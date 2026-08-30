@@ -1,0 +1,45 @@
+# Rust build output
+/target/
+
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+
+# Local databases and object-store emulators
+.data/
+.local/
+postgres-data/
+redis-data/
+docker/volumes/
+*.db
+*.sqlite
+*.sqlite3
+*.rdb
+*.aof
+
+# Runtime output
+*.log
+*.pid
+coverage/
+*.profraw
+*.lcov
+
+# Frontend and tool caches
+node_modules/
+dist/
+.cache/
+.pytest_cache/
+tmp/
+
+# Editor and OS files
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+AGENTS.md
