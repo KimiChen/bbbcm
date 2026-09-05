@@ -456,6 +456,8 @@ Redis key 固定为 `bcm:<environment>:v1:<domain>:<key>`。允许存放：
 
 ## 17. 可观测性
 
+统计事件时间与接收时间使用UTC；统计时区固定UTC（+0，DEC-048），不随用户展示时区变化。MVP可信用户不设账号年龄门槛，其他统计窗口与有效性口径按01及已批准决策执行。
+
 - 结构化日志带 request/trace/actor 摘要，不带 secret 或 C3。
 - 指标覆盖 HTTP、数据库池、事务重试、Outbox lag、DLQ、邮件、媒体和搜索。
 - tracing 贯穿 Web、事务、Outbox 和 sink。

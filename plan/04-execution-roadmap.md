@@ -44,7 +44,7 @@ WP-MVP-A00 参考标的本地化（开发第一步，无依赖）
 | `WP-MVP-A02` | `WP-MVP-A01` |
 | `WP-MVP-A03` | `WP-MVP-A01`、`WP-MVP-A02` 的配置/Secrets/启动校验前置、`WP-M0-04` 数据设计；A02 整包的 Flag/审计后续依赖 A04/D04 |
 | `WP-MVP-A04` | `WP-MVP-A03` |
-| `WP-MVP-A05` | `WP-MVP-A02`、`WP-MVP-A03`、`WP-MVP-A04` |
+| `WP-MVP-A05` | `WP-MVP-A02` 已交付配置/Secrets/启动校验/Flag存储只读切片（DEC-047）、`WP-MVP-A03`、`WP-MVP-A04`；观测承接M0-05 |
 | `WP-MVP-A06` | `WP-MVP-A04`、`WP-MVP-A05` |
 | `WP-MVP-B01` | `WP-MVP-A03`、`WP-MVP-A04`、`WP-MVP-A05`、`WP-MVP-A06` |
 | `WP-MVP-B02` | `WP-MVP-A03`、`WP-MVP-A04`、`WP-MVP-A05`、`WP-MVP-A06` |
@@ -69,6 +69,7 @@ WP-MVP-A00 参考标的本地化（开发第一步，无依赖）
 任何 Pending 决策只阻塞受影响行和 Production Approved；除非它会改变数据模型、安全边界或不可逆实现，否则不得阻塞其他已就绪工作包。具体地：
 
 - 用户此前明确授权 M0-04 → A02 配置前置 → A03 顺序；配置前置满足 A03 依赖，A02 的受控写、只读/紧急关闭与审批仍按 A04/D04 依赖继续；本轮用户授权A04后增加Flag存储与只读查询切片（99 §5.5），不据此标记 A02 整包 Implemented。
+- `DEC-047`：A02 已交付配置/Secrets/启动校验/Flag只读切片满足本轮 A05 技术前置，A02 整包继续 In progress；本轮 A05 共享接口冻结后完成 A06 接线，精确登记见99 §5.6。
 - `DEC-016`/`DEC-018` 只阻塞**生产 IAM 授权与角色种子**，不阻塞 `WP-M0-04` 的 schema、迁移、事务与 Outbox 设计。
 - `DEC-019`（视觉基准，`10` 第 3 节第 5 项）只阻塞 `WP-MVP-E04` 与 Production Approved，不阻塞 `WP-MVP-A01` 及其下游。
 - `WP-MVP-A00` 依赖为「无」指的是无**工作包**依赖；它需要 `bbbcm-web` 可运行，因此 `WP-MVP-A01` 的 workspace 骨架先行是必要顺序，不构成路线图冲突。

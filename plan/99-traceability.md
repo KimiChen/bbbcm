@@ -109,7 +109,8 @@
 | `WP-MVP-A02` | In progress（开发期，2026-09-05） | 本轮配置前置完成：三程序共用安全默认/主文件/local/环境/Secret分层，四环境模板、严格解析、连接/前缀/Redis/Worker校验、Secret脱敏、PostgreSQL启动检查与手册；配置13项及CLI/连接回归随最小集通过。本轮另完成版本化Flag存储、一致只读加载与实际CLI list（第5.5节）；整包剩余受控flag set与/manage/config、审计接线/审批、只读/紧急关闭及提示态，依赖后续授权/A04/D04；14个MVP Flag仍默认全关。配置前置见第5.4节。 |
 | `WP-MVP-A03` | Implemented（开发期，2026-09-05） | 已修复有效轨为空豁免；交付PG/SQLite真实迁移、15逻辑schema映射与3张必要初始表、专用单连接/前缀锁/元数据/漂移拒绝/失败回滚/FK恢复、受信表注册、PG组角色bootstrap与显式/默认ACL、实际migrate/status/seed、4版块规则占位和共享SQL lint。迁移20项及种子/ACL/CLI回归、真实SQLite与HTTP冒烟通过；角色与IAM区分，mysql8只占位，真实PG ACL/并发等留硬化。版本、设计和证据见第5.4节。 |
 | `WP-MVP-A04` | Implemented（开发期，2026-09-05） | 事务/幂等/未知提交、Outbox调度/受控重放、追加审计/敏感读取、双宿主恢复与Webhook版本模型完成；独立复核及真实SQLite最小集通过，见第5.5节。无真实provider或授权路由，不授Verified。 |
-| `WP-MVP-A05..A06` | Not started | 本轮不实施。 |
+| `WP-MVP-A05` | In progress | Redis、观测、健康与状态页；实施前设计见第5.6节，依赖按DEC-047细化。 |
+| `WP-MVP-A06` | In progress | 分析及本地适配器/邮件代码面；实施前设计见第5.6节，不推进尚缺领域接线的产品需求。 |
 | `WP-MVP-B01..B06` | Not started | - |
 | `WP-MVP-C01..C05` | Not started | - |
 | `WP-MVP-D01..D04` | Not started | - |
@@ -218,6 +219,25 @@
 | `ADMIN-012` | In progress | 本地原子审计、同事务复制请求、关闭行为和本地复制适配已交付；完整高危业务操作接线及生产独立权限域仍依赖B/D04与供应商/权限批准。 |
 | `ADMIN-013` | In progress | 类型化审批/前后摘要/关联/时间合同及敏感读取门槛已交付；真实资料查看、证据下载、导出、密钥和break-glass流程仍待身份/管理/领域接线。 |
 | M0-05、A02及01 §7.3/7.4/8.3平台约束 | 仅工作包/子范围交付 | 不据基础引擎推进任何身份/内容/管理产品需求；容量目标无实测，不宣称性能达标。其余产品需求状态不变。 |
+
+### 5.6 A05 → A06 平台开发登记（2026-09-05）
+
+项目负责人及最终批准人：项目所有者（用户）；Codex 负责实现、独立交叉复核、开发期验证及本机提交。实施前工作区干净，完整核对 AGENTS、README 与01/02/03/05/06/04/10/20/90/99。DEC-047/048先单独登记提交；MVP可信用户无账号年龄门槛、统计UTC，其他长度及周/月口径待用户答复。保留Workspace与crate方向：共享合同在platform，数据库适配在platform-db，其他platform-*只依赖platform，apps组合和注入。先冻结A05合同，再接A06；不重新搭建A03/A04。
+
+| 设计项 | A05 | A06 |
+|---|---|---|
+| 精确范围与原文 | 平台任务WP-MVP-A05；01 §7.4/7.5/8.2–8.5、§4.20状态页路由，02 §12/17/18；不交付身份业务限流或A02写入口。 | DATA-001..006、INTEG-001/006与INTEG-005代码面，01 §1.3/4.18/4.19、02 §11/14/17/18；不包括RSS、验证码、密码泄露检查、搜索词典、外链或第三方Webhook。 |
+| 依赖 | A02配置/Secrets/启动/Flag只读切片（DEC-047），A03/A04、M0-05；A00本地品牌与冻结组件。 | A04已提交Outbox与Worker，A05冻结异步合同与观测接口；B/C/D领域生产者/看板后续。DEC-011真实供应商、DNS/凭证继续关闭。 |
+| 共享接口 | CacheStore/Wakeup/Lease/RateLimiter统一BoxFuture+Result；Disabled/Unavailable/InvalidInput区分；受控PublicCacheKey含版本/public可见性，默认TTL30秒，CacheEntity失效；Wakeup固定Outbox通道、超时等候；Lease持有者令牌续租/释放；RateLimitPolicy显式参数。RedisRuntime配置装配，Environment枚举生成bcm:<environment>:v1，普通读回源/高风险依赖写失败关闭；内存限流只供测试，关闭模式明确无能力。 | 版本化EventDictionary与受信统计窗口/排除上下文，AnalyticsConsumer通过已提交Outbox引用取事实；MailProvider/MessageSource/FeedbackSource、ObjectStore/ImageProcessor/MalwareScanner/ErrorTracker/BasicAnalytics异步Result合同；关闭、本地测试和不可用分开。现有Sink注入，无公开事件/反馈HTTP。 |
+| 最小持久数据 | 0004配对迁移operations.status_announcements：公开标题/正文、maintenance/incident、公布及起止UTC时间、版本。只读源为主库，空态和查询失败分离；无自动维护/事故推断。 | 0005配对迁移analytics.event_facts/projection_receipts/aggregates/watermarks：事件与接收时间、字典版本、伪匿名引用、受信排除、已提交Outbox关联；receipt按投影版本/event_id唯一，水位保留乱序/延迟信息。0006配对迁移platform.mail_feedback/mail_suppressions/mail_dispatches/mail_alerts：反馈来源+ID唯一/摘要防异载荷，recipient_ref、分类/抑制原因/硬退信计数/版本、脱敏投递状态及告警。邮箱/正文不入Outbox或日志，由受信消息源回读。 |
+| 权限与公告写边界 | status_announcements仅app_rw SELECT，worker/report无授权；写入仅migrator维护数据边界，开发测试用合成夹具，没有新增管理写API或未经鉴权CLI写口。公开/status只投影C0公告和通用状态，不公开连接/拓扑/详细指标；诊断指标仅本机受控读取。 | analytics facts由受信生产服务同事务INSERT，worker SELECT；投影由worker显式SELECT/INSERT/UPDATE/DELETE，report_ro仅脱敏aggregate列。邮件dispatch/suppression为worker SELECT/INSERT/UPDATE，feedback/alerts为worker SELECT/INSERT；app无邮件表权限，report仅dispatch分类/状态/时间与feedback种类/时间列，无recipient或反馈ID。dispatch/feedback显式simulated，本地邮件只报LocalRecorded；告警同事务追加mail.alert Outbox。所有新对象经SchemaRenderer受信注册与显式ACL，mysql8占位，不创建身份/内容/IAM/审批表。 |
+| 事务、版本与Outbox | 公共缓存只有确定提交后可失效；已有Outbox目标提供可靠重试，Redis只是缓存/短租约/唤醒，数据库租约/去重仍权威。Worker在丢失/断连/关闭时固定轮询恢复，取消与退出有界；namespace清理仅当前环境SCAN+UNLINK。 | 事件事实与Outbox同事务，消费者去重/聚合/水位同事务；版本条件与固定锁序、失败回滚、重放重建不重复累计。邮件等副作用只走已提交Outbox/Worker；反馈去重+抑制+告警同事务，营销退订不屏蔽安全事务邮件，硬退信永久失败停止重试并告警；生产率/延迟阈值仅Option配置合同，无猜测默认。 |
+| 观测与本地输出 | 结构化脱敏日志与trace贯穿HTTP/事务重试/Outbox/Worker/sink；固定标签HTTP/池/重试/lag/积压/租约/DLQ/缓存/依赖错误，采集值、未支持、未接入分离，不用零冒充缺失；邮件/媒体/搜索同接口。liveness/readiness/依赖降级分离，可选Redis错误不阻断公开读。 | 本地邮件生成可检查品牌邮件文件；本地对象实际隔离读写，图片真实解码/预算/重编码清元数据，模拟扫描明确非真实检测；本地错误/基础分析生成脱敏结果。对关闭/故障不报已发送/已扫描/已上传，真实provider与全部业务Flag关闭。 |
+| 依赖新增理由 | Redis客户端仅为Redis8/Tokio/Rustls网络适配；复用已有Tokio和tracing，结构化日志启用既有subscriber JSON，不升级无关依赖。 | image仅为本地PNG/JPEG真实解码/限像素/重编码，不用固定成功替代图片处理；其余优先复用已有依赖。 |
+| 开发验证与复核 | 异步合同/装配/禁用不可用/命名空间/TTL/失效/令牌过期/唤醒丢失轮询/取消，日志脱敏/关联/采集/健康及/status空故障；提供真实Redis8可复现测试入口但本轮不假称已执行真实合同。 | 合成事件+真实临时SQLite去重/排除/边界/延迟/聚合/水位/重建；本地适配器实际输入输出/失败关闭；邮件分类/反馈去重/抑制/硬退信停止重试告警。交叉独立复核接口、Redis故障/敏感日志、分析正确性和邮件规则后修复。 |
+| Flag与状态条件 | 14项业务Flag保持关闭，Redis测试只隔离配置，A02整包始终In progress。全部约定开发交付、最小集和独立复核后A05才可Implemented，不授Verified。 | DATA/INTEG逐条裁决，合成测试不证明真实领域生产者/看板完成；平台切片完成但领域接线缺口则A06整包In progress。未批准口径/阈值暂停依赖计算，继续显式参数合同与合成处理。 |
+
+共同最小集：适用单元、真实临时SQLite冒烟、./scripts/dev-check.sh、git diff --check、逐文件暂存复核。原迁移/种子/Flag list/事务审计/Worker恢复/A00/A01回归；无独立构建或完整资产构建。真实PG/Redis全矩阵、多实例、安全、跨平台、性能与视觉留E01/E02/E04。AGENTS.md、g.md、本机配置/Secrets/数据库/缓存/处理产物仍忽略，不做保留期或自动清理批准。实现、验证和证据结果完成后在本节补登记；当前不声称已通过。
 
 ## 6. 门禁状态
 
