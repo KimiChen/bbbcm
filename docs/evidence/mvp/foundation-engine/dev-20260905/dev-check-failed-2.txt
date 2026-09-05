@@ -1,0 +1,26 @@
+
+== 1/7 格式化检查
+
+== 2/7 Clippy -D warnings
+    Checking platform-db v0.1.0 (<repository>/crates/platform-db)
+    Checking bbbcm-worker v0.1.0 (<repository>/apps/bbbcm-worker)
+    Checking bbbcm-cli v0.1.0 (<repository>/apps/bbbcm-cli)
+    Checking bbbcm-web v0.1.0 (<repository>/apps/web)
+error: field assignment outside of initializer for an instance created with Default::default()
+   --> crates/platform-db/src/migrations/tests.rs:546:9
+    |
+546 |         config.database = f.cfg.clone();
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: consider initializing the variable with `platform::config::Config { database: f.cfg.clone(), ..Default::default() }` and removing relevant reassignments
+   --> crates/platform-db/src/migrations/tests.rs:545:9
+    |
+545 |         let mut config = Config::default();
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#field_reassign_with_default
+    = note: `-D clippy::field-reassign-with-default` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::field_reassign_with_default)]`
+
+error: could not compile `platform-db` (lib test) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+✗ Clippy 有告警

@@ -10,6 +10,11 @@ publish.workspace = true
 platform.workspace = true
 platform-db.workspace = true
 platform-outbox.workspace = true
+platform-audit.workspace = true
 tokio.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
+tokio-util.workspace = true
+
+[dev-dependencies]
+chrono.workspace = true

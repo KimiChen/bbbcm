@@ -80,6 +80,21 @@ impl Pool {
         }
     }
 
+    /// 只读查询入口连接已有存储；SQLite 不创建目录或数据库，不修复结构。
+    pub async fn connect_existing(cfg: &DatabaseConfig) -> Result<Pool, ConnectError> {
+        if cfg.backend != Backend::Sqlite {
+            return Self::connect(cfg).await;
+        }
+        if cfg.max_connections != 1 {
+            return Err(connection::DatabaseError::InvalidConfiguration.into());
+        }
+        let pool = sqlx::sqlite::SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect_with(connection::sqlite_options(cfg, false)?)
+            .await?;
+        Ok(Pool::Sqlite(pool))
+    }
+
     /// 探测后端能力集。
     ///
     /// SQLite 的 FTS5 探针建在 `temp` 库上，而 `temp` 是**连接级**的：建表与删表
@@ -147,10 +162,15 @@ impl Pool {
 }
 
 pub mod acl;
+pub mod audit_repo;
+pub mod command;
 pub mod connection;
+pub mod flags_repo;
+pub mod idempotency_repo;
 pub mod migrations;
 pub mod seed;
 mod seed_repo;
+pub mod transaction;
 
 #[cfg(test)]
 mod tests {
@@ -207,3 +227,5 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
     }
 }
+
+pub mod outbox_repo;

@@ -11,6 +11,9 @@ chrono.workspace = true
 serde.workspace = true
 thiserror.workspace = true
 toml.workspace = true
+uuid.workspace = true
+sha2.workspace = true
+serde_json.workspace = true
 url = "2"
 
 [dev-dependencies]

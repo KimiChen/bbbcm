@@ -1,8 +1,8 @@
 # 草莓社区（bbbcm）
 
-开源中文技术社区软件：Rust + Axum + Askama SSR。支持 PostgreSQL（完整模式）与 SQLite（体验模式，零外部依赖）双后端；SQL 按 PostgreSQL/SQLite/MySQL 8.0 三库交集子集编写，预留 MySQL 8.0（规范先行，暂未实现）。Redis 可选，承载缓存、短租约、唤醒与限流。
+开源中文技术社区软件：Rust + Axum + Askama SSR。支持 PostgreSQL（完整模式）与 SQLite（体验模式，零外部依赖）双后端；SQL 按 PostgreSQL/SQLite/MySQL 8.0 三库交集子集编写，预留 MySQL 8.0（规范先行，暂未实现）。Redis按架构为可选缓存、短租约、唤醒与限流组件；目前只做配置校验，运行时接入归A05。
 
-> **开发中。** 已提供共用配置、PostgreSQL/SQLite 迁移、状态查询和开发种子。身份、内容与后台业务、Outbox/审计引擎和 Flag 持久化仍未交付，所有业务 Flag 默认关闭。状态以 [`plan/99-traceability.md`](plan/99-traceability.md) 为准。
+> **开发中。** 已提供共用配置、PostgreSQL/SQLite 迁移、状态查询和开发种子。已增加事务/幂等、Outbox/Worker、追加审计与 Flag 数据库只读查询；身份、内容、后台业务及 Flag 受控写仍待后续交付，所有业务 Flag 默认关闭。状态以 [`plan/99-traceability.md`](plan/99-traceability.md) 为准。
 
 ## 快速体验（SQLite）
 
@@ -13,7 +13,7 @@ cargo run --locked --package bbbcm-cli -- db seed
 cargo run --locked --package bbbcm-web  # http://127.0.0.1:8080
 ```
 
-体验模式默认 `features.redis = false`，因此**不提供限流**：注册、登录、找回密码没有速率保护。该模式用于本机体验与评估，不要公开部署（`DEC-024`）。公开部署请使用完整模式：PostgreSQL + `features.redis = true`。
+体验模式默认 `features.redis = false`，因此**不提供限流**：注册、登录、找回密码没有速率保护。该模式用于本机体验与评估，不要公开部署（`DEC-024`）。公开部署须等后续实现和发布门禁；当前设 `features.redis = true` 不会获得尚未实现的生产缓存或限流能力。
 
 ### 环境变量
 
@@ -34,8 +34,10 @@ cargo run --locked --package bbbcm-web  # http://127.0.0.1:8080
 | 程序 | 作用 |
 |---|---|
 | `bbbcm-web` | Web 服务（Axum + Askama SSR） |
-| `bbbcm-worker` | 后台任务（Outbox、邮件、媒体、清理）；体验模式可内嵌进 web（`worker.embedded = true`） |
-| `bbbcm-cli` | 迁移、种子数据、账号引导、Feature Flag 管理 |
+| `bbbcm-worker` | 持久化Outbox轮询、本地sink、关闭的审计副本；体验模式可内嵌web。邮件/媒体/清理待后续 |
+| `bbbcm-cli` | 迁移、状态、开发种子与Flag数据库查询；账号引导/Flag写入待后续 |
+
+事务调用、未知提交查询、Worker/DLQ恢复与Flag查询见 [基础引擎手册](docs/development/engine.md)。
 
 ## 代码结构
 

@@ -174,6 +174,60 @@ pub fn decode_time(text: &str) -> Result<chrono::DateTime<chrono::Utc>, chrono::
     Ok(chrono::DateTime::parse_from_rfc3339(text)?.with_timezone(&chrono::Utc))
 }
 
+/// 方言入口：Repository 只提供共享 SELECT；SQLite 依赖 IMMEDIATE 单写者。
+pub fn lock_sql(backend: Backend, select: &str, skip_locked: bool) -> String {
+    match backend {
+        Backend::Postgres | Backend::Mysql8 => {
+            if skip_locked {
+                format!("{select} FOR UPDATE SKIP LOCKED")
+            } else {
+                format!("{select} FOR UPDATE")
+            }
+        }
+        Backend::Sqlite => select.to_owned(),
+    }
+}
+
+/// 必须由事务适配器在同事务同连接上紧接单行 INSERT 调用。
+pub fn last_insert_id_sql(backend: Backend) -> &'static str {
+    match backend {
+        Backend::Postgres => "SELECT lastval() AS id",
+        Backend::Sqlite => "SELECT last_insert_rowid() AS id",
+        Backend::Mysql8 => "SELECT LAST_INSERT_ID() AS id",
+    }
+}
+
+pub fn begin_write_sql(backend: Backend) -> &'static str {
+    match backend {
+        Backend::Postgres => "BEGIN ISOLATION LEVEL READ COMMITTED",
+        Backend::Sqlite => "BEGIN IMMEDIATE",
+        Backend::Mysql8 => "START TRANSACTION",
+    }
+}
+
+pub fn transaction_setup_sql(backend: Backend) -> Option<&'static str> {
+    match backend {
+        Backend::Postgres => Some("SET LOCAL lock_timeout = '500ms'"),
+        Backend::Sqlite | Backend::Mysql8 => None,
+    }
+}
+
+/// SQLite 租约三步算法与 PG 批量行锁共用显式 ID 列表；不产生 IN 子查询 LIMIT。
+pub fn outbox_claim_update_sql(
+    renderer: &crate::identifiers::SchemaRenderer,
+    backend: Backend,
+    count: usize,
+) -> Result<String, crate::identifiers::SchemaError> {
+    if !(1..=100).contains(&count) {
+        return Err(crate::identifiers::SchemaError::InvalidTemplate);
+    }
+    let table = renderer.table(backend, "platform", "outbox_events")?;
+    let placeholders = vec!["?"; count].join(", ");
+    Ok(format!(
+        "UPDATE {table} SET state = 'leased', lease_owner = ?, lease_batch_id = ?, lease_until = ?, attempts = attempts + 1 WHERE event_id IN ({placeholders}) AND ((state = 'ready' AND available_at <= ?) OR (state = 'leased' AND lease_until <= ?))"
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -40,10 +40,15 @@ mod tests {
     use platform::db::Backend;
     #[test]
     fn all_initial_objects_have_explicit_acl_and_future_defaults_are_empty() {
-        let source = include_str!("../../../db/migrations/postgres/0001_init.sql");
+        let source = [
+            include_str!("../../../db/migrations/postgres/0001_init.sql"),
+            include_str!("../../../db/migrations/postgres/0002_engine.sql"),
+            include_str!("../../../db/migrations/postgres/0003_flags.sql"),
+        ]
+        .join("\n");
         for prefix in ["bcm_", "review42_"] {
             let r = SchemaRenderer::new(prefix).unwrap();
-            let sql = r.migration(Backend::Postgres, source).unwrap();
+            let sql = r.migration(Backend::Postgres, &source).unwrap();
             let bootstrap = bootstrap_sql(&r).unwrap();
             for role in DATABASE_ROLES {
                 assert!(bootstrap.contains(&format!("CREATE ROLE {} NOLOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS", r.role(role).unwrap())));

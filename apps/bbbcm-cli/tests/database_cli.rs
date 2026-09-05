@@ -66,8 +66,8 @@ fn cli_migrates_reports_and_seeds_repeatedly() {
     assert!(succeeds(f.db(&["status"])).contains("pending"));
     assert!(!f.dir.join("test.db").exists(), "status不能创建数据库");
     assert!(!f.db(&["seed"]).status.success());
-    assert!(succeeds(f.db(&["migrate", "--backend", "sqlite"])).contains("应用 [1]"));
-    assert!(succeeds(f.db(&["migrate"])).contains("已应用跳过 [1]"));
+    assert!(succeeds(f.db(&["migrate", "--backend", "sqlite"])).contains("应用 [1, 2, 3]"));
+    assert!(succeeds(f.db(&["migrate"])).contains("已应用跳过 [1, 2, 3]"));
     assert!(succeeds(f.db(&["status"])).contains("applied"));
     assert!(succeeds(f.db(&["seed"])).contains("新增 4 个版块、4 个规则"));
     assert!(succeeds(f.db(&["seed"])).contains("新增 0 个版块、0 个规则"));
@@ -146,4 +146,61 @@ fn implicit_postgres_environment_cannot_bypass_shared_config() {
         assert!(!String::from_utf8_lossy(&output.stderr).contains("PRIVATE_DRIVER_SENTINEL"));
         assert!(!String::from_utf8_lossy(&output.stdout).contains("PRIVATE_DRIVER_SENTINEL"));
     }
+}
+
+#[test]
+fn flag_list_reads_storage_and_fails_without_schema() {
+    let f = Fixture::new();
+    assert!(!f.run(&["flag", "list"]).status.success());
+    assert!(
+        !f.dir.join("test.db").exists(),
+        "只读Flag查询不能创建数据库"
+    );
+    succeeds(f.db(&["migrate"]));
+    let text = succeeds(f.run(&["flag", "list"]));
+    assert!(text.contains("数据库快照"));
+    assert_eq!(
+        text.matches("默认 关 当前 关 版本 1 来源 数据库").count(),
+        14
+    );
+}
+
+#[tokio::test]
+async fn flag_list_distinguishes_persisted_value_and_missing_row() {
+    let f = Fixture::new();
+    succeeds(f.db(&["migrate"]));
+    let mut config = platform::config::Config::default().database;
+    config.sqlite_path = f.dir.join("test.db").to_str().unwrap().into();
+    let pool = platform_db::Pool::connect_existing(&config).await.unwrap();
+    let renderer = platform::identifiers::SchemaRenderer::new(&config.schema_prefix).unwrap();
+    let table = renderer
+        .table(pool.backend(), "platform", "feature_flags")
+        .unwrap();
+    let platform_db::Pool::Sqlite(sqlite) = &pool else {
+        unreachable!()
+    };
+    sqlx::query(&format!(
+        "UPDATE {table} SET enabled = ?, version = ? WHERE flag_key = ?"
+    ))
+    .bind(1)
+    .bind(2)
+    .bind("public_read")
+    .execute(sqlite)
+    .await
+    .unwrap();
+    sqlx::query(&format!("DELETE FROM {table} WHERE flag_key = ?"))
+        .bind("search")
+        .execute(sqlite)
+        .await
+        .unwrap();
+    pool.close().await;
+    let text = succeeds(f.run(&["flag", "list"]));
+    assert!(
+        text.lines().any(|line| line.contains("public_read")
+            && line.contains("默认 关 当前 开 版本 2 来源 数据库"))
+    );
+    assert!(
+        text.lines().any(|line| line.contains("search")
+            && line.contains("默认 关 当前 关 版本 - 来源 缺项安全关闭"))
+    );
 }

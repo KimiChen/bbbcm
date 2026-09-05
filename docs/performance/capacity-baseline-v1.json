@@ -1,0 +1,90 @@
+{
+  "model_version": "capacity-baseline-v1",
+  "kind": "derived_model_not_measurement",
+  "source": "plan/01-product-requirements.md sections 7.5 and 8.3; plan/90-quality-release.md section 6",
+  "targets": {
+    "registered_users": 10000,
+    "peak_online_sessions": 300,
+    "topics_and_replies": 1000000,
+    "offered_public_reads_per_second": 200,
+    "offered_writes_per_second": 20,
+    "public_read_p95_ms": 400,
+    "write_p95_ms": 800,
+    "ssr_first_byte_p95_ms": 800
+  },
+  "assumptions": {
+    "seed": "bbbcm-capacity-v1",
+    "topics": 100000,
+    "replies": 900000,
+    "synthetic_epoch_utc": "2026-01-01T00:00:00.000000Z",
+    "historical_span_days": 365,
+    "hot_topic_percent": 10,
+    "hot_reply_percent": 60,
+    "hot_detail_read_percent": 80,
+    "forums": [
+      {"id": "forum-1", "name": "问答/实战", "percent": 40},
+      {"id": "forum-2", "name": "AI", "percent": 25},
+      {"id": "forum-3", "name": "域名与主机", "percent": 25},
+      {"id": "forum-4", "name": "站务", "percent": 10}
+    ],
+    "visibility_cases": [
+      {"id": "public", "percent": 90},
+      {"id": "restricted_fixture", "percent": 8},
+      {"id": "hidden_fixture", "percent": 2}
+    ],
+    "topic_body_utf8_bytes": [
+      {"bytes": 256, "percent": 70},
+      {"bytes": 2048, "percent": 25},
+      {"bytes": 16384, "percent": 5}
+    ],
+    "reply_body_utf8_bytes": [
+      {"bytes": 128, "percent": 70},
+      {"bytes": 512, "percent": 25},
+      {"bytes": 4096, "percent": 5}
+    ],
+    "topic_title_utf8_bytes": 96,
+    "read_scenarios": [
+      {"id": "topic_detail", "percent": 45, "ssr": true},
+      {"id": "forum_latest", "percent": 20, "ssr": true},
+      {"id": "home_feed", "percent": 20, "ssr": true},
+      {"id": "content_search", "percent": 10, "ssr": false},
+      {"id": "public_profile", "percent": 5, "ssr": false}
+    ],
+    "write_scenarios": [
+      {"id": "create_topic", "percent": 10},
+      {"id": "create_reply", "percent": 70},
+      {"id": "edit_content", "percent": 10},
+      {"id": "bookmark", "percent": 5},
+      {"id": "report", "percent": 5}
+    ],
+    "arrival_model": "open_loop_fixed_rate",
+    "warmup_seconds": 300,
+    "measurement_seconds": 900,
+    "repeat_count": 3,
+    "sample_max_content_rows": 10000
+  },
+  "pending_production_values": {
+    "vps_region": null,
+    "vps_cpu_ram": null,
+    "persistent_volume_capacity_iops": null,
+    "database_connection_pool_budget": null,
+    "resource_quotas": null,
+    "scaling_thresholds": null,
+    "monthly_budget": null,
+    "approved_primary_user_regions": null,
+    "outbox_delivery_dlq_retention": null,
+    "audit_retention": null,
+    "wal_and_backup_retention": null,
+    "rpo_rto": null,
+    "observability_provider": null
+  },
+  "measurement": {
+    "executed": false,
+    "performance_results": null,
+    "actual_hardware": null,
+    "actual_regions_and_network": null,
+    "actual_device_browser_versions": null,
+    "actual_pool_and_cache_settings": null,
+    "actual_window_utc": null
+  }
+}

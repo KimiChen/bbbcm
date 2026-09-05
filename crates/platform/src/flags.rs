@@ -105,3 +105,65 @@ mod tests {
         assert!(Flag::ALL.iter().all(|flag| !flag.default_enabled()));
     }
 }
+
+/// 成功读取数据库后的一致快照；缺项与注册默认值可被调用者明确区分。
+#[derive(Debug, Clone)]
+pub struct FlagSnapshot {
+    values: Vec<FlagValue>,
+}
+#[derive(Debug, Clone, Copy)]
+pub struct FlagValue {
+    pub flag: Flag,
+    pub enabled: bool,
+    /// None 表示数据库缺项，按安全默认关闭；不是一次读取失败。
+    pub version: Option<i64>,
+}
+#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+pub enum FlagReadError {
+    #[error("Feature Flag 存储不可用；未取得数据库快照")]
+    Unavailable,
+    #[error("Feature Flag 存储含未知项、非法值或损坏版本")]
+    Corrupt,
+}
+impl FlagSnapshot {
+    pub fn from_rows(rows: Vec<(String, bool, i64)>) -> Result<Self, FlagReadError> {
+        let mut seen = HashSet::new();
+        let mut values: Vec<_> = Flag::ALL
+            .iter()
+            .map(|flag| FlagValue {
+                flag: *flag,
+                enabled: false,
+                version: None,
+            })
+            .collect();
+        for (key, enabled, version) in rows {
+            let Some(value) = values.iter_mut().find(|v| v.flag.key() == key) else {
+                return Err(FlagReadError::Corrupt);
+            };
+            if version < 1 || !seen.insert(key) {
+                return Err(FlagReadError::Corrupt);
+            }
+            value.enabled = enabled;
+            value.version = Some(version);
+        }
+        Ok(Self { values })
+    }
+    pub fn values(&self) -> &[FlagValue] {
+        &self.values
+    }
+    pub fn get(&self, flag: Flag) -> FlagValue {
+        *self
+            .values
+            .iter()
+            .find(|v| v.flag == flag)
+            .expect("snapshot contains registry")
+    }
+}
+/// 只读合同，不提供写入口或启动修复。
+pub trait FlagReader: Send + Sync {
+    fn load(
+        &self,
+    ) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = Result<FlagSnapshot, FlagReadError>> + Send + '_>,
+    >;
+}

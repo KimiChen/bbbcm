@@ -81,7 +81,7 @@ enum UserCommand {
 
 #[derive(Debug, Subcommand)]
 enum FlagCommand {
-    /// 列出全部 flag 及其默认状态
+    /// 从数据库列出当前值、版本、缺项与注册默认值
     List,
     /// 修改 flag（受控命令）
     Set { name: String, value: bool },
@@ -186,14 +186,37 @@ async fn run(cli: Cli) -> Result<(), String> {
         },
         Command::Flag { command } => match command {
             FlagCommand::List => {
-                // 打印的是编译期注册表的默认值，不是数据库中的生效状态——
-                // 持久化与受控修改随 WP-MVP-A02 接入（DEC-028 定义两个受控入口）。
-                println!("Feature Flag 注册表（默认值；数据库生效状态随 WP-MVP-A02 接入）：");
-                for flag in platform::flags::Flag::ALL {
+                use platform::flags::FlagReader;
+                let pool = platform_db::Pool::connect_existing(&config.database)
+                    .await
+                    .map_err(|err| err.to_string())?;
+                let renderer =
+                    platform::identifiers::SchemaRenderer::new(&config.database.schema_prefix)
+                        .map_err(|err| err.to_string())?;
+                let reader = platform_db::flags_repo::DbFlagReader::new(pool.clone(), renderer);
+                let result = reader.load().await;
+                pool.close().await;
+                let snapshot = result.map_err(|err| err.to_string())?;
+                println!("Feature Flag 数据库快照（只读；注册默认值单列）：");
+                for value in snapshot.values() {
                     println!(
-                        "  {:<20} 默认 {}",
-                        flag.key(),
-                        if flag.default_enabled() { "开" } else { "关" }
+                        "  {:<20} 默认 {} 当前 {} 版本 {} 来源 {}",
+                        value.flag.key(),
+                        if value.flag.default_enabled() {
+                            "开"
+                        } else {
+                            "关"
+                        },
+                        if value.enabled { "开" } else { "关" },
+                        value
+                            .version
+                            .map(|v| v.to_string())
+                            .unwrap_or_else(|| "-".into()),
+                        if value.version.is_some() {
+                            "数据库"
+                        } else {
+                            "缺项安全关闭"
+                        }
                     );
                 }
             }

@@ -1,0 +1,487 @@
+{
+  "kind": "development_staged_review_not_release_gate",
+  "date": "2026-09-05",
+  "result": "passed",
+  "code_version": "the implementation commit containing this evidence",
+  "initial_worktree": "clean",
+  "staging": "explicit paths only; no forced ignored-file additions",
+  "per_file_method": "Each staged diff actually read by assigned reviewer; root additionally checked evidence, hashes, staged scope and final metadata. Prior independent implementation review is recorded in summary.md.",
+  "checks": {
+    "git_diff_check": true,
+    "git_diff_cached_check": true,
+    "utf8_lf_final_newline": true,
+    "staged_matches_worktree": true,
+    "evidence_code_hashes_match": 46,
+    "markdown_file_links_resolve": true,
+    "targeted_private_value_check": "passed; newly added lines only, not a full security scan",
+    "ignored_local_files": "AGENTS.md, g.md, local config, SQLite data and worker lock samples checked",
+    "unchanged_applied_migration": "0001 files unchanged",
+    "feature_flags": "14 registered values initialized off; no runtime writer"
+  },
+  "files": [
+    {
+      "path": ".gitignore",
+      "sha256": "4456360f04d8090dd5fcb5a9628623d851ce1151b940192c0446e889b7a88d08",
+      "reviewer": "capacity_model",
+      "scope": "依赖方向、操作说明、范围/状态和后续依赖",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "Cargo.lock",
+      "sha256": "e9923a9bf7a4dac56bc28dc6f481f69b7f38fe16473a892dd831daca5e57b0db",
+      "reviewer": "capacity_model",
+      "scope": "依赖方向、操作说明、范围/状态和后续依赖",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "Cargo.toml",
+      "sha256": "c49255196653cf0a066dd1fc65bb72848f805609e93c5b2f932ef8dab01b4866",
+      "reviewer": "capacity_model",
+      "scope": "依赖方向、操作说明、范围/状态和后续依赖",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "README.md",
+      "sha256": "394960ce7d5477b1ab32a93096f8d884003f4ef6199f8e96cc953d92189a2e9e",
+      "reviewer": "capacity_model",
+      "scope": "依赖方向、操作说明、范围/状态和后续依赖",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "apps/bbbcm-cli/Cargo.toml",
+      "sha256": "f248d3d78e482c4b0d9f29eeae9267945b33ed0451e79a0d642cdfedd12d3d65",
+      "reviewer": "capacity_model",
+      "scope": "依赖方向、操作说明、范围/状态和后续依赖",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "apps/bbbcm-cli/src/main.rs",
+      "sha256": "88fe0419ed00f495a1d0cf459d238f294b7d1936b2021a720a8ec3a77c30bb9c",
+      "reviewer": "outbox_engine",
+      "scope": "实际应用组合、审计/Outbox/Worker边界与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "apps/bbbcm-cli/tests/database_cli.rs",
+      "sha256": "44e7b2c6bd5bf4258bd5bac4f7e70b7b80ed4515f2a7fd79d9b9c3b4c162dfbe",
+      "reviewer": "outbox_engine",
+      "scope": "实际应用组合、审计/Outbox/Worker边界与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "apps/bbbcm-cli/tests/engine.rs",
+      "sha256": "90187876df38971cb8f3e951126f30ca1bafee3451e3293f3a9cb51edf4dbd8b",
+      "reviewer": "outbox_engine",
+      "scope": "实际应用组合、审计/Outbox/Worker边界与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "apps/bbbcm-worker/Cargo.toml",
+      "sha256": "26b0c29ef55052029a37d1ee4ff3c8a234cf08ce5729b5287a5977d3e54bffb7",
+      "reviewer": "capacity_model",
+      "scope": "依赖方向、操作说明、范围/状态和后续依赖",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "apps/bbbcm-worker/src/main.rs",
+      "sha256": "7d7b4ae845599d2da9cbdabde81d2768c64d4b595b0d18c19891e28413a527fb",
+      "reviewer": "outbox_engine",
+      "scope": "实际应用组合、审计/Outbox/Worker边界与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "apps/bbbcm-worker/tests/scheduler.rs",
+      "sha256": "25976a24d8e930f7706e2bf15540d806650d1a7a601df44ffbbea899ef65a2fc",
+      "reviewer": "outbox_engine",
+      "scope": "实际应用组合、审计/Outbox/Worker边界与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "apps/web/Cargo.toml",
+      "sha256": "b0b252df3d6158385d62edc00fb6920396c44494e87f399e8255fd349336ca86",
+      "reviewer": "capacity_model",
+      "scope": "依赖方向、操作说明、范围/状态和后续依赖",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "apps/web/src/jobs.rs",
+      "sha256": "1a30d0ace91cf0b6583e07968608839f8266142fc671b08663e346a82ff33fa1",
+      "reviewer": "outbox_engine",
+      "scope": "实际应用组合、审计/Outbox/Worker边界与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "apps/web/src/main.rs",
+      "sha256": "fea5c240ab44e032b5c380291afac3103119ae3660a8cf4300f5ceb87f75a4d2",
+      "reviewer": "outbox_engine",
+      "scope": "实际应用组合、审计/Outbox/Worker边界与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "crates/platform-audit/Cargo.toml",
+      "sha256": "3b2fdfe4133d15e159728a99f2ba30629619ef230c41cf9edc4f77d1fa672bc4",
+      "reviewer": "capacity_model",
+      "scope": "依赖方向、操作说明、范围/状态和后续依赖",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "crates/platform-audit/src/lib.rs",
+      "sha256": "537e4f35268ce7f4aebdab739da7660c72ebc8b70df142ac3e3f880a9ed92784",
+      "reviewer": "outbox_engine",
+      "scope": "实际应用组合、审计/Outbox/Worker边界与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "crates/platform-db/Cargo.toml",
+      "sha256": "e168a778c68e403d9c57675c3880a5f3f7efa57bb406bc1122944bed00918e31",
+      "reviewer": "capacity_model",
+      "scope": "依赖方向、操作说明、范围/状态和后续依赖",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "crates/platform-db/src/acl.rs",
+      "sha256": "7b735cba134bd89e5c1e88eafd776619333da78eebac8adb32062fdb77ba2761",
+      "reviewer": "transaction_engine",
+      "scope": "事务/幂等/Flag、迁移/ACL、容量模型与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "crates/platform-db/src/audit_repo.rs",
+      "sha256": "772c73ff647c5435ae5057181a3f346d340ebc1171e9eefc6e86542b74004251",
+      "reviewer": "outbox_engine",
+      "scope": "实际应用组合、审计/Outbox/Worker边界与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "crates/platform-db/src/command.rs",
+      "sha256": "e98fbc18261be10b13f63b58e6c5b022feba398d885853c3aa4943da465d2ffa",
+      "reviewer": "transaction_engine",
+      "scope": "事务/幂等/Flag、迁移/ACL、容量模型与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "crates/platform-db/src/command/tests.rs",
+      "sha256": "00de2b4513e2a16dde1264b421cc0f58d675b2b48471bb52335dff59ad9dc035",
+      "reviewer": "transaction_engine",
+      "scope": "事务/幂等/Flag、迁移/ACL、容量模型与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "crates/platform-db/src/flags_repo.rs",
+      "sha256": "670f25c57c8db66b9514f801adf71a3019dea3914b685fc49b565bcecfeb6696",
+      "reviewer": "transaction_engine",
+      "scope": "事务/幂等/Flag、迁移/ACL、容量模型与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "crates/platform-db/src/flags_repo/tests.rs",
+      "sha256": "6411b196cec6b9087d2929899a8fddf5c68d9e0d84f9a7acc6e462d5f7adf51f",
+      "reviewer": "transaction_engine",
+      "scope": "事务/幂等/Flag、迁移/ACL、容量模型与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "crates/platform-db/src/idempotency_repo.rs",
+      "sha256": "997ee8631f26bfa95ac3871060412545cf35992f9c2d47c6a5af05a507271cf5",
+      "reviewer": "transaction_engine",
+      "scope": "事务/幂等/Flag、迁移/ACL、容量模型与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "crates/platform-db/src/lib.rs",
+      "sha256": "acc12775f73da83f094fdee6e4210a634939723ab3cba724515e4cf1c98c0a0b",
+      "reviewer": "transaction_engine",
+      "scope": "事务/幂等/Flag、迁移/ACL、容量模型与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "crates/platform-db/src/migrations/tests.rs",
+      "sha256": "f6a1e286b8cadb535a4c1113974e4538a004c883045746ed077210fc97f94ab2",
+      "reviewer": "transaction_engine",
+      "scope": "事务/幂等/Flag、迁移/ACL、容量模型与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "crates/platform-db/src/outbox_repo.rs",
+      "sha256": "7b8550e2c9785d63712d8a90f6cd723d9fa4f0a06142b824d818850a3372c4a8",
+      "reviewer": "outbox_engine",
+      "scope": "实际应用组合、审计/Outbox/Worker边界与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "crates/platform-db/src/outbox_repo/tests.rs",
+      "sha256": "e6ec87ab9385e965d3f3d1e8b154155ad9f80b8a27222923b6962e4ec2c90668",
+      "reviewer": "outbox_engine",
+      "scope": "实际应用组合、审计/Outbox/Worker边界与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "crates/platform-db/src/seed.rs",
+      "sha256": "0db33a4617a6d4710023710432c52e73b375c73ad60fb9d19d86af074bb960d0",
+      "reviewer": "transaction_engine",
+      "scope": "事务/幂等/Flag、迁移/ACL、容量模型与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "crates/platform-db/src/transaction.rs",
+      "sha256": "c65896cf30802cc9c5e04f39ed6f72bcdd098f5e8785258137a71cad5cdf9178",
+      "reviewer": "transaction_engine",
+      "scope": "事务/幂等/Flag、迁移/ACL、容量模型与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "crates/platform-db/src/transaction/tests.rs",
+      "sha256": "49a413f7dc32e0371e05b963c260a6382247442bc4baabf3ac6eb234e2f8cdc1",
+      "reviewer": "transaction_engine",
+      "scope": "事务/幂等/Flag、迁移/ACL、容量模型与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "crates/platform-outbox/Cargo.toml",
+      "sha256": "61727c05facfda8119a9ecd9ea72d8182b29dce8e8bce70006c2a565bdc5d177",
+      "reviewer": "capacity_model",
+      "scope": "依赖方向、操作说明、范围/状态和后续依赖",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "crates/platform-outbox/src/lib.rs",
+      "sha256": "eaa29266723a7befe93716f5f5921324f8e67ac676aa85882b12dd8b2132ffa5",
+      "reviewer": "outbox_engine",
+      "scope": "实际应用组合、审计/Outbox/Worker边界与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "crates/platform/Cargo.toml",
+      "sha256": "7878e45dacea455befa858138e1692d57688c2b05dd8de1d49db8c83f6b15bfb",
+      "reviewer": "capacity_model",
+      "scope": "依赖方向、操作说明、范围/状态和后续依赖",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "crates/platform/src/audit.rs",
+      "sha256": "54ed406cea4b62f114816fcc5781d57593134752bfb5e71ece5bd4a295cfa5fb",
+      "reviewer": "outbox_engine",
+      "scope": "实际应用组合、审计/Outbox/Worker边界与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "crates/platform/src/db.rs",
+      "sha256": "1a32064e1e2ac856f56f9353d3688a4ded567113d7b007aa700efbe14316a311",
+      "reviewer": "transaction_engine",
+      "scope": "事务/幂等/Flag、迁移/ACL、容量模型与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "crates/platform/src/flags.rs",
+      "sha256": "e0f070b3736eaef21151b17c0c33f982c416505594e7f97b1ce7619387c38481",
+      "reviewer": "transaction_engine",
+      "scope": "事务/幂等/Flag、迁移/ACL、容量模型与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "crates/platform/src/identifiers.rs",
+      "sha256": "7b872811ef4d614da96f38464cfc2693ea6012b85a51d486c9c903827cd3fa18",
+      "reviewer": "transaction_engine",
+      "scope": "事务/幂等/Flag、迁移/ACL、容量模型与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "crates/platform/src/lib.rs",
+      "sha256": "1071713ff66fc160117f1da82c1305a448f70ddcdb5234154b0c32c65676c358",
+      "reviewer": "transaction_engine",
+      "scope": "事务/幂等/Flag、迁移/ACL、容量模型与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "crates/platform/src/outbox.rs",
+      "sha256": "d71e1860480eec9eb205a7bb108934ecb249d48a2b535315bfd7d3d923f56463",
+      "reviewer": "outbox_engine",
+      "scope": "实际应用组合、审计/Outbox/Worker边界与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "crates/platform/src/transaction.rs",
+      "sha256": "c563d73ade55f202dfd06bea86a0b5935e1cdee2a0427946094b6f72753c77a8",
+      "reviewer": "transaction_engine",
+      "scope": "事务/幂等/Flag、迁移/ACL、容量模型与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "db/migrations/README.md",
+      "sha256": "b96cf3a960601be7a339de770048b92f9de3234fed3e4ead2e82f1e40386c1be",
+      "reviewer": "transaction_engine",
+      "scope": "事务/幂等/Flag、迁移/ACL、容量模型与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "db/migrations/postgres/0002_engine.sql",
+      "sha256": "2159e50577842ce4b9525d6b253506bdc010c82e54f40d8ae8d17bc34df04fbe",
+      "reviewer": "transaction_engine",
+      "scope": "事务/幂等/Flag、迁移/ACL、容量模型与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "db/migrations/postgres/0003_flags.sql",
+      "sha256": "01dce72babaa0ea7d7131d5eb8848cb9a9675672bcf49ea2727741fb98d3df57",
+      "reviewer": "transaction_engine",
+      "scope": "事务/幂等/Flag、迁移/ACL、容量模型与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "db/migrations/sqlite/0002_engine.sql",
+      "sha256": "88481c1eaf40b25cf15f8adda50e3b9d088e52d9d6953305c291b447cc4d66ed",
+      "reviewer": "transaction_engine",
+      "scope": "事务/幂等/Flag、迁移/ACL、容量模型与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "db/migrations/sqlite/0003_flags.sql",
+      "sha256": "d0104a6a9d2e723b291a9fe0e211953e9f9f7a337edc0f67b6e4a595f7325f56",
+      "reviewer": "transaction_engine",
+      "scope": "事务/幂等/Flag、迁移/ACL、容量模型与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "docs/design-notes/2026-09-capacity-baseline.md",
+      "sha256": "d5a7f96e2c3682ece55ecd88fcd457835a6c92add5ebcf9bf9dd1c5a707fbfb9",
+      "reviewer": "transaction_engine",
+      "scope": "事务/幂等/Flag、迁移/ACL、容量模型与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "docs/development/database.md",
+      "sha256": "8f3fe08d3d855b960ff6568cf69500305f7efeada4b73ebef759676faf495ab7",
+      "reviewer": "capacity_model",
+      "scope": "依赖方向、操作说明、范围/状态和后续依赖",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "docs/development/engine.md",
+      "sha256": "3e69c7255ae23d6a9065748f0078d205abf599df16f88d8d7cafb478e8704b50",
+      "reviewer": "capacity_model",
+      "scope": "依赖方向、操作说明、范围/状态和后续依赖",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "docs/evidence/mvp/foundation-engine/dev-20260905/asset-freeze.json",
+      "sha256": "9cfbd0a960ff5f7fd76c9976eaaa6a511e2f110d0b1e7cff9d374bf842b57e86",
+      "reviewer": "root",
+      "scope": "公开证据脱敏、实际结果/失败记录、模拟与硬化边界",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "docs/evidence/mvp/foundation-engine/dev-20260905/capacity-model.json",
+      "sha256": "a4b54571c4641d27a4669858e1e1fc7626997cac8f2674eb51d65db8a81f6cbf",
+      "reviewer": "root",
+      "scope": "公开证据脱敏、实际结果/失败记录、模拟与硬化边界",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "docs/evidence/mvp/foundation-engine/dev-20260905/capacity-tests.txt",
+      "sha256": "2bea48e9242a1f0aaa271a70e9b53621579bd3605b712e20c12706ccdaa591a6",
+      "reviewer": "root",
+      "scope": "公开证据脱敏、实际结果/失败记录、模拟与硬化边界",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "docs/evidence/mvp/foundation-engine/dev-20260905/dev-check-failed-1.txt",
+      "sha256": "a5a09adb2b4d44e2d57c7a6f0ed078aa8398bb30511d1a472513258146e326db",
+      "reviewer": "root",
+      "scope": "公开证据脱敏、实际结果/失败记录、模拟与硬化边界",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "docs/evidence/mvp/foundation-engine/dev-20260905/dev-check-failed-2.txt",
+      "sha256": "cf7b07baff853c06f16db91df734e4cafc1378f01c9f1e24eba4c1fb6b1a72e6",
+      "reviewer": "root",
+      "scope": "公开证据脱敏、实际结果/失败记录、模拟与硬化边界",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "docs/evidence/mvp/foundation-engine/dev-20260905/dev-check-failed-3.txt",
+      "sha256": "c5e409e74e68b84a9cb20fd900c1e8d583f0564da36e2cfb7a333d0a0147f9fd",
+      "reviewer": "root",
+      "scope": "公开证据脱敏、实际结果/失败记录、模拟与硬化边界",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "docs/evidence/mvp/foundation-engine/dev-20260905/dev-check.txt",
+      "sha256": "f81581ccb8d5290e85fc0bd3aec9c338ef826031bc8ea317a7f35e4838769573",
+      "reviewer": "root",
+      "scope": "公开证据脱敏、实际结果/失败记录、模拟与硬化边界",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "docs/evidence/mvp/foundation-engine/dev-20260905/summary.md",
+      "sha256": "2a8f8ceb9aef0168f39a57ed2afc7809233034cde4f5f7ac9718d46a469cc26a",
+      "reviewer": "root",
+      "scope": "公开证据脱敏、实际结果/失败记录、模拟与硬化边界",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "docs/evidence/mvp/foundation-engine/dev-20260905/validation.json",
+      "sha256": "502dc3ee2846bb973658a4d0aadee1156edc43d3bce9001958e7857a64587006",
+      "reviewer": "root",
+      "scope": "公开证据脱敏、实际结果/失败记录、模拟与硬化边界",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "docs/performance/capacity-baseline-v1.json",
+      "sha256": "328134cbf1a2111d8255a300326a78de7dd520cf770fa976a40e470d7c37469f",
+      "reviewer": "transaction_engine",
+      "scope": "事务/幂等/Flag、迁移/ACL、容量模型与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "plan/04-execution-roadmap.md",
+      "sha256": "e2c3f74fa06d77fca31b493f0eab70290ac001665827cc9c0fadbf8bcbe3ee12",
+      "reviewer": "capacity_model",
+      "scope": "依赖方向、操作说明、范围/状态和后续依赖",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "plan/10-m0.md",
+      "sha256": "2691302a5970def6f036214b7b61ff4682de0c5f9100568cb3e3e0706dcf7cd1",
+      "reviewer": "capacity_model",
+      "scope": "依赖方向、操作说明、范围/状态和后续依赖",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "plan/20-mvp.md",
+      "sha256": "9f50d2b16b9fa9e7ea9a4004929a755f41e4b0d660ae9f9408acadbf05725a8f",
+      "reviewer": "capacity_model",
+      "scope": "依赖方向、操作说明、范围/状态和后续依赖",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "plan/99-traceability.md",
+      "sha256": "ff77bcd6f6e5423bdb4197b596068fd69cb1ec1296f634b6cb0d8ba7459f5e25",
+      "reviewer": "capacity_model",
+      "scope": "依赖方向、操作说明、范围/状态和后续依赖",
+      "result": "no blocking findings",
+      "final_metadata_review": "root核对暂存完成记录更新"
+    },
+    {
+      "path": "scripts/capacity_model.py",
+      "sha256": "15508cbada9a3d62fc51728744ad37cb906b2e8ff18a2f85ad90e0032401c6cc",
+      "reviewer": "transaction_engine",
+      "scope": "事务/幂等/Flag、迁移/ACL、容量模型与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "scripts/test_capacity_model.py",
+      "sha256": "43085e76335fc85be1bbc576eb6150ca450448964963ad9258822c831d0f82cf",
+      "reviewer": "transaction_engine",
+      "scope": "事务/幂等/Flag、迁移/ACL、容量模型与对应测试",
+      "result": "no blocking findings"
+    },
+    {
+      "path": "docs/evidence/mvp/foundation-engine/dev-20260905/staged-review.json",
+      "sha256": null,
+      "reviewer": "root",
+      "scope": "逐文件名单、证据哈希、实际复核与检查结果",
+      "result": "no blocking findings",
+      "hash_note": "self hash omitted to avoid recursion; content is versioned by its containing Git commit"
+    }
+  ]
+}

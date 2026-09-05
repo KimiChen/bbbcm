@@ -137,8 +137,25 @@ mod tests {
                     .await
                     .unwrap();
             assert_eq!(name, "本机编辑保留");
-            let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'").fetch_one(&mut *c).await.unwrap();
-            assert_eq!(count, 3, "不提前创建账户、IAM、Flag或A04引擎表");
+            let tables: Vec<String> = sqlx::query_scalar("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name").fetch_all(&mut *c).await.unwrap();
+            let mut expected: Vec<_> = platform::identifiers::TABLES
+                .iter()
+                .map(|t| renderer.table(Backend::Sqlite, t.schema, t.table).unwrap())
+                .collect();
+            expected.sort();
+            assert_eq!(
+                tables, expected,
+                "种子只使用已迁移受信对象，不创建账户或IAM表"
+            );
+            let flags = renderer
+                .table(Backend::Sqlite, "platform", "feature_flags")
+                .unwrap();
+            let enabled: i64 =
+                sqlx::query_scalar(&format!("SELECT COUNT(*) FROM {flags} WHERE enabled <> 0"))
+                    .fetch_one(&mut *c)
+                    .await
+                    .unwrap();
+            assert_eq!(enabled, 0, "种子不能启用Flag");
             conn.close().await.unwrap();
         }
         std::fs::remove_dir_all(&dir).unwrap();

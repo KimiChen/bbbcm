@@ -1,0 +1,25 @@
+{
+  "kind": "model_arithmetic_not_measurement",
+  "model_version": "capacity-baseline-v1",
+  "target_content_rows": 1000000,
+  "logical_body_bytes": 531200000,
+  "logical_body_mib": 506.591796875,
+  "logical_title_bytes": 9600000,
+  "offered_reads_per_window": 180000,
+  "offered_writes_per_window": 18000,
+  "read_rates_per_second": {
+    "topic_detail": 90.0,
+    "forum_latest": 40.0,
+    "home_feed": 40.0,
+    "content_search": 20.0,
+    "public_profile": 10.0
+  },
+  "write_rates_per_second": {
+    "create_topic": 2.0,
+    "create_reply": 14.0,
+    "edit_content": 2.0,
+    "bookmark": 1.0,
+    "report": 1.0
+  },
+  "performance_measured": false
+}

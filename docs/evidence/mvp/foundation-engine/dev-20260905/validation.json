@@ -1,0 +1,109 @@
+{
+  "kind": "development_evidence_not_hardening",
+  "date": "2026-09-05",
+  "code_version": "the implementation commit containing this evidence",
+  "work_packages": {
+    "WP-M0-05": "Implemented",
+    "WP-MVP-A04": "Implemented",
+    "WP-MVP-A02": "In progress (storage/read slice)"
+  },
+  "dev_check": {
+    "command": "./scripts/dev-check.sh",
+    "exit_code": 0,
+    "rust_tests": 141,
+    "unit_tests": 124,
+    "application_integration_tests": 17,
+    "http_smoke_routes": 51,
+    "real_sqlite_migration": true,
+    "clippy": true,
+    "rustfmt": true,
+    "sql_lint": true
+  },
+  "capacity": {
+    "tests": 10,
+    "exit_code": 0,
+    "measurement_executed": false,
+    "million_rows_loaded": false
+  },
+  "independent_review": {
+    "capacity": "transaction agent and root",
+    "transactions": "root; agent driver-source review",
+    "audit_flags_migrations": "capacity agent and root",
+    "outbox_worker": "capacity agent and root",
+    "manual": "capacity agent and root"
+  },
+  "simulation_boundary": {
+    "lost_commit_ack": "test-only simulation; real SQLite storage and connection discard marker",
+    "commit_rejection": "real temporary SQLite deferred foreign-key rejection",
+    "postgres_network_fault": "not executed"
+  },
+  "not_executed": [
+    "real PostgreSQL/Redis full matrix",
+    "PostgreSQL role/ACL execution",
+    "multiple PostgreSQL workers/concurrency",
+    "full security/supply chain scans",
+    "cross-platform",
+    "performance/capacity measurements",
+    "browser visual gates"
+  ],
+  "flags": {
+    "registry_items": 14,
+    "migration_default": "all off",
+    "runtime_external_effects": "closed",
+    "writer_implemented": false
+  },
+  "code_sha256": {
+    "apps/bbbcm-cli/tests/engine.rs": "90187876df38971cb8f3e951126f30ca1bafee3451e3293f3a9cb51edf4dbd8b",
+    "apps/bbbcm-worker/tests/scheduler.rs": "25976a24d8e930f7706e2bf15540d806650d1a7a601df44ffbbea899ef65a2fc",
+    "crates/platform-db/src/audit_repo.rs": "772c73ff647c5435ae5057181a3f346d340ebc1171e9eefc6e86542b74004251",
+    "crates/platform-db/src/command.rs": "e98fbc18261be10b13f63b58e6c5b022feba398d885853c3aa4943da465d2ffa",
+    "crates/platform-db/src/command/tests.rs": "00de2b4513e2a16dde1264b421cc0f58d675b2b48471bb52335dff59ad9dc035",
+    "crates/platform-db/src/flags_repo.rs": "670f25c57c8db66b9514f801adf71a3019dea3914b685fc49b565bcecfeb6696",
+    "crates/platform-db/src/flags_repo/tests.rs": "6411b196cec6b9087d2929899a8fddf5c68d9e0d84f9a7acc6e462d5f7adf51f",
+    "crates/platform-db/src/idempotency_repo.rs": "997ee8631f26bfa95ac3871060412545cf35992f9c2d47c6a5af05a507271cf5",
+    "crates/platform-db/src/outbox_repo.rs": "7b8550e2c9785d63712d8a90f6cd723d9fa4f0a06142b824d818850a3372c4a8",
+    "crates/platform-db/src/outbox_repo/tests.rs": "e6ec87ab9385e965d3f3d1e8b154155ad9f80b8a27222923b6962e4ec2c90668",
+    "crates/platform-db/src/transaction.rs": "c65896cf30802cc9c5e04f39ed6f72bcdd098f5e8785258137a71cad5cdf9178",
+    "crates/platform-db/src/transaction/tests.rs": "49a413f7dc32e0371e05b963c260a6382247442bc4baabf3ac6eb234e2f8cdc1",
+    "crates/platform/src/audit.rs": "54ed406cea4b62f114816fcc5781d57593134752bfb5e71ece5bd4a295cfa5fb",
+    "crates/platform/src/outbox.rs": "d71e1860480eec9eb205a7bb108934ecb249d48a2b535315bfd7d3d923f56463",
+    "crates/platform/src/transaction.rs": "c563d73ade55f202dfd06bea86a0b5935e1cdee2a0427946094b6f72753c77a8",
+    "db/migrations/postgres/0002_engine.sql": "2159e50577842ce4b9525d6b253506bdc010c82e54f40d8ae8d17bc34df04fbe",
+    "db/migrations/postgres/0003_flags.sql": "01dce72babaa0ea7d7131d5eb8848cb9a9675672bcf49ea2727741fb98d3df57",
+    "db/migrations/sqlite/0002_engine.sql": "88481c1eaf40b25cf15f8adda50e3b9d088e52d9d6953305c291b447cc4d66ed",
+    "db/migrations/sqlite/0003_flags.sql": "d0104a6a9d2e723b291a9fe0e211953e9f9f7a337edc0f67b6e4a595f7325f56",
+    "scripts/capacity_model.py": "15508cbada9a3d62fc51728744ad37cb906b2e8ff18a2f85ad90e0032401c6cc",
+    "scripts/test_capacity_model.py": "43085e76335fc85be1bbc576eb6150ca450448964963ad9258822c831d0f82cf",
+    "Cargo.lock": "e9923a9bf7a4dac56bc28dc6f481f69b7f38fe16473a892dd831daca5e57b0db",
+    "Cargo.toml": "c49255196653cf0a066dd1fc65bb72848f805609e93c5b2f932ef8dab01b4866",
+    "apps/bbbcm-cli/Cargo.toml": "f248d3d78e482c4b0d9f29eeae9267945b33ed0451e79a0d642cdfedd12d3d65",
+    "apps/bbbcm-cli/src/main.rs": "88fe0419ed00f495a1d0cf459d238f294b7d1936b2021a720a8ec3a77c30bb9c",
+    "apps/bbbcm-cli/tests/database_cli.rs": "44e7b2c6bd5bf4258bd5bac4f7e70b7b80ed4515f2a7fd79d9b9c3b4c162dfbe",
+    "apps/bbbcm-worker/Cargo.toml": "26b0c29ef55052029a37d1ee4ff3c8a234cf08ce5729b5287a5977d3e54bffb7",
+    "apps/bbbcm-worker/src/main.rs": "7d7b4ae845599d2da9cbdabde81d2768c64d4b595b0d18c19891e28413a527fb",
+    "apps/web/Cargo.toml": "b0b252df3d6158385d62edc00fb6920396c44494e87f399e8255fd349336ca86",
+    "apps/web/src/jobs.rs": "1a30d0ace91cf0b6583e07968608839f8266142fc671b08663e346a82ff33fa1",
+    "apps/web/src/main.rs": "fea5c240ab44e032b5c380291afac3103119ae3660a8cf4300f5ceb87f75a4d2",
+    "crates/platform-audit/Cargo.toml": "3b2fdfe4133d15e159728a99f2ba30629619ef230c41cf9edc4f77d1fa672bc4",
+    "crates/platform-audit/src/lib.rs": "537e4f35268ce7f4aebdab739da7660c72ebc8b70df142ac3e3f880a9ed92784",
+    "crates/platform-db/Cargo.toml": "e168a778c68e403d9c57675c3880a5f3f7efa57bb406bc1122944bed00918e31",
+    "crates/platform-db/src/acl.rs": "7b735cba134bd89e5c1e88eafd776619333da78eebac8adb32062fdb77ba2761",
+    "crates/platform-db/src/lib.rs": "acc12775f73da83f094fdee6e4210a634939723ab3cba724515e4cf1c98c0a0b",
+    "crates/platform-db/src/migrations/tests.rs": "f6a1e286b8cadb535a4c1113974e4538a004c883045746ed077210fc97f94ab2",
+    "crates/platform-db/src/seed.rs": "0db33a4617a6d4710023710432c52e73b375c73ad60fb9d19d86af074bb960d0",
+    "crates/platform-outbox/Cargo.toml": "61727c05facfda8119a9ecd9ea72d8182b29dce8e8bce70006c2a565bdc5d177",
+    "crates/platform-outbox/src/lib.rs": "eaa29266723a7befe93716f5f5921324f8e67ac676aa85882b12dd8b2132ffa5",
+    "crates/platform/Cargo.toml": "7878e45dacea455befa858138e1692d57688c2b05dd8de1d49db8c83f6b15bfb",
+    "crates/platform/src/db.rs": "1a32064e1e2ac856f56f9353d3688a4ded567113d7b007aa700efbe14316a311",
+    "crates/platform/src/flags.rs": "e0f070b3736eaef21151b17c0c33f982c416505594e7f97b1ce7619387c38481",
+    "crates/platform/src/identifiers.rs": "7b872811ef4d614da96f38464cfc2693ea6012b85a51d486c9c903827cd3fa18",
+    "crates/platform/src/lib.rs": "1071713ff66fc160117f1da82c1305a448f70ddcdb5234154b0c32c65676c358",
+    "db/migrations/README.md": "b96cf3a960601be7a339de770048b92f9de3234fed3e4ead2e82f1e40386c1be"
+  },
+  "staging_review": {
+    "result": "passed",
+    "record": "staged-review.json",
+    "method": "explicit-path staging, per-file staged diff review by root and three agents, targeted public-repository checks",
+    "full_security_scan": false
+  }
+}

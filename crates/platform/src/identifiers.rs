@@ -34,6 +34,36 @@ pub struct TableRegistration {
 pub const TABLES: &[TableRegistration] = &[
     TableRegistration {
         schema: "platform",
+        table: "idempotency_records",
+        identity_column: Some("id"),
+    },
+    TableRegistration {
+        schema: "platform",
+        table: "outbox_events",
+        identity_column: None,
+    },
+    TableRegistration {
+        schema: "platform",
+        table: "sink_deliveries",
+        identity_column: None,
+    },
+    TableRegistration {
+        schema: "platform",
+        table: "feature_flags",
+        identity_column: None,
+    },
+    TableRegistration {
+        schema: "audit",
+        table: "audit_events",
+        identity_column: None,
+    },
+    TableRegistration {
+        schema: "audit",
+        table: "sensitive_access_events",
+        identity_column: None,
+    },
+    TableRegistration {
+        schema: "platform",
         table: "schema_migrations",
         identity_column: None,
     },
@@ -47,6 +77,16 @@ pub const TABLES: &[TableRegistration] = &[
         table: "rule_versions",
         identity_column: Some("id"),
     },
+];
+
+/// 仅本轮引擎所需索引；迁移与表注册同时版本化。
+pub const INDEXES: &[(&str, &str)] = &[
+    ("platform", "outbox_ready_idx"),
+    ("platform", "outbox_lease_idx"),
+    ("platform", "outbox_batch_idx"),
+    ("platform", "sink_event_idx"),
+    ("audit", "audit_actor_idx"),
+    ("audit", "access_actor_idx"),
 ];
 
 /// 数据库组角色，不是业务 IAM registry；不创建登录凭证或授予用户身份。
@@ -153,6 +193,17 @@ impl SchemaRenderer {
             Backend::Sqlite | Backend::Mysql8 => bounded(format!("{physical_schema}_{table}")),
         }
     }
+    pub fn index(&self, backend: Backend, schema: &str, name: &str) -> Result<String, SchemaError> {
+        if !INDEXES.contains(&(schema, name)) {
+            return Err(SchemaError::InvalidTemplate);
+        }
+        match backend {
+            Backend::Postgres => bounded(name.to_owned()),
+            Backend::Sqlite | Backend::Mysql8 => {
+                bounded(format!("{}_{name}", self.schema(schema)?))
+            }
+        }
+    }
     pub fn role(&self, role: &str) -> Result<String, SchemaError> {
         if !DATABASE_ROLES.contains(&role) {
             return Err(SchemaError::UnknownRole);
@@ -192,6 +243,7 @@ impl SchemaRenderer {
             let rendered = match (kind, parts.as_slice()) {
                 ("schema", [schema]) if backend == Backend::Postgres => self.schema(schema)?,
                 ("table", [schema, table]) => self.table(backend, schema, table)?,
+                ("index", [schema, name]) => self.index(backend, schema, name)?,
                 ("rebuild", [schema, table]) if backend == Backend::Sqlite => {
                     self.rebuild_table(schema, table)?
                 }

@@ -52,16 +52,18 @@ async fn run() -> Result<(), String> {
 
     // 内嵌任务循环与 HTTP 服务共享同一取消令牌：优雅退出时先停任务循环再落地。
     let cancel = CancellationToken::new();
-    let jobs = config
-        .worker
-        .embedded
-        .then(|| tokio::spawn(jobs::run(state.clone(), cancel.clone())));
+    let prepared_jobs = if config.worker.embedded {
+        Some(jobs::prepare(&config).await?)
+    } else {
+        None
+    };
 
     let listener = tokio::net::TcpListener::bind(&config.server.bind)
         .await
         .map_err(|err| format!("监听地址绑定失败（{}）: {err}", config.server.bind))?;
     tracing::info!("bbbcm-web 监听 http://{}", config.server.bind);
 
+    let jobs = prepared_jobs.map(|prepared| tokio::spawn(prepared.run(cancel.clone())));
     let serve = axum::serve(listener, router::router(state))
         .with_graceful_shutdown(shutdown_signal(cancel.clone()))
         .await;
@@ -69,9 +71,9 @@ async fn run() -> Result<(), String> {
     cancel.cancel();
     if let Some(handle) = jobs {
         // 等任务循环真正退出，而不是随进程一起被砍掉。
-        if let Err(err) = handle.await {
-            tracing::warn!(%err, "内嵌任务循环未正常结束");
-        }
+        handle
+            .await
+            .map_err(|_| "内嵌任务循环未正常结束".to_owned())??;
     }
     serve.map_err(|err| format!("服务异常退出: {err}"))
 }

@@ -1,6 +1,6 @@
 # 本机配置与数据库初始化
 
-本手册是 [计划入口](../../plan/README.md) 下数据库基础实现的操作说明；状态和证据统一见 [99 §5.4](../../plan/99-traceability.md)。当前仅实现 PostgreSQL/SQLite 数据库基础、四版块骨架和规则占位。业务路由、事务/Outbox/审计引擎、身份、管理后台和 Flag 持久化仍由后续包交付。
+本手册是 [计划入口](../../plan/README.md) 下数据库基础实现的操作说明；状态和证据统一见 [99 §5.4](../../plan/99-traceability.md)。数据库基础、四版块骨架和规则占位沿用M0-04/A03；本轮新增事务/Outbox/审计及Flag只读存储的接线与恢复见 [基础引擎手册](engine.md) 和99 §5.5。身份、内容业务、管理后台及Flag受控写仍待后续。
 
 ## 配置加载
 
@@ -27,7 +27,7 @@
 
 `config/{development,test,staging,production}.toml.example` 是脱敏模板。development/test 可直接用于本机体验；staging/production 模板的空 bind 和零连接上限是故意的非法哨兵，必须注入实际已批准值和数据库/Redis Secret 后才能启动，不能把模板当作已批准部署参数。provider 尚未批准和实现，没有虚构 provider 默认配置。
 
-完整模式 Web/Worker 启动探测 PostgreSQL locale、数据库角色及扩展；不接受非 UTF8 或 C/POSIX 的 lc_ctype，缺 pg_jieba/pg_trgm 则明确提示并保持 search Flag 关闭。Redis 当前仅校验配置，连接、限流/缓存运行时属于 A05；现有业务 Flag 全关。SQLite 夹具仍不依赖业务池。A00/A01 的 staging/production 夹具和源资产拒绝规则不变。
+完整模式 Web/Worker 启动探测 PostgreSQL locale、数据库角色及扩展；不接受非 UTF8 或 C/POSIX 的 lc_ctype，缺 pg_jieba/pg_trgm 则明确提示，不会启用搜索能力或自动改写数据库Flag。Redis 当前仅校验配置，连接、限流/缓存运行时属于 A05；现有业务 Flag 全关。SQLite 夹具仍不依赖业务池。A00/A01 的 staging/production 夹具和源资产拒绝规则不变。
 
 ## SQLite 本机初始化
 
@@ -53,7 +53,7 @@ bbbcm-cli db --migrations-dir /absolute/repository/db/migrations status
 bbbcm-cli db --migrations-dir /absolute/repository/db/migrations seed
 ```
 
-独立 `bbbcm-worker` 在 SQLite 默认 `worker.embedded=true` 时拒绝启动。需要独立宿主时所有进程共用 `worker.embedded=false` 配置；当前仅宿主与启动检查，任务引擎未交付。
+独立 `bbbcm-worker` 在 SQLite 默认 `worker.embedded=true` 时拒绝启动。需要独立宿主时所有进程共用 `worker.embedded=false` 配置；现已接同一持久化Outbox调度器，并用OS锁阻止两个SQLite宿主同时运行；详见 [基础引擎手册](engine.md)。
 
 ## PostgreSQL 角色与初始化
 
@@ -77,7 +77,7 @@ cargo run --locked --package bbbcm-cli -- db migrate --backend postgres
 cargo run --locked --package bbbcm-cli -- db status
 ```
 
-初始迁移创建 15 个 schema；实际表只有 schema_migrations、forums、rule_versions。每表/序列显式撤权；app_rw 只获两张骨架表 SELECT 和所需 schema USAGE，worker/report 暂无表权限。审计和 IAM 域没有业务表或运行时授权。每次新建表必须在同一迁移追加 ACL，未来审计历史不得授予 runtime UPDATE/DELETE/TRUNCATE。
+`0001` 初始迁移创建15个schema，当时的表为schema_migrations、forums、rule_versions。每表/序列显式撤权；app_rw 只获两张骨架表 SELECT 和所需 schema USAGE，worker/report 暂无表权限。这是0001的授权边界；0002引擎和0003 Flag另加显式ACL，审计仅追加，Flag运行角色只读，IAM仍无业务表或授权。每次新建表必须在同一迁移追加 ACL，未来审计历史不得授予 runtime UPDATE/DELETE/TRUNCATE。
 
 migrator 的未来对象默认权限同时在全局和各 schema 撤销 PUBLIC/runtime 授权，包括 TABLES/SEQUENCES/FUNCTIONS/TYPES。只做 schema 级撤销不能抵消全局默认授予，因此两层同时设置。[PG16 默认权限说明](https://www.postgresql.org/docs/16/sql-alterdefaultprivileges.html)
 

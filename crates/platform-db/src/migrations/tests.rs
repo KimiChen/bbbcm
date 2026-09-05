@@ -534,3 +534,42 @@ SELECT broken;
         ));
     }
 }
+
+#[tokio::test]
+async fn upgrades_a03_database_to_engine_and_flags_without_changing_old_data() {
+    for prefix in ["bcm_", "upgrade42_"] {
+        let mut f = Fixture::new();
+        f.cfg.schema_prefix = prefix.into();
+        f.initial();
+        assert_eq!(migrate(&f.cfg, &f.root).await.unwrap().applied, [1]);
+        let config = Config {
+            database: f.cfg.clone(),
+            ..Config::default()
+        };
+        crate::seed::seed(&config).await.unwrap();
+        let before = status(&f.cfg, &f.root).await.unwrap();
+        let current = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../db/migrations");
+        let result = migrate(&f.cfg, &current).await.unwrap();
+        assert_eq!(result.applied, [2, 3]);
+        assert_eq!(result.skipped, [1]);
+        let after = status(&f.cfg, &current).await.unwrap();
+        assert_eq!(before[0].checksum, after[0].checksum);
+        assert_eq!(before[0].executed_at, after[0].executed_at);
+        let seed = crate::seed::seed(&config).await.unwrap();
+        assert_eq!(seed.forums_created, 0);
+        assert_eq!(seed.rules_created, 0);
+        let pool = crate::Pool::connect_existing(&f.cfg).await.unwrap();
+        let reader = crate::flags_repo::DbFlagReader::new(pool.clone(), f.renderer());
+        use platform::flags::FlagReader;
+        assert!(
+            reader
+                .load()
+                .await
+                .unwrap()
+                .values()
+                .iter()
+                .all(|v| !v.enabled && v.version == Some(1))
+        );
+        pool.close().await;
+    }
+}

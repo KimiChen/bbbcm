@@ -1,12 +1,13 @@
 //! bbbcm-worker：后台任务宿主（Outbox 消费、邮件、媒体、清理、聚合）。
-//! Outbox 循环与各 sink 随 platform-outbox 工作包接入；本进程不写业务规则。
+//! 使用与内嵌 jobs 相同的调度器；本进程不写业务规则。
 
+use platform_outbox::{
+    ClosedExternalEffects, HostLock, LocalSink, Scheduler, Settings, SinkRegistry,
+};
 use std::process::ExitCode;
-use std::time::Duration;
+use std::sync::Arc;
+use tokio_util::sync::CancellationToken;
 use tracing_subscriber::EnvFilter;
-
-/// 轮询间隔。`features.redis = true` 时由 Wakeup 唤醒，间隔只作兜底。
-const TICK: Duration = Duration::from_secs(30);
 
 #[tokio::main]
 async fn main() -> ExitCode {
@@ -34,20 +35,52 @@ async fn run() -> Result<(), String> {
     .await
     .map_err(|err| err.to_string())?;
 
-    tracing::info!("bbbcm-worker 骨架启动：Outbox 循环随 platform-outbox 接入");
-
-    let mut ticker = tokio::time::interval(TICK);
-    loop {
-        tokio::select! {
-            _ = ticker.tick() => {
-                // 轮询 Outbox 与定时作业随 platform-outbox 接入。
-            }
-            signal = shutdown_signal() => {
-                tracing::info!("收到 {signal}，bbbcm-worker 退出");
-                break;
-            }
-        }
-    }
+    let pool =
+        platform_db::Pool::connect_for(&config.database, platform_db::connection::Purpose::Worker)
+            .await
+            .map_err(|error| error.to_string())?;
+    let _host_lock = HostLock::acquire(&config.database).map_err(|error| error.to_string())?;
+    let renderer = platform::identifiers::SchemaRenderer::new(&config.database.schema_prefix)
+        .map_err(|error| error.to_string())?;
+    let store = Arc::new(platform_db::outbox_repo::DbOutboxStore::new(
+        pool.clone(),
+        renderer.clone(),
+    ));
+    let mut registry = SinkRegistry::default();
+    registry
+        .register(Arc::new(LocalSink::default()))
+        .map_err(|error| error.to_string())?;
+    registry
+        .register(Arc::new(platform_audit::ReplicaSink::new(
+            Arc::new(platform_db::audit_repo::DbAuditExport::new(
+                pool.clone(),
+                renderer,
+            )),
+            Arc::new(platform_audit::DisabledReplica),
+        )))
+        .map_err(|error| error.to_string())?;
+    let scheduler = Scheduler::new(
+        store,
+        registry,
+        Arc::new(ClosedExternalEffects),
+        Settings::default(),
+    )
+    .map_err(|error| error.to_string())?;
+    let cancel = CancellationToken::new();
+    let signal_cancel = cancel.clone();
+    let signal = tokio::spawn(async move {
+        let name = shutdown_signal().await;
+        tracing::info!("收到 {name}，停止领取并释放未完成租约");
+        signal_cancel.cancel();
+    });
+    tracing::info!("bbbcm-worker Outbox 轮询启动，外部副作用关闭");
+    let result = scheduler
+        .run(cancel)
+        .await
+        .map_err(|error| error.to_string());
+    signal.abort();
+    pool.close().await;
+    result?;
     Ok(())
 }
 

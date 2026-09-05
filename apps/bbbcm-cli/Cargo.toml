@@ -11,3 +11,11 @@ clap.workspace = true
 platform.workspace = true
 platform-db.workspace = true
 tokio.workspace = true
+
+[dev-dependencies]
+platform-audit.workspace = true
+platform-outbox.workspace = true
+sqlx.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+tokio-util.workspace = true
