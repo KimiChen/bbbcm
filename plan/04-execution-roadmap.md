@@ -46,10 +46,10 @@ WP-MVP-A00 参考标的本地化（开发第一步，无依赖）
 | `WP-MVP-A04` | `WP-MVP-A03` |
 | `WP-MVP-A05` | `WP-MVP-A02` 已交付配置/Secrets/启动校验/Flag存储只读切片（DEC-047）、`WP-MVP-A03`、`WP-MVP-A04`；观测承接M0-05 |
 | `WP-MVP-A06` | `WP-MVP-A04`、`WP-MVP-A05` |
-| `WP-MVP-B01` | `WP-MVP-A03`、`WP-MVP-A04`、`WP-MVP-A05`、`WP-MVP-A06` |
-| `WP-MVP-B02` | `WP-MVP-A03`、`WP-MVP-A04`、`WP-MVP-A05`、`WP-MVP-A06` |
+| `WP-MVP-B01` | `WP-MVP-A03`、`WP-MVP-A04`、`WP-MVP-A05`、A06 已交付事件字典/分析流水线/本地适配器/邮件代码面（DEC-050）；B06 身份必需合同先冻结，AUTH-008 借 MOD-010 最小政策版本读取 |
+| `WP-MVP-B02` | `WP-MVP-A03`、`WP-MVP-A04`、`WP-MVP-A05`、A06 已交付事件字典/分析流水线/本地适配器/邮件代码面（DEC-050）；B06 身份必需合同先冻结，AUTH-008 借 MOD-010 最小政策版本读取 |
 | `WP-MVP-B03` | `WP-MVP-A03`、`WP-MVP-A04`、`WP-MVP-A05` |
-| `WP-MVP-B04` | `WP-MVP-A03`、`WP-MVP-A04`、`WP-MVP-A05`、`WP-MVP-A06` |
+| `WP-MVP-B04` | `WP-MVP-A03`、`WP-MVP-A04`、`WP-MVP-A05`、A06 已交付事件字典/分析流水线/本地适配器/邮件代码面（DEC-050）；B06 身份必需合同先冻结，AUTH-008 借 MOD-010 最小政策版本读取 |
 | `WP-MVP-B06` | `WP-MVP-A04`、`WP-MVP-A05`、`WP-MVP-B01`、`WP-MVP-B02` |
 | `WP-MVP-C01` | `WP-MVP-A00`、`WP-MVP-A01`、`WP-MVP-A02` |
 | `WP-MVP-C02` | `WP-MVP-A03`、`WP-MVP-A04`、`WP-MVP-B01`、`WP-MVP-B06` |
@@ -69,6 +69,7 @@ WP-MVP-A00 参考标的本地化（开发第一步，无依赖）
 任何 Pending 决策只阻塞受影响行和 Production Approved；除非它会改变数据模型、安全边界或不可逆实现，否则不得阻塞其他已就绪工作包。具体地：
 
 - 用户此前明确授权 M0-04 → A02 配置前置 → A03 顺序；配置前置满足 A03 依赖，A02 的受控写、只读/紧急关闭与审批仍按 A04/D04 依赖继续；本轮用户授权A04后增加Flag存储与只读查询切片（99 §5.5），不据此标记 A02 整包 Implemented。
+- `DEC-050`：本轮先冻结身份共享合同与 B06 受限合同，再并行 B01/B02 认证与 B04 设置切片，最后完成身份事件、邮件、风险、SSR 和观测接线；不等待 A06/B06 整包。具体范围、待决和状态见99 §5.7。
 - `DEC-047`：A02 已交付配置/Secrets/启动校验/Flag只读切片满足本轮 A05 技术前置，A02 整包继续 In progress；本轮 A05 共享接口冻结后完成 A06 接线，精确登记见99 §5.6。
 - `DEC-016`/`DEC-018` 只阻塞**生产 IAM 授权与角色种子**，不阻塞 `WP-M0-04` 的 schema、迁移、事务与 Outbox 设计。
 - `DEC-019`（视觉基准，`10` 第 3 节第 5 项）只阻塞 `WP-MVP-E04` 与 Production Approved，不阻塞 `WP-MVP-A01` 及其下游。
