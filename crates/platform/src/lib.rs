@@ -7,4 +7,5 @@ pub mod db;
 pub mod error;
 pub mod flags;
 pub mod identifiers;
+pub mod sql_lint;
 pub mod types;

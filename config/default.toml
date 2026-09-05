@@ -2,6 +2,7 @@
 # 完整模式参见 production.toml.example。
 # 用法：BBBCM_CONFIG=config/default.toml ./bbbcm-web（缺省即本文件）
 # 未知键会导致启动失败，不会被静默忽略。
+# 优先级：安全默认 < 本文件/BBBCM_CONFIG < config/local.toml < 普通环境变量 < Secret 注入。
 
 [server]
 environment = "development"
@@ -14,6 +15,7 @@ sqlite_path = "data/bbbcm.db"
 # SQLite 是单写者：该值必须为 1，否则启动被拒。
 max_connections = 1
 # PostgreSQL 连接串不入库：通过环境变量 BBBCM_DATABASE_POSTGRES_URL 注入。
+# 开启 Redis 时连接串仅通过 BBBCM_REDIS_URL 注入，禁止写入任何 TOML。
 
 [features]
 # false 时不提供限流（DEC-024）：体验模式无注册/登录/找回速率保护，

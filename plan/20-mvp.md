@@ -1,6 +1,6 @@
 # 20 MVP：可治理的内容论坛
 
-状态：`In progress`（开发期；A00/A01 已完成开发期交付，A01 实现与验证见 `99` 第 5.3 节，A02/A03 仍为部分交付。A00 未知许可遵守 DEC-045/046，不恢复已取消的本机版本化前置；正式门禁仍未通过）。
+状态：`In progress`（开发期；A00/A01 已完成开发期交付，A01 实现与验证见 `99` 第 5.3 节，A03 数据库基础已完成开发期交付与设计复核，见 `99` 第5.4节；A02 配置前置已交付，整包仍为部分交付。A00 未知许可遵守 DEC-045/046，不恢复已取消的本机版本化前置；正式门禁仍未通过）。
 
 ## 1. 范围
 
@@ -14,8 +14,8 @@
 
 - [x] `WP-MVP-A00` 参考标的本地化（开发第一步，无依赖，DEC-021；本地SSR夹具、冻结结构与资产已完成开发期交付，见 `99` 第 5.1 节；未知许可按 DEC-045/046 如实登记，E04/DEC-019 正式视觉与批准边界不变）。
 - [x] `WP-MVP-A01` Workspace、服务程序和供应链（含实际 esbuild 构建、manifest SSR helper、immutable 指纹服务和生产隔离，开发期交付与最小集证据见 `99` 第5.3节；不表示 E01/E04 或阶段门禁通过）。
-- [ ] `WP-MVP-A02` 配置、Secrets、Feature Flag、只读和紧急关闭。（部分落地，见 `99`）
-- [ ] `WP-MVP-A03` PostgreSQL schema、N 轨迁移（postgres/sqlite，mysql8 占位）、角色和 ACL。（部分落地，见 `99`）
+- [ ] `WP-MVP-A02` 配置、Secrets、Feature Flag、只读和紧急关闭。（配置前置完成，Flag存储/受控写、审计审批及只读/紧急关闭依赖A04/D04，见 `99` 第5.4节）
+- [x] `WP-MVP-A03` PostgreSQL schema、N 轨迁移（postgres/sqlite，mysql8 占位）、角色和 ACL。（开发期 Implemented：真实runner、CLI/种子/SQL lint及SQLite最小集，见 `99` 第5.4节；真实PG ACL等仍待硬化）
 - [ ] `WP-MVP-A04` 事务、幂等、Outbox、审计和敏感读取。
 - [ ] `WP-MVP-A05` Redis、日志、指标、trace 和健康检查。
 - [ ] `WP-MVP-A06` 数据事件、指标和外部 provider 适配器。

@@ -1,0 +1,9 @@
+{
+  "status": "pass",
+  "url_only_templates": [
+    "apps/web/templates/a00/page.html",
+    "apps/web/templates/auth/fixture.html"
+  ],
+  "original_freeze_unchanged": true,
+  "scope": "whole-source hashes after exact helper reversal; no visual gate claim"
+}

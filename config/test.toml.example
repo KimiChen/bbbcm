@@ -1,5 +1,6 @@
 # 测试环境模板：集成测试使用隔离的合成数据。
-# 以 BBBCM_CONFIG=config/test.toml ./bbbcm-web 启动。
+# 以 BBBCM_CONFIG=config/test.toml.example ./bbbcm-web 启动。
+# 自动叠加当前工作目录的 config/local.toml；自动化测试请使用隔离工作目录。
 
 [server]
 environment = "test"

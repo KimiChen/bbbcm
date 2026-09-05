@@ -101,11 +101,12 @@
 | `WP-M0-01` | Implemented（开发期，2026-09-05） | 执行责任：Codex；批准责任：项目所有者（用户）。已冻结并交叉复核 `01` 的 316 个唯一需求及阶段映射、18 条 MVP 门槛，`04` 的工作包与依赖，以及 `06` 的决策、待决事项、冲突和风险；所有当前 Pending 均有责任角色、阻塞范围和未决定时行为。开发期复核覆盖需求计数、阶段计数、过期口径扫描、`./scripts/dev-check.sh`、`git diff --check` 与暂存区复核；状态止于 `Implemented`，不据此授予 `Verified` 或任何发布门禁。 |
 | `WP-M0-02` | Blocked | `DEC-019` 尚未批准，无法冻结 `visual-baseline-v1`；阻塞只落在 `WP-MVP-E04` 与 Production Approved，不阻塞 `WP-MVP-A00` 重做。 |
 | `WP-M0-03` | Implemented（开发期，2026-09-05） | 技术与供应链基线已交付：保留 Rust/Cargo、共用 Node/npm/esbuild 锁文件、固定测试镜像与扩展输入、扫描配置及复现入口。负责人、依赖、交付物、测试设计与证据见第 5.2 节；沿用现有 Workspace 与 A00，未授予 Verified 或推进任何阶段/发布门禁。 |
-| `WP-M0-04..06` | Not started | 已存在的架构和配置骨架属于提前开发，不替代这些工作包所需的负责人登记、完整交付与评审证据。 |
+| `WP-M0-04` | Implemented（开发期，2026-09-05） | 完成15逻辑schema/受信注册、数据库角色与ACL、迁移流程/元数据、固定锁序、幂等/Outbox/追加审计及16类保留矩阵派生设计；独立复核与最小集通过，责任、依赖、交付和证据见第5.4节。A04引擎、法律/IAM待决保持后续边界，不推进产品需求或正式门禁。 |
+| `WP-M0-05..06` | Not started | 容量模型、冷启动与合规尚未交付。 |
 | `WP-MVP-A00` | Implemented（开发期重做，2026-09-05） | 14个隔离SSR夹具、30项本地源资产、模板结构/CSS类名冻结、17张本机原始参考截图和开发期检查已交付，详见第5.1节。按用户修改后的 `05` 与 `DEC-045` 如实登记未知许可并本机版本化；E04/DEC-019仍未执行，不授予 `Verified`。代码版本为本条记录所在实现提交。 |
 | `WP-MVP-A01` | Implemented（开发期，2026-09-05） | 沿用16成员Workspace、三个可执行与七步dev-check；复用 M0-03 锁定的 Node/npm/esbuild 和根 npm 锁文件，完成真实资产构建、30项 SHA-256 产物与 manifest、Rust 加载校验/SSR helper、immutable 指纹路由、生产隔离及操作手册。原A00冻结未改，模板仅11处资源URL接线。5项构建测试、15项web测试、四环境492次HTTP/84个SSR变体/8次启动拒绝、最小集72个单元测试和51条HTTP冒烟、diff与暂存区逐文件复核通过；SQLite迁移明确跳过（A03）。本轮开发交付无剩余缺口，代码版本为本条证据所在的 `新增：完成 WP-MVP-A01 静态资产构建与指纹服务` 提交；完整说明、依赖、测试与证据见第5.3节。E01/E04完整矩阵和阶段/发布门禁仍未通过。 |
-| `WP-MVP-A02` | In progress（开发期，2026-09-05） | 部分交付：`config/default.toml` 与 development/test/production 三份脱敏模板（含 `server.environment`、`database.schema_prefix`、`max_connections`）、`crates/platform/src/config.rs`（`Environment` 枚举、全结构 `deny_unknown_fields`、`validate()` 覆盖预留后端拒绝启动／SQLite 单写者／前缀合法性／绑定地址／生产必须启用 Redis）、`crates/platform/src/flags.rs`（14 个 MVP flag，默认全关，key 唯一性有单元测试）。**待交付**：配置分层加载与 `config/local.toml` 覆盖、flag 持久化与两个受控写入口（`DEC-028`）、只读与紧急关闭 |
-| `WP-MVP-A03` | In progress（开发期，2026-09-05） | 部分交付：`db/migrations/{postgres,sqlite,mysql8}/` 三轨目录、`crates/platform-db/src/migrations.rs` 的 `verify_alignment` N 轨编号对齐骨架（文件名格式、同轨重复编号、集合差异与仓库目录测试）、`crates/platform-db/src/lib.rs` 双后端连接池（连接数取自配置、SQLite WAL/busy_timeout/外键、FTS5 单连接探测、PostgreSQL 扩展探测）、`crates/platform/src/identifiers.rs` 的受信 `SchemaRenderer`（15 个逻辑 schema 注册表、表名校验、63 字节上限、`DEC-029` 渲染）。**已知缺口**：当前 `verify_alignment` 豁免所有空轨，尚未收紧为只豁免 `mysql8`；PostgreSQL 或 SQLite 单轨为空时可能误判通过。**待交付**：修复该缺口、迁移执行器、初始 schema、`bbbcm-cli db migrate/status/seed`、PostgreSQL 角色与 ACL policy、共享 SQL lint。 |
+| `WP-MVP-A02` | In progress（开发期，2026-09-05） | 本轮配置前置完成：三程序共用安全默认/主文件/local/环境/Secret分层，四环境模板、严格解析、连接/前缀/Redis/Worker校验、Secret脱敏、PostgreSQL启动检查与手册；配置13项及CLI/连接回归随最小集通过。整包剩余Flag持久化、受控flag set与/manage/config、审计/审批、只读/紧急关闭及提示态，依赖A04/D04；现有14个MVP Flag仍默认全关。见第5.4节。 |
+| `WP-MVP-A03` | Implemented（开发期，2026-09-05） | 已修复有效轨为空豁免；交付PG/SQLite真实迁移、15逻辑schema映射与3张必要初始表、专用单连接/前缀锁/元数据/漂移拒绝/失败回滚/FK恢复、受信表注册、PG组角色bootstrap与显式/默认ACL、实际migrate/status/seed、4版块规则占位和共享SQL lint。迁移20项及种子/ACL/CLI回归、真实SQLite与HTTP冒烟通过；角色与IAM区分，mysql8只占位，真实PG ACL/并发等留硬化。版本、设计和证据见第5.4节。 |
 | `WP-MVP-A04..A06` | Not started | - |
 | `WP-MVP-B01..B06` | Not started | - |
 | `WP-MVP-C01..C05` | Not started | - |
@@ -160,13 +161,39 @@
 | Feature Flag 与状态边界 | 不新增、不启用任何业务 Feature Flag。原资产未知许可继续如实登记，DEC-045/046 已取消的本机版本化前置不恢复。只同步 `04`、`20`、`99` 实际交付与证据；不标记 Verified，不宣布阶段或发布门禁通过。 |
 | 当前证据与缺口 | 实施前已核对 AGENTS、计划入口及01/02/04/05/06/10/20/90/99。最新证据见 [summary.md](../docs/evidence/mvp/wp-mvp-a01/dev-20260905/summary.md) 及同级 validation.json、http.json、freeze.json 和命令/日志。真实构建及5项构建测试、15项web测试、492次四环境HTTP/84个SSR变体/8次启动拒绝、M0-03基线一致性、无dist下 ./scripts/dev-check.sh（72个单元测试、51条HTTP冒烟）、git diff --check 与36个暂存文件逐文件复核通过；SQLite迁移执行器未接入，明确跳过。原A00全部源资产/冻结保持，实际SSR反向还原URL后与原42种响应字节一致。初次Python前置、占位文件、macOS路径和证据文件末尾空行失败均保留修正记录；本轮开发期交付无剩余缺口。真实依赖/全量扫描/跨平台/安全完整矩阵留E01，视觉与DEC-019留E04，ADMIN-005业务写入与对象存储未提前实施。 |
 
+### 5.4 数据库基础开发登记（2026-09-05）
+
+本轮由用户担任项目负责人和最终批准人，Codex 负责设计细化、实现、独立复核、开发期验证和本机新建中文提交；仅本机开发，不部署、不推送。工作包按 M0-04 设计 → A02 配置前置 → A03 迁移与 CLI 顺序实施。下表保留实施前范围与状态条件；本轮结果与证据补充于表后。沿用 M0-01、M0-03、A00、A01、现有 Workspace/锁文件与资产隔离；g.md 与 AGENTS.md 继续本机忽略。
+
+| 设计项 | WP-M0-04 | WP-MVP-A02（本轮部分） | WP-MVP-A03 |
+|---|---|---|---|
+| 范围与原始条款 | 平台任务，01 §6、§7.2–7.4、§8.2；关联 PRIV-000/005、ADMIN-012/013 的设计边界，不推进这些产品需求。 | 平台任务，01 §7.1/7.2/8.1，02 §4/5/6.4；仅配置、Secrets、启动校验，不代表 ADMIN-005/011 完成。 | 平台任务，01 §6/7.2/7.3，02 §6–8/19；种子仅引用 CAT-000/001 的四版块骨架，不代表产品/冷启动完成。 |
+| 依赖与责任 | M0-01、M0-03 已 Implemented；Codex 细化与独立复核，用户最终批准。DEC-016/018、CR-013 仅限制 IAM registry 和生产授权。 | A01 已 Implemented，复用 M0-04 设计；Codex 实现/测试。Flag 整包后续依赖 A04 审计/事务与 D04 审批。 | A01、M0-04 设计复核与 A02 配置前置；依用户本轮指示，不以 A02 整包状态阻塞迁移；Codex 实现/测试/复核。 |
+| 交付物 | 可复核的数据设计：15 schema、受信注册、ACL、迁移元数据/流程、锁顺序、幂等、Outbox、追加审计和保留矩阵；设计文档是 01/02/03 的派生说明，不建立并行事实源。 | 共用分层加载、四环境脱敏模板、local 覆盖、环境变量/Secret 注入、严格解析和启动校验、三程序接线与手册。 | PostgreSQL/SQLite 真实对齐迁移、初始结构、数据库角色与显式 ACL、专用单连接 runner/status、开发种子、共享 SQL lint、dev-check 真实 SQLite 接线和手册。 |
+| 接口与数据 | 文档化设计，不交付 A04 空接口；实际 A03 表精确登记到受信表注册。 | Config 共用入口保留 BBBCM_CONFIG；安全默认 < 配置文件 < local 覆盖 < 环境变量 < Secret 注入；不建立配置数据库。 | bbbcm-cli db migrate/status/seed；mysql8 预留拒绝执行；元数据编号、名称、内容哈希、执行状态与时间；其他业务表随所属包落地。 |
+| 权限 | 区分 PG 数据库角色与业务 IAM；未批准保留期/法律依据明确待定，不自行批准。 | Secret 不入配置文件/Debug/日志/错误；provider 缺配置保持关闭；production 固定 bcm_，staging/production 拒绝不安全配置。 | migrator 拥有应用对象；app_rw/worker_rw/report_ro NOINHERIT、无 schema CREATE、未来对象默认无授权；审计历史无更新删除。SQLite 不模拟 PG ACL；seed 限 development/test，无账号或 IAM 种子。 |
+| 事务与 Outbox | 定义固定跨领域锁序、同事务状态/版本/幂等/Outbox/审计、未知提交与追加审计边界；引擎归 A04。 | 不适用事务/Outbox：只加载本进程配置，无业务状态或外部副作用；Flag 持久化/审计不在本轮。 | 每迁移专用连接事务，PG 含前缀 advisory xact lock，SQLite BEGIN IMMEDIATE；重建迁移事务外关闭 FK、提交前检查、退出恢复；种子同事务幂等。初始化无业务事件，不伪造 Outbox。 |
+| 开发期测试 | 默认/非默认映射、注册和 ACL 对照设计复核；保留矩阵待决范围复核。 | 分层优先级、未知键/类型/环境、缺失/非法参数、Secret 脱敏、四环境、Worker 模式；保持 A00/A01 隔离。 | 临时 SQLite：对齐/空轨/编号/内容漂移/元数据/重复/失败回滚/FK恢复、双前缀/未注册拒绝、实际 CLI/种子重放/生产拒绝、SQL lint 合法/非法例；./scripts/dev-check.sh、diff/暂存逐文件检查。 |
+| Flag 与状态条件 | 无新增 Flag；设计交付及所需复核完成才可 Implemented，未决生产法律/IAM 不冒称获批。 | 默认全关，整包保持 In progress；待交付 Flag 存储、flag set 与 /manage/config 共用受控写/审计、只读/紧急关闭与提示态及审批。 | 开发交付与最小集全部完成才可 Implemented；不实现 A04–A06、身份/内容/后台业务，不启用业务 Flag。真实 PG/Redis、安全/并发/跨平台/性能/视觉留 E01/E02/E04，不标 Verified 或通过阶段门禁。 |
+
+
+#### 本轮实际交付与开发期证据
+
+- 实施前已完整核对 AGENTS、计划入口、01/02/03/04/06/10/20/90/99；未改提示页面、模板或品牌资产，无需新增05视觉交付。设计为 [数据库基础派生设计](../docs/design-notes/2026-09-database-foundation.md)，操作入口为 [本机数据库手册](../docs/development/database.md)。不改变01/02/03/05/06事实源或批准任何Pending；04只按本轮用户明确授权拆解A02配置前置依赖。
+- M0-04 的15 schema、3初始表、ACL、迁移、锁总序、幂等/未知提交、Outbox/追加审计、16类保留矩阵已由实现代理和独立代理对照事实源复核；本轮设计交付无剩余缺口，标记 Implemented。A04事务/Outbox/审计引擎与保留政策批准仍是后续事项，PRIV-000/005、ADMIN-012/013、CAT-000/001等产品需求状态不变。
+- A02配置前置完成并接到三个可执行。主文件缺失、逐层未知键/类型、非法环境/URL/前缀、Secret入文件、生产TLS降级、隐式PG环境/.pgpass旁路均拒绝；未批准provider没有新增配置或功能。Redis仅配置校验，连接运行时归A05。A02整包仍 In progress；待Flag数据库存储、两受控写入口、A04事务/审计、D04审批、只读/紧急关闭和05提示态完成后再评估。
+- A03初始应用表仅schema_migrations、forums、rule_versions。PG迁移创建15 schema、显式表/序列ACL与全局及逐schema默认撤权；bootstrap输出NOLOGIN数据库组脚本，真实登录/成员配置按手册由数据库管理员执行。SQLite不伪造角色；种子只development/test且保留已有编辑，未创建账号/IAM/生产规则。本轮开发期交付与所需设计复核完成，标记 Implemented。
+- 开发期最小集 `./scripts/dev-check.sh` 一次完整执行通过：rustfmt、Clippy `-D warnings`、99个单元测试及4个真实CLI集成测试（含配置13、迁移20、连接4、种子2、SQL lint8、ACL1、注册3和Web15项）、真实临时SQLite迁移、51条HTTP冒烟、diff检查和Handler静态守卫。资产冻结复核通过，A00/A01模板及源资产无改动；没有独立构建或完整资产构建。dev-check的暂存步骤运行时尚无暂存文件，最终逐文件复核单独记录，不能以空暂存冒称完成审查。
+- 当前证据入口为 [summary.md](../docs/evidence/mvp/database-foundation/dev-20260905/summary.md)、同级dev-check.txt、asset-freeze.json和validation.json，包含代码复核、早期失败/修正及最终暂存记录。代码/配置版本为这些记录所在的 `新增：完成数据库基础设计与配置迁移底座` 提交；仅新建本机提交，不amend、不push、不部署。AGENTS.md、g.md、local配置、Secrets与临时数据库保持忽略。
+- 未执行真实PostgreSQL/Redis全矩阵、真实数据库角色/未来ACL探针、并发/故障注入、安全全量扫描、跨平台、性能或视觉完整验证，留E01/E02/E04；未改变A04–A06及身份/内容/管理后台实现状态，没有Flag启用、Verified或阶段/发布门禁。
+
 ## 6. 门禁状态
 
 | 门禁 | 当前状态 | 原因 |
 |---|---|---|
-| M0 Repository Ready | In progress | `WP-M0-01`、`WP-M0-03` 已为 `Implemented`；`WP-M0-02` 受 `DEC-019` 阻塞，`WP-M0-04..06` 尚未完成，统一硬化证据和阶段门禁尚未通过。 |
+| M0 Repository Ready | In progress | `WP-M0-01`、`WP-M0-03`、`WP-M0-04` 已为 `Implemented`；`WP-M0-02` 受 `DEC-019` 阻塞，`WP-M0-05..06` 尚未完成，统一硬化证据和阶段门禁尚未通过。 |
 | M0 Production Approved | Blocked | 多项决策、人员和生产事项待定 |
-| MVP Repository Ready | In progress | `WP-MVP-A00/A01` 已完成开发期交付，`A02/A03` 仍为部分交付，其余 MVP 工作包及统一硬化尚未完成；DEC-045/046本机版本化不代替正式门禁。 |
+| MVP Repository Ready | In progress | `WP-MVP-A00/A01/A03` 已完成开发期交付，`A02` 仍为部分交付，其余 MVP 工作包及统一硬化尚未完成；DEC-045/046本机版本化不代替正式门禁。 |
 | MVP Production Approved | Blocked | 依赖 M0、真实依赖和 18 条门槛 |
 | P1-A/P1-B/P2/Later | Closed | 前置阶段和 `DEC-014` 未满足 |
 

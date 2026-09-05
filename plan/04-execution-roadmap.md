@@ -42,7 +42,7 @@ WP-MVP-A00 参考标的本地化（开发第一步，无依赖）
 | `WP-MVP-A00` | 无 |
 | `WP-MVP-A01` | `WP-M0-01`、`WP-M0-03` |
 | `WP-MVP-A02` | `WP-MVP-A01` |
-| `WP-MVP-A03` | `WP-MVP-A01`、`WP-MVP-A02`、`WP-M0-04` |
+| `WP-MVP-A03` | `WP-MVP-A01`、`WP-MVP-A02` 的配置/Secrets/启动校验前置、`WP-M0-04` 数据设计；A02 整包的 Flag/审计后续依赖 A04/D04 |
 | `WP-MVP-A04` | `WP-MVP-A03` |
 | `WP-MVP-A05` | `WP-MVP-A02`、`WP-MVP-A03`、`WP-MVP-A04` |
 | `WP-MVP-A06` | `WP-MVP-A04`、`WP-MVP-A05` |
@@ -68,6 +68,7 @@ WP-MVP-A00 参考标的本地化（开发第一步，无依赖）
 
 任何 Pending 决策只阻塞受影响行和 Production Approved；除非它会改变数据模型、安全边界或不可逆实现，否则不得阻塞其他已就绪工作包。具体地：
 
+- 用户本轮明确授权 M0-04 → A02 配置前置 → A03 顺序；配置前置满足 A03 依赖，A02 的 Flag 持久化、受控写、只读/紧急关闭与审批仍按 A04/D04 依赖继续，不据此标记 A02 整包 Implemented。
 - `DEC-016`/`DEC-018` 只阻塞**生产 IAM 授权与角色种子**，不阻塞 `WP-M0-04` 的 schema、迁移、事务与 Outbox 设计。
 - `DEC-019`（视觉基准，`10` 第 3 节第 5 项）只阻塞 `WP-MVP-E04` 与 Production Approved，不阻塞 `WP-MVP-A01` 及其下游。
 - `WP-MVP-A00` 依赖为「无」指的是无**工作包**依赖；它需要 `bbbcm-web` 可运行，因此 `WP-MVP-A01` 的 workspace 骨架先行是必要顺序，不构成路线图冲突。
@@ -107,6 +108,8 @@ WP-MVP-A00 参考标的本地化（开发第一步，无依赖）
 ### `WP-M0-04` 数据与权限设计
 
 交付：15 个逻辑 schema、角色/ACL、迁移设计、事务锁顺序、保留矩阵和 Outbox 设计。
+
+派生数据设计见 [数据库基础设计](../docs/design-notes/2026-09-database-foundation.md)，只细化现有事实源；设计复核、实际实现与证据统一见 `99` 第 5.4 节。
 
 退出：默认/非默认前缀方案经评审；`DEC-016/018` 未解决时生产 IAM 仍 Blocked。
 
@@ -152,6 +155,8 @@ WP-MVP-A00 参考标的本地化（开发第一步，无依赖）
 
 硬化阶段（`WP-MVP-E01`）：非法/缺失配置拒绝启动；staging/production 拒绝 demo；所有 P1/P2 flag 关闭。
 
+已落地配置前置（见 `99` 第5.4节）：三程序共用分层加载、四环境脱敏模板、Secret注入、严格启动校验及操作手册。Flag持久化、受控写/审计、审批、只读/紧急关闭及提示态依赖A04/D04，A02整包保持 In progress。
+
 ### `WP-MVP-A03` PostgreSQL 迁移与 ACL
 
 交付：N 轨迁移集合（postgres/sqlite，mysql8 占位，编号对齐，DEC-022）、初始 schema、角色、ACL policy、迁移元数据和幂等校验、共享 SQL lint（`02` §6.1 语义差异禁用清单的强制手段）、`bbbcm-cli db seed` 开发/测试种子（四个首发版块骨架与规则占位版本；角色与权限种子受 `DEC-016/018`、`CR-013` 阻塞，未批准前不生成生产角色种子）。
@@ -159,6 +164,8 @@ WP-MVP-A00 参考标的本地化（开发第一步，无依赖）
 开发期验证：格式化、Clippy `-D warnings`、单元测试、SQLite 冒烟（适用时）。
 
 硬化阶段（`WP-MVP-E01`）：真实 PostgreSQL 默认/随机前缀、SQLite WAL/外键/单写者租约、未来对象 ACL 和前向修复。
+
+已落地开发期交付（见 `99` 第5.4节）：PG/SQLite初始迁移、15逻辑schema及3必要表、注册校验、专用单连接迁移/状态/失败恢复、数据库组与显式ACL、四版块开发种子、共享SQL lint及dev-check真实SQLite接线；M0-04设计与A02配置前置满足本轮依赖。A03为 Implemented，真实PG及完整矩阵未授予 Verified。
 
 ### `WP-MVP-A04` 事务、幂等、Outbox 和审计
 

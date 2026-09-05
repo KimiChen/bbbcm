@@ -9,3 +9,5 @@ publish.workspace = true
 [dependencies]
 clap.workspace = true
 platform.workspace = true
+platform-db.workspace = true
+tokio.workspace = true

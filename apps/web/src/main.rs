@@ -11,7 +11,6 @@ mod jobs;
 mod middleware;
 mod router;
 
-use std::path::Path;
 use std::process::ExitCode;
 use std::sync::Arc;
 use tokio_util::sync::CancellationToken;
@@ -35,14 +34,14 @@ async fn main() -> ExitCode {
 }
 
 async fn run() -> Result<(), String> {
-    let config_path =
-        std::env::var("BBBCM_CONFIG").unwrap_or_else(|_| "config/default.toml".to_string());
-    let mut config = platform::config::Config::load(Path::new(&config_path))
-        .map_err(|err| format!("配置加载失败（{config_path}）: {err}"))?;
-    config.apply_env();
+    let config = platform::config::Config::from_environment().map_err(|err| err.to_string())?;
     config
-        .validate()
-        .map_err(|err| format!("配置校验失败（{config_path}）: {err}"))?;
+        .validate_for(platform::config::ProcessKind::Web)
+        .map_err(|err| err.to_string())?;
+
+    platform_db::connection::check_startup(&config.database, platform_db::connection::Purpose::App)
+        .await
+        .map_err(|err| err.to_string())?;
 
     let assets = assets::Assets::from_environment(
         config.server.environment,

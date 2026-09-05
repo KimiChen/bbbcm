@@ -1,0 +1,20 @@
+# staging 脱敏模板。BBBCM_CONFIG=config/staging.toml.example。
+# 必须覆盖 BBBCM_SERVER_BIND 与 BBBCM_DATABASE_MAX_CONNECTIONS 后才可启动。
+# 空监听地址和零连接数是未配置哨兵，不是可运行默认规格。
+# BBBCM_DATABASE_POSTGRES_URL / BBBCM_REDIS_URL 仅经环境或部署注入，不入 TOML。
+# 使用隔离的数据和缓存实例；provider 保持未配置关闭。
+
+[server]
+environment = "staging"
+bind = ""
+
+[database]
+backend = "postgres"
+schema_prefix = "bcm_"
+max_connections = 0
+
+[features]
+redis = true
+
+[worker]
+embedded = false

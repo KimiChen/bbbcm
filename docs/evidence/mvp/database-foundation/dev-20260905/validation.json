@@ -1,0 +1,51 @@
+{
+  "scope": [
+    "WP-M0-04",
+    "WP-MVP-A02 configuration prerequisite only",
+    "WP-MVP-A03"
+  ],
+  "phase": "development; not Verified",
+  "command": "./scripts/dev-check.sh",
+  "exit_code": 0,
+  "rustfmt": "pass",
+  "clippy_workspace_all_targets_deny_warnings": "pass",
+  "unit_tests": 99,
+  "cli_integration_tests": 4,
+  "failed_tests": 0,
+  "ignored_tests": 0,
+  "test_components": {
+    "platform": 55,
+    "platform_db": 29,
+    "web": 15,
+    "database_cli": 4
+  },
+  "targeted_coverage": {
+    "config": 13,
+    "migrations": 20,
+    "connection_options": 4,
+    "seed": 2,
+    "acl": 1,
+    "identifiers": 3,
+    "sql_lint": 8,
+    "web": 15
+  },
+  "sqlite_smoke": "real migration into isolated temporary file, no skip",
+  "http_smoke_checks": 51,
+  "asset_freeze": "pass; no source asset/template changes",
+  "secret_environment_isolation": "CLI children clear environment; smoke clears BBBCM_* and PG* and uses isolated cwd",
+  "staged_review": "recorded separately in staged-review.json; dev-check ran before staging",
+  "dependency_versions": "unchanged; only existing locked dependency edges/features",
+  "not_run": [
+    "real PostgreSQL roles/ACL/TLS/extension and dual-prefix matrix",
+    "Redis integration",
+    "concurrent migration/worker and network commit-uncertainty fault injection",
+    "full security and supply-chain scans",
+    "cross-platform",
+    "performance",
+    "full asset build",
+    "formal visual matrix"
+  ],
+  "flags": "all existing business defaults remain off; no persistence or write command",
+  "deployment": "none",
+  "push": "none"
+}

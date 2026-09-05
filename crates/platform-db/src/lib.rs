@@ -1,20 +1,20 @@
-//! 连接管理与后端能力探测；事务模板与迁移执行随后续工作包接入。
+//! 连接管理、能力探测与数据库初始化；业务事务引擎归 A04。
 
 use platform::config::DatabaseConfig;
 use platform::db::{Backend, Capabilities};
-use std::time::Duration;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum ConnectError {
-    #[error("缺少 PostgreSQL 连接串：请设置环境变量 BBBCM_DATABASE_POSTGRES_URL")]
-    MissingPostgresUrl,
     #[error("后端 {0} 尚未接入（DEC-022 规范预留值）")]
     BackendNotImplemented(Backend),
-    #[error("数据库连接失败: {0}")]
-    Sqlx(#[from] sqlx::Error),
-    #[error("创建数据目录失败: {0}")]
-    Io(#[from] std::io::Error),
+    #[error(transparent)]
+    Database(#[from] connection::DatabaseError),
+}
+impl From<sqlx::Error> for ConnectError {
+    fn from(_: sqlx::Error) -> Self {
+        Self::Database(connection::DatabaseError::Operation)
+    }
 }
 
 /// 双后端连接池封装；repo 经 `platform::db::render_sql` + SchemaRenderer 使用。
@@ -38,34 +38,42 @@ impl Pool {
     /// SQLite 的连接数取自配置且被校验为 1：多写连接只会把单写者冲突变成
     /// `SQLITE_BUSY`，而不会提高吞吐（`02` 第 6.1 节）。
     pub async fn connect(cfg: &DatabaseConfig) -> Result<Pool, ConnectError> {
+        Self::connect_for(cfg, connection::Purpose::App).await
+    }
+
+    pub async fn connect_for(
+        cfg: &DatabaseConfig,
+        purpose: connection::Purpose,
+    ) -> Result<Pool, ConnectError> {
+        if cfg.max_connections == 0 || (cfg.backend == Backend::Sqlite && cfg.max_connections != 1)
+        {
+            return Err(connection::DatabaseError::InvalidConfiguration.into());
+        }
         match cfg.backend {
             Backend::Mysql8 => Err(ConnectError::BackendNotImplemented(cfg.backend)),
             Backend::Sqlite => {
-                if let Some(dir) = std::path::Path::new(&cfg.sqlite_path).parent()
-                    && !dir.as_os_str().is_empty()
-                {
-                    std::fs::create_dir_all(dir)?;
-                }
-                let options = sqlx::sqlite::SqliteConnectOptions::new()
-                    .filename(cfg.sqlite_path.clone())
-                    .create_if_missing(true)
-                    .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal)
-                    .busy_timeout(Duration::from_millis(5000))
-                    .foreign_keys(true);
                 let pool = sqlx::sqlite::SqlitePoolOptions::new()
-                    .max_connections(cfg.max_connections.max(1))
-                    .connect_with(options)
+                    .max_connections(cfg.max_connections)
+                    .connect_with(connection::sqlite_options(cfg, true)?)
                     .await?;
                 Ok(Pool::Sqlite(pool))
             }
             Backend::Postgres => {
-                let url = cfg
-                    .postgres_url
-                    .as_deref()
-                    .ok_or(ConnectError::MissingPostgresUrl)?;
+                let renderer = platform::identifiers::SchemaRenderer::new(&cfg.schema_prefix)
+                    .map_err(connection::DatabaseError::from)?;
                 let pool = sqlx::postgres::PgPoolOptions::new()
-                    .max_connections(cfg.max_connections.max(1))
-                    .connect(url)
+                    .max_connections(cfg.max_connections)
+                    .after_connect(move |conn, _| {
+                        let renderer = renderer.clone();
+                        Box::pin(async move {
+                            connection::prepare_postgres(conn, &renderer, purpose)
+                                .await
+                                .map_err(|_| {
+                                    sqlx::Error::Protocol("数据库启动校验失败（已脱敏）".into())
+                                })
+                        })
+                    })
+                    .connect_with(connection::postgres_options(cfg)?)
                     .await?;
                 Ok(Pool::Postgres(pool))
             }
@@ -99,8 +107,8 @@ impl Pool {
                             tracing::info!("SQLite 未编译 FTS5，标题搜索降级为规范化列 LIKE");
                         }
                     }
-                    Err(err) => {
-                        tracing::warn!(%err, "取连接探测 FTS5 失败，按不可用处理");
+                    Err(_) => {
+                        tracing::warn!("取连接探测 FTS5 失败，按不可用处理");
                     }
                 }
                 caps
@@ -109,8 +117,8 @@ impl Pool {
                 let installed: Vec<String> = sqlx::query_scalar("SELECT extname FROM pg_extension")
                     .fetch_all(pool)
                     .await
-                    .unwrap_or_else(|err| {
-                        tracing::warn!(%err, "查询 pg_extension 失败，按扩展缺失处理");
+                    .unwrap_or_else(|_| {
+                        tracing::warn!("查询 pg_extension 失败，按扩展缺失处理");
                         Vec::new()
                     });
                 let caps = Capabilities {
@@ -138,7 +146,11 @@ impl Pool {
     }
 }
 
+pub mod acl;
+pub mod connection;
 pub mod migrations;
+pub mod seed;
+mod seed_repo;
 
 #[cfg(test)]
 mod tests {

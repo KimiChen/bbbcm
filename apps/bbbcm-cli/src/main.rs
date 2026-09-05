@@ -15,6 +15,9 @@ struct Cli {
 enum Command {
     /// 数据库结构迁移与状态
     Db {
+        /// 版本化迁移根目录；不接受 SQL 内联参数
+        #[arg(long, global = true, default_value = "db/migrations")]
+        migrations_dir: std::path::PathBuf,
         #[command(subcommand)]
         command: DbCommand,
     },
@@ -39,7 +42,9 @@ enum DbCommand {
     },
     /// 查看迁移与结构版本状态
     Status,
-    /// 写入初始数据（版块、规则、首个管理员）
+    /// 输出一次性 PostgreSQL 组角色初始化 SQL（需数据库管理员另行执行）
+    BootstrapSql,
+    /// 写入 development/test 四版块与规则占位（不创建账号）
     Seed,
 }
 
@@ -82,28 +87,89 @@ enum FlagCommand {
     Set { name: String, value: bool },
 }
 
-fn main() {
-    let cli = Cli::parse();
+#[tokio::main]
+async fn main() -> std::process::ExitCode {
+    match run(Cli::parse()).await {
+        Ok(()) => std::process::ExitCode::SUCCESS,
+        Err(err) => {
+            eprintln!("{err}");
+            std::process::ExitCode::FAILURE
+        }
+    }
+}
+
+async fn run(cli: Cli) -> Result<(), String> {
+    use platform::config::{Config, ProcessKind};
+    let mut config = Config::from_environment().map_err(|err| err.to_string())?;
+    config
+        .validate_for(ProcessKind::Cli)
+        .map_err(|err| err.to_string())?;
     match cli.command {
-        Command::Db { command } => match command {
+        Command::Db {
+            migrations_dir,
+            command,
+        } => match command {
             DbCommand::Migrate { backend } => {
-                if let Some(arg) = backend {
-                    let backend: Backend = arg.into();
-                    if !backend.is_implemented() {
-                        eprintln!(
-                            "后端 {backend} 是规范预留值，尚未接入（DEC-022）：\
-                             迁移集合 db/migrations/mysql8/ 目前为空占位。"
-                        );
-                        std::process::exit(1);
-                    }
-                    not_implemented(&format!(
-                        "db migrate --backend {backend}，随 WP-MVP-A03 接入"
-                    ));
+                if let Some(backend) = backend {
+                    config.database.backend = backend.into();
                 }
-                not_implemented("db migrate（backend 取自配置），随 WP-MVP-A03 接入");
+                config.validate().map_err(|err| err.to_string())?;
+                let result = platform_db::migrations::migrate(&config.database, &migrations_dir)
+                    .await
+                    .map_err(|err| err.to_string())?;
+                println!(
+                    "迁移完成：应用 {:?}；已应用跳过 {:?}",
+                    result.applied, result.skipped
+                );
             }
-            DbCommand::Status => not_implemented("db status，随 WP-MVP-A03 接入"),
-            DbCommand::Seed => not_implemented("db seed，随 WP-MVP-A01/A03 接入"),
+            DbCommand::Status => {
+                let states = platform_db::migrations::status(&config.database, &migrations_dir)
+                    .await
+                    .map_err(|err| err.to_string())?;
+                println!(
+                    "后端 {}，前缀 {}",
+                    config.database.backend, config.database.schema_prefix
+                );
+                for state in states {
+                    println!(
+                        "{:04} {} {} {} {}",
+                        state.number,
+                        state.name,
+                        state.state,
+                        state.checksum,
+                        state.executed_at.as_deref().unwrap_or("-")
+                    );
+                }
+            }
+            DbCommand::Seed => {
+                if config.server.environment.is_production_like() {
+                    return Err(
+                        "db seed 只允许 development/test；staging/production 禁止种子写入".into(),
+                    );
+                }
+                let states = platform_db::migrations::status(&config.database, &migrations_dir)
+                    .await
+                    .map_err(|err| err.to_string())?;
+                if states.iter().any(|s| s.state != "applied") {
+                    return Err("种子需要所有迁移已应用；请先执行 db migrate".into());
+                }
+                let result = platform_db::seed::seed(&config)
+                    .await
+                    .map_err(|err| err.to_string())?;
+                println!(
+                    "种子完成：新增 {} 个版块、{} 个规则占位版本；已有数据保留",
+                    result.forums_created, result.rules_created
+                );
+            }
+            DbCommand::BootstrapSql => {
+                let renderer =
+                    platform::identifiers::SchemaRenderer::new(&config.database.schema_prefix)
+                        .map_err(|err| err.to_string())?;
+                print!(
+                    "{}",
+                    platform_db::acl::bootstrap_sql(&renderer).map_err(|err| err.to_string())?
+                );
+            }
         },
         Command::User { command } => match command {
             UserCommand::Create { username } => {
@@ -136,6 +202,7 @@ fn main() {
             }
         },
     }
+    Ok(())
 }
 
 fn not_implemented(what: &str) -> ! {

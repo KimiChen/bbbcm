@@ -11,6 +11,11 @@ platform.workspace = true
 sqlx.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
+sha2.workspace = true
+chrono.workspace = true
+url = "2"
+# Only PostgreSQL needs chrono bindings; avoid enabling optional MySQL through sqlx macros.
+sqlx-postgres = { version = "=0.8.6", default-features = false, features = ["chrono"] }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt"] }

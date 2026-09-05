@@ -6,6 +6,7 @@
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
+REPOSITORY_DIR="$PWD"
 fail() { echo "✗ $1" >&2; exit 1; }
 step() { echo; echo "== $1"; }
 
@@ -36,22 +37,24 @@ redis = false
 [worker]
 embedded = true
 CFG
-  # 迁移执行器随 WP-MVP-A03 接入；在此之前只冒烟 HTTP 表层。
-  # cargo test/clippy 不保证刷新 target/debug 下的普通可执行文件。
-  # 在冒烟步骤内用 cargo run 运行当前源码，不新增独立构建步骤（DEC-039）。
-  if BBBCM_CONFIG="$SMOKE_DIR/config.toml" cargo run --quiet --locked --package bbbcm-cli -- \
-      db migrate --backend sqlite >"$SMOKE_DIR/migrate.log" 2>&1; then
-    echo "  迁移已执行"
-  elif grep -Fq '尚未实现：db migrate --backend sqlite，随 WP-MVP-A03 接入' "$SMOKE_DIR/migrate.log"; then
-    echo "  迁移执行器尚未接入，跳过（WP-MVP-A03）"
-  else
+  # 每次在隔离 cwd 下加载配置，清除调用者 BBBCM_*，避免本机覆盖/Secrets 污染冒烟。
+  SMOKE_ENV=(env)
+  while IFS= read -r name; do
+    SMOKE_ENV+=(-u "$name")
+  done < <(compgen -A variable BBBCM_ || true; compgen -A variable PG || true)
+  # cargo test/clippy 不保证刷新普通可执行文件；cargo run 属实际冒烟执行，不另加构建步。
+  if ! (cd "$SMOKE_DIR" && "${SMOKE_ENV[@]}" BBBCM_CONFIG="$SMOKE_DIR/config.toml" \
+      cargo run --quiet --locked --manifest-path "$REPOSITORY_DIR/Cargo.toml" --package bbbcm-cli -- \
+      db --migrations-dir "$REPOSITORY_DIR/db/migrations" migrate --backend sqlite) >"$SMOKE_DIR/migrate.log" 2>&1; then
     cat "$SMOKE_DIR/migrate.log" >&2
     fail "SQLite 迁移冒烟失败"
   fi
+  echo "  SQLite 真实迁移已执行"
   if curl -s --max-time 1 -o /dev/null "http://127.0.0.1:18099/health"; then
     fail "冒烟端口 18099 已有 HTTP 服务，不能复用未知进程"
   fi
-  BBBCM_CONFIG="$SMOKE_DIR/config.toml" cargo run --quiet --locked --package bbbcm-web -- \
+  (cd "$SMOKE_DIR" && exec "${SMOKE_ENV[@]}" BBBCM_CONFIG="$SMOKE_DIR/config.toml" \
+    cargo run --quiet --locked --manifest-path "$REPOSITORY_DIR/Cargo.toml" --package bbbcm-web --) \
     >"$SMOKE_DIR/web.log" 2>&1 &
   WEB_PID=$!
   trap 'kill $WEB_PID 2>/dev/null || true; rm -rf "$SMOKE_DIR"' EXIT
@@ -80,6 +83,7 @@ CFG
     echo "  $route → $got"
   done < scripts/smoke-routes.txt
   kill $WEB_PID 2>/dev/null || true
+  wait "$WEB_PID" 2>/dev/null || true
 else
   echo "  scripts/smoke-routes.txt 不存在，跳过"
 fi

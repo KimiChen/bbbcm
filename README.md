@@ -2,15 +2,15 @@
 
 开源中文技术社区软件：Rust + Axum + Askama SSR。支持 PostgreSQL（完整模式）与 SQLite（体验模式，零外部依赖）双后端；SQL 按 PostgreSQL/SQLite/MySQL 8.0 三库交集子集编写，预留 MySQL 8.0（规范先行，暂未实现）。Redis 可选，承载缓存、短租约、唤醒与限流。
 
-> **开发中。** 当前仓库处于骨架阶段：迁移执行器、种子数据与业务路由尚未接入，下方“快速体验”的 `db migrate`、`db seed` 会以退出码 1 明示“尚未实现”。工作包状态以 [`plan/99-traceability.md`](plan/99-traceability.md) 为准。
+> **开发中。** 已提供共用配置、PostgreSQL/SQLite 迁移、状态查询和开发种子。身份、内容与后台业务、Outbox/审计引擎和 Flag 持久化仍未交付，所有业务 Flag 默认关闭。状态以 [`plan/99-traceability.md`](plan/99-traceability.md) 为准。
 
 ## 快速体验（SQLite）
 
 ```bash
-cargo build --release
-./target/release/bbbcm-cli db migrate --backend sqlite   # 随 WP-MVP-A03 接入
-./target/release/bbbcm-cli db seed                       # 随 WP-MVP-A03 接入
-./target/release/bbbcm-web                               # http://127.0.0.1:8080
+cargo run --locked --package bbbcm-cli -- db migrate --backend sqlite
+cargo run --locked --package bbbcm-cli -- db status
+cargo run --locked --package bbbcm-cli -- db seed
+cargo run --locked --package bbbcm-web  # http://127.0.0.1:8080
 ```
 
 体验模式默认 `features.redis = false`，因此**不提供限流**：注册、登录、找回密码没有速率保护。该模式用于本机体验与评估，不要公开部署（`DEC-024`）。公开部署请使用完整模式：PostgreSQL + `features.redis = true`。
@@ -22,7 +22,10 @@ cargo build --release
 | `BBBCM_CONFIG` | 配置文件路径，默认 `config/default.toml` |
 | `BBBCM_ASSET_DIST` | 指纹资源目录；默认 `apps/web/static/dist`，显式指定时缺失或损坏必须拒绝启动 |
 | `BBBCM_DATABASE_POSTGRES_URL` | PostgreSQL 连接串。只从环境变量注入，禁止写入任何配置文件 |
+| `BBBCM_REDIS_URL` | Redis 连接串；启用 Redis 时必需，只经 Secret 注入 |
 | `RUST_LOG` | 日志级别，默认 `info` |
+
+共用加载优先级为安全默认、主配置文件、本机 `config/local.toml`、环境变量、Secret 注入。四环境模板、完整变量映射、PostgreSQL 角色初始化、迁移/种子失败处理和本机清理见 [数据库手册](docs/development/database.md)。
 
 配置文件的未知键会导致启动失败而非被静默忽略；`server.environment` 只接受 `development`、`test`、`staging`、`production`。
 

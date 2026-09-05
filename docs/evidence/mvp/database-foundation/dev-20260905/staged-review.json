@@ -1,0 +1,332 @@
+{
+  "scope": "final staged per-file review; development evidence only",
+  "files_reviewed": 45,
+  "checks": {
+    "diff_check": "pass",
+    "cached_diff_check": "pass",
+    "utf8_lf_final_newline": "pass",
+    "public_content_patterns": "pass, plus manual review; not full secret scanner",
+    "local_markdown_links": "pass; staged-review.json self-entry generated now",
+    "dependency_packages_versions_checksums_unchanged": true,
+    "asset_template_changes": false,
+    "ignored_local_rules_secrets_database_staged": false
+  },
+  "files": [
+    {
+      "path": ".gitignore",
+      "sha256": "a5fa97b4edafdb860e52ee742ef32ba2ebb1c7a953c3e839893cd07e8645f9e8",
+      "reviewer": "root",
+      "result": "pass",
+      "review": "scoped integration, dependency versions, documentation, state/evidence, ignores or real smoke wiring checked"
+    },
+    {
+      "path": "Cargo.lock",
+      "sha256": "716a324b6bce4de8adaacf36d9b95a2fa7099647f2bf46ac0643872e4f9f3f25",
+      "reviewer": "root",
+      "result": "pass",
+      "review": "scoped integration, dependency versions, documentation, state/evidence, ignores or real smoke wiring checked"
+    },
+    {
+      "path": "README.md",
+      "sha256": "24e83be9f52e56156c66d1d0aff1274d63a5f5d334077d8c1857877c58797f96",
+      "reviewer": "root",
+      "result": "pass",
+      "review": "scoped integration, dependency versions, documentation, state/evidence, ignores or real smoke wiring checked"
+    },
+    {
+      "path": "apps/bbbcm-cli/Cargo.toml",
+      "sha256": "bd02fe7295a516dbbcdaebecdbad94edbdc65da07cb952a92dcb583ff9b7badf",
+      "reviewer": "root + config independent final review",
+      "result": "pass",
+      "review": "shared config, startup entry, CLI behavior, strict types and sanitized errors; staged blob matches reviewed source"
+    },
+    {
+      "path": "apps/bbbcm-cli/src/main.rs",
+      "sha256": "dc985fe48c030e377be160b7125797adcf0c1c3fc034bf7cf28fc54c04212061",
+      "reviewer": "root + config independent final review",
+      "result": "pass",
+      "review": "shared config, startup entry, CLI behavior, strict types and sanitized errors; staged blob matches reviewed source"
+    },
+    {
+      "path": "apps/bbbcm-cli/tests/database_cli.rs",
+      "sha256": "dfdbbc58c2f6a2607df0955497d26772bb5d90c8c21792fdd3dbf88b9374a711",
+      "reviewer": "root + config independent final review",
+      "result": "pass",
+      "review": "shared config, startup entry, CLI behavior, strict types and sanitized errors; staged blob matches reviewed source"
+    },
+    {
+      "path": "apps/bbbcm-worker/Cargo.toml",
+      "sha256": "a5940f407e71f90d373716e60ae9fbd3fd978c996c5f96683e939d38c9e44c21",
+      "reviewer": "root + config independent final review",
+      "result": "pass",
+      "review": "shared config, startup entry, CLI behavior, strict types and sanitized errors; staged blob matches reviewed source"
+    },
+    {
+      "path": "apps/bbbcm-worker/src/main.rs",
+      "sha256": "baad5a0a44e7b0447ae86185e674991eb2d4d532f923b5c32ecbae063f95a24d",
+      "reviewer": "root + config independent final review",
+      "result": "pass",
+      "review": "shared config, startup entry, CLI behavior, strict types and sanitized errors; staged blob matches reviewed source"
+    },
+    {
+      "path": "apps/web/Cargo.toml",
+      "sha256": "423642235bf376a3c419cdd819d46329dcd16c359c1676b1d50519f01510620c",
+      "reviewer": "root + config independent final review",
+      "result": "pass",
+      "review": "shared config, startup entry, CLI behavior, strict types and sanitized errors; staged blob matches reviewed source"
+    },
+    {
+      "path": "apps/web/src/main.rs",
+      "sha256": "26ec3b61b8f710d821ea727e62553870d12ed1e6623c9708b2184fc215e24f20",
+      "reviewer": "root + config independent final review",
+      "result": "pass",
+      "review": "shared config, startup entry, CLI behavior, strict types and sanitized errors; staged blob matches reviewed source"
+    },
+    {
+      "path": "config/default.toml",
+      "sha256": "f98139aae5c259d2e8bb2eefb0abb6b6964cd7da88ac47d2eb9f930da24e50d0",
+      "reviewer": "root + config independent final review",
+      "result": "pass",
+      "review": "shared config, startup entry, CLI behavior, strict types and sanitized errors; staged blob matches reviewed source"
+    },
+    {
+      "path": "config/development.toml.example",
+      "sha256": "03ccf47800a0853fa89585f56b45c8a250af08f522aff9c584c1ce7411bd33ff",
+      "reviewer": "root + config independent final review",
+      "result": "pass",
+      "review": "shared config, startup entry, CLI behavior, strict types and sanitized errors; staged blob matches reviewed source"
+    },
+    {
+      "path": "config/production.toml.example",
+      "sha256": "e11fe7c9e879cd0e454f60b07e0808460d6094b6ca8c9500dd22cf56c6d0931d",
+      "reviewer": "root + config independent final review",
+      "result": "pass",
+      "review": "shared config, startup entry, CLI behavior, strict types and sanitized errors; staged blob matches reviewed source"
+    },
+    {
+      "path": "config/staging.toml.example",
+      "sha256": "16b7d896c3c8c5ac4caeedcc22ccd833cdbd6eefadbe81099291e6d6677c00da",
+      "reviewer": "root + config independent final review",
+      "result": "pass",
+      "review": "shared config, startup entry, CLI behavior, strict types and sanitized errors; staged blob matches reviewed source"
+    },
+    {
+      "path": "config/test.toml.example",
+      "sha256": "349febe6fcf7b3bfea43b156ef44e2089b5d4ba1bb3c963a5ae4b144226dbb02",
+      "reviewer": "root + config independent final review",
+      "result": "pass",
+      "review": "shared config, startup entry, CLI behavior, strict types and sanitized errors; staged blob matches reviewed source"
+    },
+    {
+      "path": "crates/platform-db/Cargo.toml",
+      "sha256": "6d960c9177ccae3f662011a44fd1910cceb44e42b54ed683b7a754680d0cbd73",
+      "reviewer": "root",
+      "result": "pass",
+      "review": "scoped integration, dependency versions, documentation, state/evidence, ignores or real smoke wiring checked"
+    },
+    {
+      "path": "crates/platform-db/src/acl.rs",
+      "sha256": "16ad44dd7ed576bc6b43453c495183844f202dd68d0351aea37cc5b7ff4a195e",
+      "reviewer": "root + sql_lint independent final review",
+      "result": "pass",
+      "review": "registered identifiers, portable values, migration/table/ACL/seed boundaries; staged blob matches reviewed source"
+    },
+    {
+      "path": "crates/platform-db/src/connection.rs",
+      "sha256": "ccd1589a82a6fba9b66f5ef6c6fcccb37b08c65a49e67c430d264728bbf7ee56",
+      "reviewer": "root + config independent final review",
+      "result": "pass",
+      "review": "shared config, startup entry, CLI behavior, strict types and sanitized errors; staged blob matches reviewed source"
+    },
+    {
+      "path": "crates/platform-db/src/lib.rs",
+      "sha256": "bbbaf69dd30bd863187db1d5dfbdaae8267cb5e69cbb5fdfbed3d4bfefc3d91b",
+      "reviewer": "root",
+      "result": "pass",
+      "review": "scoped integration, dependency versions, documentation, state/evidence, ignores or real smoke wiring checked"
+    },
+    {
+      "path": "crates/platform-db/src/migrations.rs",
+      "sha256": "a905d1ace1beb467d473124376e3439f0bb9c5e088a9b441fb331547662178e0",
+      "reviewer": "root + design_review implementation/review, sql_lint independent migration review",
+      "result": "pass",
+      "review": "dedicated migration transaction, metadata drift and recovery tests, M0 design/remaining decisions; staged blob matches reviewed source"
+    },
+    {
+      "path": "crates/platform-db/src/migrations/discovery.rs",
+      "sha256": "edb838a15dbadac5d45df618a36bc2df5f536f35a38d92e2d6a68d7584a76025",
+      "reviewer": "root + design_review implementation/review, sql_lint independent migration review",
+      "result": "pass",
+      "review": "dedicated migration transaction, metadata drift and recovery tests, M0 design/remaining decisions; staged blob matches reviewed source"
+    },
+    {
+      "path": "crates/platform-db/src/migrations/tests.rs",
+      "sha256": "e90fb32a677289e02bc37fadef27da5ddc7b296a3f59258c07205f6aaf9b3625",
+      "reviewer": "root + design_review implementation/review, sql_lint independent migration review",
+      "result": "pass",
+      "review": "dedicated migration transaction, metadata drift and recovery tests, M0 design/remaining decisions; staged blob matches reviewed source"
+    },
+    {
+      "path": "crates/platform-db/src/seed.rs",
+      "sha256": "98b951c82edfa0a2169a1125a231b1c28037664a07a31274efb6dabc248fb19e",
+      "reviewer": "root + sql_lint independent final review",
+      "result": "pass",
+      "review": "registered identifiers, portable values, migration/table/ACL/seed boundaries; staged blob matches reviewed source"
+    },
+    {
+      "path": "crates/platform-db/src/seed_repo.rs",
+      "sha256": "fd5d0b82c4420fe51ea26b62bac25ae33e89e2ea662940378daffc8f93422a06",
+      "reviewer": "root + sql_lint independent final review",
+      "result": "pass",
+      "review": "registered identifiers, portable values, migration/table/ACL/seed boundaries; staged blob matches reviewed source"
+    },
+    {
+      "path": "crates/platform/Cargo.toml",
+      "sha256": "75790d37546a6af9c904181d5ce566d6eaf655f56b22955cf9af67330da01867",
+      "reviewer": "root",
+      "result": "pass",
+      "review": "scoped integration, dependency versions, documentation, state/evidence, ignores or real smoke wiring checked"
+    },
+    {
+      "path": "crates/platform/src/config.rs",
+      "sha256": "9b90617a6770f7d72cd28c764ba1924efbb31a92966911bd23a5319533cac8be",
+      "reviewer": "root + config independent final review",
+      "result": "pass",
+      "review": "shared config, startup entry, CLI behavior, strict types and sanitized errors; staged blob matches reviewed source"
+    },
+    {
+      "path": "crates/platform/src/config/tests.rs",
+      "sha256": "a6b54504dd8e71791b3de1c1d8b26277a9662e7c47cdb5b43036d848b8f3aba7",
+      "reviewer": "root + config independent final review",
+      "result": "pass",
+      "review": "shared config, startup entry, CLI behavior, strict types and sanitized errors; staged blob matches reviewed source"
+    },
+    {
+      "path": "crates/platform/src/identifiers.rs",
+      "sha256": "8235d359908532490274252a029d0ddd8439eccec6bf0b092e72c255c720a26d",
+      "reviewer": "root + sql_lint independent final review",
+      "result": "pass",
+      "review": "registered identifiers, portable values, migration/table/ACL/seed boundaries; staged blob matches reviewed source"
+    },
+    {
+      "path": "crates/platform/src/lib.rs",
+      "sha256": "a45f6ac2b228df24d6d731b184520e31dc2fdaeb7902251e273ef225725409ea",
+      "reviewer": "root",
+      "result": "pass",
+      "review": "scoped integration, dependency versions, documentation, state/evidence, ignores or real smoke wiring checked"
+    },
+    {
+      "path": "crates/platform/src/sql_lint.rs",
+      "sha256": "cc98d241eb6fad0fbe2577f7c0a86b4193bc91e360ac6b36185951b02a7b8599",
+      "reviewer": "root + sql_lint independent final review",
+      "result": "pass",
+      "review": "registered identifiers, portable values, migration/table/ACL/seed boundaries; staged blob matches reviewed source"
+    },
+    {
+      "path": "db/migrations/README.md",
+      "sha256": "a3086b47daf2a07444a8aafdc77225c7e3bf28f202b991ba5392b5bedd6f437d",
+      "reviewer": "root + sql_lint independent final review",
+      "result": "pass",
+      "review": "registered identifiers, portable values, migration/table/ACL/seed boundaries; staged blob matches reviewed source"
+    },
+    {
+      "path": "db/migrations/postgres/0001_init.sql",
+      "sha256": "a339140ea834ab0fe75da3c526b9c2bfba296f26f87388d46ab35a1f0fc092f9",
+      "reviewer": "root + sql_lint independent final review",
+      "result": "pass",
+      "review": "registered identifiers, portable values, migration/table/ACL/seed boundaries; staged blob matches reviewed source"
+    },
+    {
+      "path": "db/migrations/sqlite/0001_init.sql",
+      "sha256": "38a7583f6da04d09761b233d6cfd880782adccb5097325f119a9b0cbd8e704fc",
+      "reviewer": "root + sql_lint independent final review",
+      "result": "pass",
+      "review": "registered identifiers, portable values, migration/table/ACL/seed boundaries; staged blob matches reviewed source"
+    },
+    {
+      "path": "docs/design-notes/2026-09-database-foundation.md",
+      "sha256": "89e67dc9dd67527066a5213d55215d9fa1c2a19177d0625a02944c555fb4ae2d",
+      "reviewer": "root + design_review implementation/review, sql_lint independent migration review",
+      "result": "pass",
+      "review": "dedicated migration transaction, metadata drift and recovery tests, M0 design/remaining decisions; staged blob matches reviewed source"
+    },
+    {
+      "path": "docs/development/database.md",
+      "sha256": "c33830c2642908ffe1e9934d34e4e43d5692b5ebbd248179ce2a8773e82a6810",
+      "reviewer": "root",
+      "result": "pass",
+      "review": "scoped integration, dependency versions, documentation, state/evidence, ignores or real smoke wiring checked"
+    },
+    {
+      "path": "docs/evidence/mvp/database-foundation/dev-20260905/asset-freeze.json",
+      "sha256": "9cfbd0a960ff5f7fd76c9976eaaa6a511e2f110d0b1e7cff9d374bf842b57e86",
+      "reviewer": "root",
+      "result": "pass",
+      "review": "scoped integration, dependency versions, documentation, state/evidence, ignores or real smoke wiring checked"
+    },
+    {
+      "path": "docs/evidence/mvp/database-foundation/dev-20260905/dev-check.txt",
+      "sha256": "7b96895b5c481fec3cef38cf691cf4adb10af335a7fac5ba977399a24b273921",
+      "reviewer": "root",
+      "result": "pass",
+      "review": "scoped integration, dependency versions, documentation, state/evidence, ignores or real smoke wiring checked"
+    },
+    {
+      "path": "docs/evidence/mvp/database-foundation/dev-20260905/summary.md",
+      "sha256": "547a346f33cbd05d712b1253928cbbfb54923cd62e9b9c4dfcaa759cd4c78b55",
+      "reviewer": "root",
+      "result": "pass",
+      "review": "scoped integration, dependency versions, documentation, state/evidence, ignores or real smoke wiring checked"
+    },
+    {
+      "path": "docs/evidence/mvp/database-foundation/dev-20260905/validation.json",
+      "sha256": "8e066d2f720f30e61b942bd68a8423c6946fd3b2db821f4624c41ed7a2044ef7",
+      "reviewer": "root",
+      "result": "pass",
+      "review": "scoped integration, dependency versions, documentation, state/evidence, ignores or real smoke wiring checked"
+    },
+    {
+      "path": "plan/04-execution-roadmap.md",
+      "sha256": "709e294445eb36247d50797ef9fa5f290be6af51ebe50aea37da68616d5ea59e",
+      "reviewer": "root",
+      "result": "pass",
+      "review": "scoped integration, dependency versions, documentation, state/evidence, ignores or real smoke wiring checked"
+    },
+    {
+      "path": "plan/10-m0.md",
+      "sha256": "4e749b325e3066371144a67ed4a51b5484ad7639465fb8e7c2c49e76ae084c50",
+      "reviewer": "root",
+      "result": "pass",
+      "review": "scoped integration, dependency versions, documentation, state/evidence, ignores or real smoke wiring checked"
+    },
+    {
+      "path": "plan/20-mvp.md",
+      "sha256": "462a21370f26830de20fd972611a654e08c9934bcd1bae47de3c4bf0a1f45f38",
+      "reviewer": "root",
+      "result": "pass",
+      "review": "scoped integration, dependency versions, documentation, state/evidence, ignores or real smoke wiring checked"
+    },
+    {
+      "path": "plan/99-traceability.md",
+      "sha256": "6c8f22c117a1256a6c5c052ff92a92e69ff90eab1056d9b3c78cdcc95a2be82b",
+      "reviewer": "root",
+      "result": "pass",
+      "review": "scoped integration, dependency versions, documentation, state/evidence, ignores or real smoke wiring checked"
+    },
+    {
+      "path": "scripts/README.md",
+      "sha256": "05b0d3c877f9a4ddfcf7404f0e6243185933289a1a765c47bc640f18c657c8b1",
+      "reviewer": "root",
+      "result": "pass",
+      "review": "scoped integration, dependency versions, documentation, state/evidence, ignores or real smoke wiring checked"
+    },
+    {
+      "path": "scripts/dev-check.sh",
+      "sha256": "5ba671662922578758bd5e7a2b8002b12a2ac650454bdc7f919b2a3f3146b0ef",
+      "reviewer": "root",
+      "result": "pass",
+      "review": "scoped integration, dependency versions, documentation, state/evidence, ignores or real smoke wiring checked"
+    }
+  ],
+  "self": "This manifest is reviewed and staged separately; no circular self-hash."
+}

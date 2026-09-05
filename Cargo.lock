@@ -223,6 +223,8 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "platform",
+ "platform-db",
+ "tokio",
 ]
 
 [[package]]
@@ -237,6 +239,7 @@ dependencies = [
  "media",
  "moderation",
  "platform",
+ "platform-db",
  "privacy",
  "serde",
  "serde_json",
@@ -256,6 +259,7 @@ name = "bbbcm-worker"
 version = "0.1.0"
 dependencies = [
  "platform",
+ "platform-db",
  "platform-outbox",
  "tokio",
  "tracing",
@@ -1178,6 +1182,7 @@ dependencies = [
  "serde_json",
  "thiserror",
  "toml",
+ "url",
 ]
 
 [[package]]
@@ -1188,11 +1193,15 @@ version = "0.1.0"
 name = "platform-db"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "platform",
+ "sha2",
  "sqlx",
+ "sqlx-postgres",
  "thiserror",
  "tokio",
  "tracing",
+ "url",
 ]
 
 [[package]]
@@ -1548,6 +1557,7 @@ checksum = "ee6798b1838b6a0f69c007c133b8df5866302197e404e8b6ee8ed3e3a5e68dc6"
 dependencies = [
  "base64",
  "bytes",
+ "chrono",
  "crc",
  "crossbeam-queue",
  "either",
@@ -1623,6 +1633,7 @@ dependencies = [
  "base64",
  "bitflags",
  "byteorder",
+ "chrono",
  "crc",
  "dotenvy",
  "etcetera",

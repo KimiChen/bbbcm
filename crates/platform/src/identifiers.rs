@@ -1,21 +1,11 @@
-//! SchemaRenderer：物理对象名的唯一渲染入口。
-//!
-//! PostgreSQL 渲染 `<前缀><逻辑 schema>.<表名>`，SQLite/MySQL 渲染
-//! `<前缀><逻辑 schema>_<表名>`（`DEC-029`）。扁平后仍带逻辑 schema，
-//! 是因为 15 个逻辑域里 `sessions`、`jobs`、`evidence` 这类表名必然跨域重名，
-//! 而共用一个 SQLite 文件或 MySQL 库时也需要与其他应用隔离。
-//!
-//! 「受信」体现在两处：前缀在构造时校验一次，`(schema, table)` 在每次渲染时
-//! 对受信注册表校验——不在册的逻辑 schema 或非法表名一律拒绝，杜绝拼接不受信标识符。
+//! 物理对象名的唯一入口；仅接受已登记的逻辑 schema、表、序列与数据库角色。
+//! 规范见 plan/02 §6–8；注册结构随对应迁移交付，不为未来业务预注册空表。
 
 use crate::db::Backend;
 use thiserror::Error;
 
 pub const MAX_PREFIX_LEN: usize = 32;
-/// PostgreSQL 标识符上限；渲染结果超出会被静默截断，必须提前拒绝。
 pub const MAX_IDENTIFIER_LEN: usize = 63;
-
-/// `02` 第 7 节的 15 个逻辑 schema，是唯一受信集合。
 pub const LOGICAL_SCHEMAS: &[&str] = &[
     "platform",
     "identity",
@@ -34,22 +24,58 @@ pub const LOGICAL_SCHEMAS: &[&str] = &[
     "analytics",
 ];
 
+#[derive(Debug, Clone, Copy)]
+pub struct TableRegistration {
+    pub schema: &'static str,
+    pub table: &'static str,
+    pub identity_column: Option<&'static str>,
+}
+
+pub const TABLES: &[TableRegistration] = &[
+    TableRegistration {
+        schema: "platform",
+        table: "schema_migrations",
+        identity_column: None,
+    },
+    TableRegistration {
+        schema: "community",
+        table: "forums",
+        identity_column: Some("id"),
+    },
+    TableRegistration {
+        schema: "moderation",
+        table: "rule_versions",
+        identity_column: Some("id"),
+    },
+];
+
+/// 数据库组角色，不是业务 IAM registry；不创建登录凭证或授予用户身份。
+pub const DATABASE_ROLES: &[&str] = &["migrator", "app_rw", "worker_rw", "report_ro"];
+
 #[derive(Debug, Error, PartialEq, Eq)]
 pub enum SchemaError {
     #[error("前缀不能为空")]
     Empty,
-    #[error("前缀必须以 ASCII 小写字母开头: {0}")]
-    BadStart(String),
-    #[error("前缀只能包含 [a-z0-9_]，且必须以 _ 结尾: {0}")]
-    BadChars(String),
-    #[error("前缀超过 {MAX_PREFIX_LEN} 个字符: {0}")]
-    TooLong(String),
-    #[error("逻辑 schema 不在受信注册表中: {0}")]
-    UnknownSchema(String),
-    #[error("表名必须匹配 [a-z][a-z0-9_]*: {0}")]
-    BadTable(String),
-    #[error("渲染结果 {0} 超过 {MAX_IDENTIFIER_LEN} 字节")]
-    IdentifierTooLong(String),
+    #[error("前缀必须以 ASCII 小写字母开头")]
+    BadStart,
+    #[error("前缀只能包含 [a-z0-9_]，且必须以 _ 结尾")]
+    BadChars,
+    #[error("前缀超过 {MAX_PREFIX_LEN} 个字符")]
+    TooLong,
+    #[error("逻辑 schema 不在受信注册表中")]
+    UnknownSchema,
+    #[error("表名必须匹配 [a-z][a-z0-9_]*")]
+    BadTable,
+    #[error("schema/table 不在受信注册表中")]
+    UnknownTable,
+    #[error("数据库角色不在受信注册表中")]
+    UnknownRole,
+    #[error("序列不在受信注册表中")]
+    UnknownSequence,
+    #[error("物理标识符超过 {MAX_IDENTIFIER_LEN} 字节")]
+    IdentifierTooLong,
+    #[error("迁移标识符模板非法或未登记")]
+    InvalidTemplate,
 }
 
 #[derive(Debug, Clone)]
@@ -57,175 +83,210 @@ pub struct SchemaRenderer {
     prefix: String,
 }
 
-fn is_snake_lower(s: &str) -> bool {
-    let mut chars = s.chars();
-    match chars.next() {
-        Some(c) if c.is_ascii_lowercase() => {}
-        _ => return false,
+fn snake_lower(s: &str) -> bool {
+    s.bytes().next().is_some_and(|b| b.is_ascii_lowercase())
+        && s.bytes()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
+}
+fn bounded(s: String) -> Result<String, SchemaError> {
+    if s.len() > MAX_IDENTIFIER_LEN {
+        Err(SchemaError::IdentifierTooLong)
+    } else {
+        Ok(s)
     }
-    s.chars()
-        .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_')
 }
 
 impl SchemaRenderer {
-    /// 校验并固定前缀；默认及生产固定为 `bcm_`。
     pub fn new(prefix: &str) -> Result<Self, SchemaError> {
         if prefix.is_empty() {
             return Err(SchemaError::Empty);
         }
-        let first = prefix.chars().next().expect("已检查非空");
-        if !first.is_ascii_lowercase() {
-            return Err(SchemaError::BadStart(prefix.to_string()));
+        if !prefix.as_bytes()[0].is_ascii_lowercase() {
+            return Err(SchemaError::BadStart);
         }
-        if !prefix
-            .chars()
-            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_')
-        {
-            return Err(SchemaError::BadChars(prefix.to_string()));
+        if !snake_lower(prefix) || !prefix.ends_with('_') {
+            return Err(SchemaError::BadChars);
         }
-        if !prefix.ends_with('_') {
-            return Err(SchemaError::BadChars(prefix.to_string()));
+        if prefix.len() > MAX_PREFIX_LEN {
+            return Err(SchemaError::TooLong);
         }
-        if prefix.chars().count() > MAX_PREFIX_LEN {
-            return Err(SchemaError::TooLong(prefix.to_string()));
+        let renderer = Self {
+            prefix: prefix.to_owned(),
+        };
+        // 全注册表两种命名均须可用，不能等运行到某张表时才发现截断。
+        for table in TABLES {
+            renderer.table(Backend::Postgres, table.schema, table.table)?;
+            renderer.table(Backend::Sqlite, table.schema, table.table)?;
         }
-        Ok(Self {
-            prefix: prefix.to_string(),
-        })
+        Ok(renderer)
     }
-
-    /// 按后端渲染物理表名；查询值一律使用 bind 参数，不经此渲染。
+    pub fn prefix(&self) -> &str {
+        &self.prefix
+    }
+    pub fn schema(&self, logical: &str) -> Result<String, SchemaError> {
+        if !LOGICAL_SCHEMAS.contains(&logical) {
+            return Err(SchemaError::UnknownSchema);
+        }
+        bounded(format!("{}{logical}", self.prefix))
+    }
     pub fn table(
         &self,
         backend: Backend,
         schema: &str,
         table: &str,
     ) -> Result<String, SchemaError> {
-        if !LOGICAL_SCHEMAS.contains(&schema) {
-            return Err(SchemaError::UnknownSchema(schema.to_string()));
+        let physical_schema = self.schema(schema)?;
+        if !snake_lower(table) {
+            return Err(SchemaError::BadTable);
         }
-        if !is_snake_lower(table) {
-            return Err(SchemaError::BadTable(table.to_string()));
+        if !TABLES
+            .iter()
+            .any(|t| t.schema == schema && t.table == table)
+        {
+            return Err(SchemaError::UnknownTable);
         }
-        let rendered = match backend {
-            Backend::Postgres => format!("{}{}.{}", self.prefix, schema, table),
-            Backend::Sqlite | Backend::Mysql8 => {
-                format!("{}{}_{}", self.prefix, schema, table)
+        match backend {
+            Backend::Postgres => {
+                bounded(table.to_owned())?;
+                Ok(format!("{physical_schema}.{table}"))
             }
-        };
-        // PostgreSQL 按 schema 与 table 分别限长，扁平形态则整体是一个标识符。
-        let longest = match backend {
-            Backend::Postgres => (self.prefix.len() + schema.len()).max(table.len()),
-            Backend::Sqlite | Backend::Mysql8 => rendered.len(),
-        };
-        if longest > MAX_IDENTIFIER_LEN {
-            return Err(SchemaError::IdentifierTooLong(rendered));
+            Backend::Sqlite | Backend::Mysql8 => bounded(format!("{physical_schema}_{table}")),
         }
-        Ok(rendered)
+    }
+    pub fn role(&self, role: &str) -> Result<String, SchemaError> {
+        if !DATABASE_ROLES.contains(&role) {
+            return Err(SchemaError::UnknownRole);
+        }
+        bounded(format!("{}{role}", self.prefix))
+    }
+    pub fn sequence(&self, schema: &str, table: &str, column: &str) -> Result<String, SchemaError> {
+        self.table(Backend::Postgres, schema, table)?;
+        if !TABLES
+            .iter()
+            .any(|t| t.schema == schema && t.table == table && t.identity_column == Some(column))
+        {
+            return Err(SchemaError::UnknownSequence);
+        }
+        let name = bounded(format!("{table}_{column}_seq"))?;
+        Ok(format!("{}.{name}", self.schema(schema)?))
+    }
+    /// SQLite 重建用替代表：只能从已注册逻辑表派生固定后缀，仍做物理限长检查。
+    pub fn rebuild_table(&self, schema: &str, table: &str) -> Result<String, SchemaError> {
+        bounded(format!(
+            "{}_rebuild",
+            self.table(Backend::Sqlite, schema, table)?
+        ))
+    }
+    /// 迁移模板只支持受信对象孔位，不接受自由 SQL 片段或请求输入。
+    pub fn migration(&self, backend: Backend, sql: &str) -> Result<String, SchemaError> {
+        let mut result = String::new();
+        let mut rest = sql;
+        while let Some(start) = rest.find("{{") {
+            result.push_str(&rest[..start]);
+            let tail = &rest[start + 2..];
+            let end = tail.find("}}").ok_or(SchemaError::InvalidTemplate)?;
+            let (kind, value) = tail[..end]
+                .split_once(':')
+                .ok_or(SchemaError::InvalidTemplate)?;
+            let parts: Vec<_> = value.split('.').collect();
+            let rendered = match (kind, parts.as_slice()) {
+                ("schema", [schema]) if backend == Backend::Postgres => self.schema(schema)?,
+                ("table", [schema, table]) => self.table(backend, schema, table)?,
+                ("rebuild", [schema, table]) if backend == Backend::Sqlite => {
+                    self.rebuild_table(schema, table)?
+                }
+                ("role", [role]) if backend == Backend::Postgres => self.role(role)?,
+                ("sequence", [schema, table, column]) if backend == Backend::Postgres => {
+                    self.sequence(schema, table, column)?
+                }
+                _ => return Err(SchemaError::InvalidTemplate),
+            };
+            result.push_str(&rendered);
+            rest = &tail[end + 2..];
+        }
+        if rest.contains("}}") {
+            return Err(SchemaError::InvalidTemplate);
+        }
+        result.push_str(rest);
+        Ok(result)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn renderer() -> SchemaRenderer {
-        SchemaRenderer::new("bcm_").expect("bcm_ 必须合法")
-    }
-
     #[test]
-    fn accepts_default_prefix() {
-        let r = renderer();
-        assert_eq!(
-            r.table(Backend::Postgres, "identity", "users")
-                .expect("应渲染成功"),
-            "bcm_identity.users"
-        );
-        assert_eq!(
-            r.table(Backend::Sqlite, "identity", "users")
-                .expect("应渲染成功"),
-            "bcm_identity_users"
-        );
-        assert_eq!(
-            r.table(Backend::Mysql8, "identity", "users")
-                .expect("应渲染成功"),
-            "bcm_identity_users"
-        );
-    }
-
-    #[test]
-    fn rejects_invalid_prefixes() {
-        assert!(matches!(SchemaRenderer::new(""), Err(SchemaError::Empty)));
-        assert!(matches!(
-            SchemaRenderer::new("Bcm_"),
-            Err(SchemaError::BadStart(_))
-        ));
-        assert!(matches!(
-            SchemaRenderer::new("bcm"),
-            Err(SchemaError::BadChars(_))
-        ));
-        assert!(matches!(
-            SchemaRenderer::new("bcm-1_"),
-            Err(SchemaError::BadChars(_))
-        ));
-        assert!(matches!(
-            SchemaRenderer::new(&format!("{}_", "a".repeat(32))),
-            Err(SchemaError::TooLong(_))
-        ));
-    }
-
-    #[test]
-    fn rejects_unknown_schema() {
-        assert_eq!(
-            renderer().table(Backend::Postgres, "not_a_schema", "users"),
-            Err(SchemaError::UnknownSchema("not_a_schema".into()))
-        );
-    }
-
-    #[test]
-    fn rejects_untrusted_table_names() {
-        let r = renderer();
-        for bad in ["Users", "users; drop table x", "1users", "users-x", ""] {
-            assert!(
-                matches!(
-                    r.table(Backend::Postgres, "identity", bad),
-                    Err(SchemaError::BadTable(_))
-                ),
-                "表名 {bad:?} 应被拒绝"
-            );
+    fn registered_objects_render_under_both_prefixes() {
+        for prefix in ["bcm_", "dev42_"] {
+            let r = SchemaRenderer::new(prefix).unwrap();
+            assert_eq!(LOGICAL_SCHEMAS.len(), 15);
+            for s in LOGICAL_SCHEMAS {
+                assert_eq!(r.schema(s).unwrap(), format!("{prefix}{s}"));
+            }
+            let mut flat = std::collections::BTreeSet::new();
+            for t in TABLES {
+                assert_eq!(
+                    r.table(Backend::Postgres, t.schema, t.table).unwrap(),
+                    format!("{prefix}{}.{}", t.schema, t.table)
+                );
+                assert!(flat.insert(r.table(Backend::Sqlite, t.schema, t.table).unwrap()));
+            }
         }
     }
-
     #[test]
-    fn rejects_over_long_identifier() {
-        let r = renderer();
-        let long = "a".repeat(60);
-        assert!(matches!(
-            r.table(Backend::Sqlite, "interaction", &long),
-            Err(SchemaError::IdentifierTooLong(_))
-        ));
-    }
-
-    /// 扁平渲染必须全局唯一：这正是 `DEC-029` 要解决的问题。
-    #[test]
-    fn flat_rendering_is_unique_across_schemas() {
-        let r = renderer();
-        let a = r
-            .table(Backend::Sqlite, "identity", "sessions")
-            .expect("应渲染成功");
-        let b = r
-            .table(Backend::Sqlite, "iam", "sessions")
-            .expect("应渲染成功");
-        assert_ne!(a, b, "同名表在不同逻辑 schema 下必须渲染为不同物理名");
-    }
-
-    #[test]
-    fn every_logical_schema_renders() {
-        let r = renderer();
-        for s in LOGICAL_SCHEMAS {
-            r.table(Backend::Postgres, s, "t")
-                .unwrap_or_else(|e| panic!("{s} 应可渲染: {e}"));
+    fn refuses_unregistered_identifiers_and_invalid_prefixes() {
+        for p in [
+            "",
+            "Bcm_",
+            "bcm",
+            "bcm-1_",
+            "1b_",
+            &format!("{}_", "a".repeat(32)),
+        ] {
+            assert!(SchemaRenderer::new(p).is_err());
         }
-        assert_eq!(LOGICAL_SCHEMAS.len(), 15, "02 第 7 节定义 15 个逻辑 schema");
+        let r = SchemaRenderer::new("bcm_").unwrap();
+        assert_eq!(
+            r.table(Backend::Sqlite, "identity", "users"),
+            Err(SchemaError::UnknownTable)
+        );
+        assert_eq!(
+            r.table(Backend::Sqlite, "community", "valid_but_unknown"),
+            Err(SchemaError::UnknownTable)
+        );
+        assert!(
+            r.table(Backend::Postgres, "community", "forums; DROP TABLE t")
+                .is_err()
+        );
+        assert!(r.schema("unregistered").is_err());
+        assert!(r.role("site_owner").is_err());
+        assert!(r.rebuild_table("community", "unregistered").is_err());
+        assert_eq!(
+            r.rebuild_table("community", "forums").unwrap(),
+            "bcm_community_forums_rebuild"
+        );
+        assert!(r.sequence("community", "forums", "other").is_err());
+    }
+    #[test]
+    fn template_replaces_only_registered_objects() {
+        let r = SchemaRenderer::new("test_").unwrap();
+        assert_eq!(
+            r.migration(Backend::Sqlite, "SELECT * FROM {{table:community.forums}}")
+                .unwrap(),
+            "SELECT * FROM test_community_forums"
+        );
+        assert_eq!(
+            r.sequence("community", "forums", "id").unwrap(),
+            "test_community.forums_id_seq"
+        );
+        for bad in [
+            "{{table:community.fake}}",
+            "{{schema:fake}}",
+            "{{table:community.forums}",
+            "{{raw:DROP}}",
+            "}}",
+        ] {
+            assert!(r.migration(Backend::Postgres, bad).is_err());
+        }
     }
 }
