@@ -158,7 +158,7 @@ manage → 全部领域
 - 只解析和校验传输输入，不直接写 SQL。
 - 写请求创建事务并调用领域服务；响应仅在提交结果明确后返回成功。
 - JavaScript 只增强体验，关键浏览、分页、登录和表单在无 JavaScript 时可用。
-- 体验模式 `worker.embedded = true` 时同时承担任务循环宿主。
+- SQLite 体验模式 `worker.embedded = true` 时同时承担任务循环宿主；PostgreSQL 必须使用独立 Worker 及其专用角色，启动校验拒绝 PostgreSQL 内嵌模式，避免 Web 凭证承担 Worker 数据权限。
 
 ### bbbcm-worker
 

@@ -1,0 +1,874 @@
+{
+  "scope": "final explicit index; no empty-index substitution",
+  "source_validation": "dev-check-3.txt (182 Rust passed, 1 real Redis ignored, 55 HTTP routes)",
+  "per_file_review": "Independent agents read their requested staged diffs; root reviewed remaining source/plan/script diffs and evidence provenance, structured values, normalization and sensitive-path scan. UTF-8, LF, final newline and git diff --cached --check passed.",
+  "files": [
+    {
+      "path": "Cargo.lock",
+      "sha256": "995b224a4e02d14aae0a6c53462136f244b3271165225375fe9aa6f9e33ab613",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "Cargo.toml",
+      "sha256": "cd16480878fa42c567b764702cba52d0055990a02d34faeec46cf6f14776f7f2",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "apps/bbbcm-cli/tests/a05_trace.rs",
+      "sha256": "94b347e6c5c37e642cec436afd8af7ce9c3f4684e80b0c89c03b6115e4a8c5ea",
+      "reviewers": [
+        "analytics_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "apps/bbbcm-cli/tests/database_cli.rs",
+      "sha256": "969998731fe5ed636472e288ca8046cbd162ba89524bfa7553bae84c21bc70dd",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "apps/bbbcm-cli/tests/engine.rs",
+      "sha256": "a78651f221a85b3bc5e398386bc802ff89ce91454b4fbb43a8db7913d46f7e96",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "apps/bbbcm-worker/Cargo.toml",
+      "sha256": "05a0e59bfa9bcaba11c7a02657ed16c8eb78d317fa0793385da1227601070f4f",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "apps/bbbcm-worker/src/main.rs",
+      "sha256": "02442aa08be794434dcb44f284ed69995d86135b71458c555a86f123a6e9f674",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "apps/bbbcm-worker/tests/platform_services.rs",
+      "sha256": "63aa21a75f3ea314dd01719855d06d30b8b556e834e0b9e23256054b211c9f51",
+      "reviewers": [
+        "adapters_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "apps/web/Cargo.toml",
+      "sha256": "20b652e79052d535b09dc0c7190c0a0f4d51dc8323b26a8b5d0e3bd443f32f31",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "apps/web/src/app_state.rs",
+      "sha256": "d1a30bc002c5ec1c0346a186b3fdc3b8b8ff29b14cfb281511b504d5d5620086",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "apps/web/src/error.rs",
+      "sha256": "77e89d7a322786dc4164a301147f2230a9690993eaefdab3de4c625b92d6df24",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "apps/web/src/jobs.rs",
+      "sha256": "ffa70d351181ded95966b277947594bca8eb847bd061743fd0f9ba98cb9c4330",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "apps/web/src/main.rs",
+      "sha256": "37de5c0e83d16bb1cfe54facc5a3d2bab442027526ec74d90d072fb8d9712d46",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "apps/web/src/middleware/mod.rs",
+      "sha256": "4ddae4d099dd10eeb2bd8bb444091ba2b553d4337ac1e315d17399c77154cd9f",
+      "reviewers": [
+        "adapters_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "apps/web/src/router.rs",
+      "sha256": "835d9f20483bc3c043e9b28430140a0eed005a6e5344122f513e3c99d5620e9d",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "apps/web/src/status.rs",
+      "sha256": "fbe965763c4e985235a02b5068453994136c13d945832c5c35a97c2a51569ffe",
+      "reviewers": [
+        "adapters_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "apps/web/templates/status/index.html",
+      "sha256": "38e0e0985d97af04a7dd88db68ae2e69810b774d119870da938f6c18f3024606",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "apps/worker_services.rs",
+      "sha256": "32e9861a659d5ddf8aa9100c6c8eef4873731061e3c20ffe37ea6bdb23e22e76",
+      "reviewers": [
+        "adapters_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "config/default.toml",
+      "sha256": "791e2a1433f0875966e5b638b31eed56b856a0fed2a0ad5da4250584da95c77e",
+      "reviewers": [
+        "adapters_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "config/development.toml.example",
+      "sha256": "bcc925e40c865e0ac1efad58b8108218d2654a9d1f2669154ab3bf17c32c87c4",
+      "reviewers": [
+        "adapters_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "config/production.toml.example",
+      "sha256": "82c5df9bb766177bfcf07bb71b6607295ed037912956ca3ee82e22e913950e99",
+      "reviewers": [
+        "adapters_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "config/staging.toml.example",
+      "sha256": "598468da2e57b9a6fc4f8dd58187e0f78edf1bdb4c5ce4fcfb9f50a04b3d239f",
+      "reviewers": [
+        "adapters_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "config/test.toml.example",
+      "sha256": "68ff265d00b49085381ff544a50d6f18943c3b92b0cd2f9e0bf6fd8e48facc96",
+      "reviewers": [
+        "adapters_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform-audit/src/lib.rs",
+      "sha256": "cd9b54d4bd3a11192a248b07fd420aefc042212e95afd542a1385a475dd85310",
+      "reviewers": [
+        "adapters_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform-db/src/acl.rs",
+      "sha256": "2524c0c8696b4f3ffff0a8d767474f9743a08f11ad5c3ecb3ff8507cd7de7960",
+      "reviewers": [
+        "adapters_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform-db/src/analytics_repo.rs",
+      "sha256": "bb185982f1088b7bf2e08e7533b391a22c02184427b90bc382a1db91406b640d",
+      "reviewers": [
+        "redis_a05"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform-db/src/analytics_repo/tests.rs",
+      "sha256": "e337e9a5119b4a01e86ed6c85871c69561805beba0cbc167cbb7d15fe05a9b4e",
+      "reviewers": [
+        "redis_a05"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform-db/src/command.rs",
+      "sha256": "52ecd3d3e6de4b33a82ab568f93c0d4bfe3c456cfd0935d9f8ce0ed8edfedfdd",
+      "reviewers": [
+        "adapters_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform-db/src/command/tests.rs",
+      "sha256": "16ea79ffaf6907bb2dc8695f9ad1fb415189f19326214eec2593a5fb69b5f2bb",
+      "reviewers": [
+        "adapters_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform-db/src/flags_repo.rs",
+      "sha256": "552423c7c1fe6960e576f857ffef0b90e0da2e035190af95422339e032ca539f",
+      "reviewers": [
+        "adapters_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform-db/src/flags_repo/tests.rs",
+      "sha256": "94a2d2a3186c39caa61228869c450260917f579b505e907c3afc312dfe56ffc4",
+      "reviewers": [
+        "adapters_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform-db/src/lib.rs",
+      "sha256": "e4897883c6b49c1b5657cb6acdb589e6268fccdcafefa9d5cbffb9160a643a2f",
+      "reviewers": [
+        "adapters_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform-db/src/mail_repo.rs",
+      "sha256": "7b465febf3890820e80d4a52d26a6b9554c57018e913f90653ba06fb6658b6ec",
+      "reviewers": [
+        "redis_a05"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform-db/src/mail_repo/tests.rs",
+      "sha256": "87fef97d50e0d06a1554ee592b029a0f2857e048c1dbb7f2bb151253f8540847",
+      "reviewers": [
+        "redis_a05"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform-db/src/migrations/tests.rs",
+      "sha256": "7864b63b63ac087da9f153f6696e93d5d366e80737de2f8946215376db5ae327",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform-db/src/outbox_repo.rs",
+      "sha256": "fa1d419c6a37efe97d60891cdf843121809da16b2cb49eae79927f128a2b337e",
+      "reviewers": [
+        "analytics_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform-db/src/outbox_repo/tests.rs",
+      "sha256": "6857f6992ca2e10db87906ddde0a8efeb4fa6ea2522dbce04c112d7855770427",
+      "reviewers": [
+        "analytics_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform-db/src/pool_observation.rs",
+      "sha256": "8ad1f80db2e46a3cca9499a867c0f1d9b9c03de49d8580e70b6fc397c31a2404",
+      "reviewers": [
+        "analytics_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform-db/src/status_repo.rs",
+      "sha256": "5535f8766be225f2de4dd7103a17116941147bfca4eb82f95a5fad0342fc5ed5",
+      "reviewers": [
+        "analytics_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform-db/src/status_repo/tests.rs",
+      "sha256": "e72aab6212f25f864e2b9caa61400188f6af4c70988e217c2ffff74e73dd9b48",
+      "reviewers": [
+        "analytics_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform-db/src/transaction.rs",
+      "sha256": "1480c14d814b32d617c5d8a693496588652a6fc9fcafb80b3ff7cf6566e1e113",
+      "reviewers": [
+        "adapters_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform-db/src/transaction/tests.rs",
+      "sha256": "e740074b0b337602b15f690f4b5ede1699ea1fad4f8620173710d4b308951074",
+      "reviewers": [
+        "adapters_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform-db/tests/pool_observations.rs",
+      "sha256": "d9b1937ee44ac8747af93b2052861eb267122b200aec8cb320d337cb12c3033c",
+      "reviewers": [
+        "analytics_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform-outbox/Cargo.toml",
+      "sha256": "ea29aaf6b4ddd83fc0c530f119e36a8109b2612f9ebf2369822cf87e03639f54",
+      "reviewers": [
+        "analytics_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform-outbox/src/lib.rs",
+      "sha256": "18cd34542b18d8f4139b00d80eb180e21a9128f68747c6ef28aac2e5389b5405",
+      "reviewers": [
+        "analytics_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform-outbox/src/observation_tests.rs",
+      "sha256": "980631c23a319e58a336d25b1e4aa6bed79961ac5c6ef42be9d4ba27f23e8f21",
+      "reviewers": [
+        "analytics_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform/Cargo.toml",
+      "sha256": "beda264b9a577b38764929e93e42f58e4a6c29d6e21fbcb9e6f7ea7581957727",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform/src/analytics.rs",
+      "sha256": "7bd33b986e6449b5da68b6b1e0b9e1aa114d19a760efa0cfd0a937cde81107cd",
+      "reviewers": [
+        "redis_a05"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform/src/cache/keys.rs",
+      "sha256": "5b34d63b93e353b0a4f2d9b47b9678ecc2a23b14059c69d35973ae5bd0143aa7",
+      "reviewers": [
+        "analytics_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform/src/cache/memory.rs",
+      "sha256": "6647b6b53a019fc9723dfcb99323bb15b4fa0806b922ae434f5b5507451caa6e",
+      "reviewers": [
+        "analytics_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform/src/cache/mod.rs",
+      "sha256": "c4de9305f2c2d912e4289584882744dc46acfcd03aa7f2465f5f0b3e4958212f",
+      "reviewers": [
+        "analytics_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform/src/cache/policy.rs",
+      "sha256": "3712dbf0481906c1d1186b1d74836c9acae2d387e7ba5e377931a1dfbe286d00",
+      "reviewers": [
+        "analytics_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform/src/cache/ratelimit.rs",
+      "sha256": "2046644ad824f99d37b9202fc2cc383223abcec18e1017381430d3e6679579e6",
+      "reviewers": [
+        "analytics_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform/src/cache/redis.rs",
+      "sha256": "fa9d13949dc83ff0f09731106229de2eed1ab04c1c5bdf7eaa8febf3dcba1d7d",
+      "reviewers": [
+        "analytics_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform/src/cache/tests.rs",
+      "sha256": "1b2b52c809add20f11d7db4121635158e9787870e2f7378a95c91f4d0361b432",
+      "reviewers": [
+        "analytics_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform/src/commit_signal.rs",
+      "sha256": "5b3f5a2af30a89f708e517d4a1c691a82d130fb99f6812c30c5773a624d7fbfe",
+      "reviewers": [
+        "analytics_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform/src/config.rs",
+      "sha256": "f95764c1399cf74eca72fde853226e83a0cf831315a4b0142191d0f00e430516",
+      "reviewers": [
+        "adapters_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform/src/config/tests.rs",
+      "sha256": "91eecd32d3aeb46b57558d99f38dd6e0f5dd555528267f8405a8801f09d5100c",
+      "reviewers": [
+        "adapters_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform/src/db.rs",
+      "sha256": "ccb7f12ac2b50362254bdc9e9b77d46c40ce35c5bb3798099862d8509c4a970f",
+      "reviewers": [
+        "adapters_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform/src/error.rs",
+      "sha256": "579bd341cece27f95bd20e0f64d93d6e415bc0fbc762855e0118150da31d513c",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform/src/identifiers.rs",
+      "sha256": "a4e5cf8f90a04f8adf93f67e9951514ebf13aff4d9e55bf2cfff67c7149dfaae",
+      "reviewers": [
+        "adapters_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform/src/integrations/local.rs",
+      "sha256": "11888c00b218b80a7c636578044c4bd6c1e1dda94fda7dadb1089454a5d8dd02",
+      "reviewers": [
+        "redis_a05"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform/src/integrations/local/tests.rs",
+      "sha256": "bd31291a05961e02fbc5d9edd7523713ce8e51479bf34aa7d8a77bdde6dbb73c",
+      "reviewers": [
+        "redis_a05"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform/src/integrations/mod.rs",
+      "sha256": "a6f236a5ac7c448b399f73d812882ac4ec2d1579f5eed193260d275613fa8a90",
+      "reviewers": [
+        "redis_a05"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform/src/lib.rs",
+      "sha256": "9721ea3b300105368e71ce392e528858a862e9fc8d48a639efbecb7eb987237a",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform/src/mail/local.rs",
+      "sha256": "342089aca739537a19bd5200f0d7042c92a96ef687714b768c8f9640b09745d5",
+      "reviewers": [
+        "redis_a05"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform/src/mail/mod.rs",
+      "sha256": "2ce13c5a6773913c2f8c6d031db83de50bf9c919cdf23f5454e5cea280620b1f",
+      "reviewers": [
+        "redis_a05"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform/src/observability.rs",
+      "sha256": "f1914afa179546efba0fa7940f170e507292d9bf14269f0a7f653a271471aaad",
+      "reviewers": [
+        "adapters_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform/src/observability/grouped.rs",
+      "sha256": "1d1a5ba969957b859e732ef90dc256d8cb5b2b74709d4a70509923be72d9a10a",
+      "reviewers": [
+        "adapters_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform/src/outbox.rs",
+      "sha256": "8e79a13d5b25bfefd6004c7aec46a40f442f0a74ecc6cf868e753b6a32537ea7",
+      "reviewers": [
+        "analytics_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform/src/status.rs",
+      "sha256": "7b0e35a9e0bd4ed5fffeace5d6bf0a00a71ddddc97bcf77e4dc285ef2f891ec6",
+      "reviewers": [
+        "analytics_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "crates/platform/tests/redis_contract.rs",
+      "sha256": "30bf3b3048af66260b8d1b955ea9fd0c91ada272ff51e408d57ae1cdf5910e9f",
+      "reviewers": [
+        "analytics_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "db/migrations/postgres/0004_status.sql",
+      "sha256": "c9508e532fe5777bf7aff6a2bf8dbc215d24027d5c5ee8f130c5f15fad88e1d2",
+      "reviewers": [
+        "adapters_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "db/migrations/postgres/0005_analytics.sql",
+      "sha256": "551d1ee2252c455726ab9a81428bb622edd583a1b665c8e8b6d5e2d8fffcda30",
+      "reviewers": [
+        "redis_a05"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "db/migrations/postgres/0006_adapters.sql",
+      "sha256": "8ba61afcc42f542a45bca0c7fe18073977ec828129c5daeee34c5d25f6723c45",
+      "reviewers": [
+        "redis_a05"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "db/migrations/sqlite/0004_status.sql",
+      "sha256": "e5e605f04a129b6865a9a087f19dbe6583b50ecd188ac7be1759af262a4133d1",
+      "reviewers": [
+        "adapters_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "db/migrations/sqlite/0005_analytics.sql",
+      "sha256": "d747f8793e5bcb000c5c0c7a97aaa19633f9273593f1cc507f4b1c3cc5df04bc",
+      "reviewers": [
+        "redis_a05"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "db/migrations/sqlite/0006_adapters.sql",
+      "sha256": "b300db5875e8463c548dd4f56263120d05ceef576969c0d854212676b393ffa0",
+      "reviewers": [
+        "redis_a05"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "docs/development/adapters.md",
+      "sha256": "fdeb178187f3bb9d89f5bdf628da4f7ad8621e9446a8a7d9f3557fa933ab529a",
+      "reviewers": [
+        "redis_a05"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "docs/development/analytics.md",
+      "sha256": "289e5aa0a3456e002952339189546f80e33119b4f77969db9edde5befd440acf",
+      "reviewers": [
+        "redis_a05"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "docs/development/observability.md",
+      "sha256": "1123fde8dff81941b3d0c096c03b0720b2e2e0d3b531b4a679926e007a1a3fc5",
+      "reviewers": [
+        "analytics_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "docs/development/redis.md",
+      "sha256": "ec074e8fbcfe6c01f93b8b284be0c2b79372464abc57b15e9f30d3fe89813c0b",
+      "reviewers": [
+        "analytics_a06"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "docs/evidence/mvp/platform-services/dev-20260905/capacity.txt",
+      "sha256": "aefbf4ec234567ca635c320494e94c5ed7ec6f1df5da983b591275d7e1b00887",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "docs/evidence/mvp/platform-services/dev-20260905/check-3.txt",
+      "sha256": "663857e6314bdd2b03fe52fd642a001fa2e5de50c04e72387814a1cc7b834f36",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "docs/evidence/mvp/platform-services/dev-20260905/check-4.txt",
+      "sha256": "b22f85eaf44d66e85c42e1a402b76005a6f52dcb2c1745d75e7e745ba72c6453",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "docs/evidence/mvp/platform-services/dev-20260905/check-5.txt",
+      "sha256": "20f101ee08872665a7de976e03d8a383aa622c97e8e6c3228942e39f826f446f",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "docs/evidence/mvp/platform-services/dev-20260905/check-6.txt",
+      "sha256": "966c4d13f6067cb9f84626ecb2c0ef7f829132c3e6103bc4f26e95f8da0c40b0",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "docs/evidence/mvp/platform-services/dev-20260905/decision-check.txt",
+      "sha256": "ca5a1ac2bc9a00cf643727601f10907a6603d7355a167cbdcc490c52d608d9bf",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "docs/evidence/mvp/platform-services/dev-20260905/dev-check-1.txt",
+      "sha256": "beb7b80309eef5e50ebbecaaf8d7585d0eec1bcae59bd379481868242c9afa41",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "docs/evidence/mvp/platform-services/dev-20260905/dev-check-2.txt",
+      "sha256": "bce80662f416169b1dadc2a9e515d116b5467e7aee45f4bfc2da80c036c1262c",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "docs/evidence/mvp/platform-services/dev-20260905/dev-check-3.txt",
+      "sha256": "85c8aca242d31504d3234b32e36c3d11fd432f69b68561473a3e80d44b5060ec",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "docs/evidence/mvp/platform-services/dev-20260905/freeze-final.json",
+      "sha256": "9cfbd0a960ff5f7fd76c9976eaaa6a511e2f110d0b1e7cff9d374bf842b57e86",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "docs/evidence/mvp/platform-services/dev-20260905/independent-review.md",
+      "sha256": "51df5337c25b25e40f70cba1f06be4486cc5f070d6c55d0f359bd0ad0e063a7a",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "docs/evidence/mvp/platform-services/dev-20260905/local-output-inspection.json",
+      "sha256": "178d45ea6d471910567f8d319e9883ab66f677ff50083573ef7e9ad491f70bc3",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "docs/evidence/mvp/platform-services/dev-20260905/sql-lint-2.txt",
+      "sha256": "d55025ddc8746214929340c59defad702f9703d0ec185db88756767e2d83daf5",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "docs/evidence/mvp/platform-services/dev-20260905/sql-lint-3.txt",
+      "sha256": "6202fc2bd311e380c0b05a5163481f6bf854ba6a68220bbd68f5f056800e3538",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "docs/evidence/mvp/platform-services/dev-20260905/status-check-2.txt",
+      "sha256": "71cc638e3e4e9d3b533d4052bd784498d070b66305f5668d8a8fb5b0e4353505",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "docs/evidence/mvp/platform-services/dev-20260905/summary.md",
+      "sha256": "751f10955074eeb27b0bd7c509b092f2ec3fed9a56bdeb301d901eb39550d5a6",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "docs/evidence/mvp/platform-services/dev-20260905/validation.json",
+      "sha256": "5e607699935c009e31150afa6dda03c5685ed8109df0732a7e73b68f11198126",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "docs/evidence/mvp/platform-services/dev-20260905/web-check-2.txt",
+      "sha256": "81da29cb80f73cdddfb2ed74c609bfc6342fe13f085cbe9ce77d85f2ff67fc41",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "docs/evidence/mvp/platform-services/dev-20260905/web-check.txt",
+      "sha256": "bfa7a3e2d5d49c4b4917c262ebf1b7ad2239d31d67f1e5967b63cc88a7552365",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "plan/02-technical-architecture.md",
+      "sha256": "683796761fafe4bb801adb61a1c5f4b72a4f5d7a36b032c87e38b7caf564c07a",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "plan/04-execution-roadmap.md",
+      "sha256": "715345d77840884a5b0ca19570b4d1896bf66c51c8c0f1bcde94f1655b62e6c8",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "plan/20-mvp.md",
+      "sha256": "adb7f6941a3090984548fc6f95c83e4f0cdfac0c7b04631f0d4ef8ddd3c90bf9",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "plan/99-traceability.md",
+      "sha256": "19a741a8be353ff2fd10810b6fc7d69b816b8a95e42809d3ef67cb888c289ed9",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "scripts/asset_freeze.py",
+      "sha256": "2a4f5fffe8be7bb595d80e0a061406f36c01bbed69871e979bb7310912ac3695",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    },
+    {
+      "path": "scripts/smoke-routes.txt",
+      "sha256": "6fda914d672c93e62bd39c90faba4f835de6c66e381c94d5a8094f0bb7014323",
+      "reviewers": [
+        "root"
+      ],
+      "result": "pass"
+    }
+  ],
+  "self_reference": "This manifest is reviewed separately and intentionally has no self hash.",
+  "exclusions": [
+    "AGENTS.md",
+    "g.md",
+    "config/local.toml",
+    "data/",
+    "Secrets",
+    "browser profiles",
+    "raw screenshots"
+  ],
+  "repository_actions": "new local commit only; no amend, push or deploy"
+}

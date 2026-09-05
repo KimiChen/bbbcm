@@ -20,14 +20,14 @@ async fn flags_snapshot_migration_registry_restart_missing_and_corruption() {
                 .await
                 .unwrap()
                 .applied,
-            [1, 2, 3]
+            [1, 2, 3, 4, 5, 6]
         );
         assert_eq!(
             crate::migrations::migrate(&cfg, &migrations)
                 .await
                 .unwrap()
                 .skipped,
-            [1, 2, 3]
+            [1, 2, 3, 4, 5, 6]
         );
         let r = SchemaRenderer::new(prefix).unwrap();
         let pool = Pool::connect(&cfg).await.unwrap();
@@ -43,7 +43,7 @@ async fn flags_snapshot_migration_registry_restart_missing_and_corruption() {
         let table = r
             .table(pool.backend(), "platform", "feature_flags")
             .unwrap();
-        let Pool::Sqlite(sqlite) = &pool else {
+        let Pool::Sqlite(sqlite, _) = &pool else {
             unreachable!()
         };
         let keys: Vec<String> =
@@ -76,7 +76,7 @@ async fn flags_snapshot_migration_registry_restart_missing_and_corruption() {
             reader.load().await.unwrap().get(Flag::PublicRead).version,
             Some(2)
         );
-        let Pool::Sqlite(sqlite) = &pool else {
+        let Pool::Sqlite(sqlite, _) = &pool else {
             unreachable!()
         };
         sqlx::query(&format!("DELETE FROM {table} WHERE flag_key = ?"))

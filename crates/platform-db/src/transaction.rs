@@ -5,8 +5,13 @@ use crate::Pool;
 use chrono::{DateTime, Utc};
 use platform::db::{self, Backend};
 use platform::identifiers::SchemaRenderer;
+use platform::observability::{
+    AcquireOutcome, DatabaseBackend, DatabasePurpose, ErrorClass, Metric, Metrics, SeriesKey,
+    TransactionOutcome, metrics,
+};
 use platform::transaction::{DbErrorClass, LockTarget, classify_database_code};
 use sqlx::{Row, TransactionManager};
+use std::sync::Arc;
 
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum TransactionError {
@@ -152,36 +157,152 @@ pub struct DbTransaction {
     inner: OwnedTransaction,
     locks: LockProgress,
     finished: bool,
+    checkout_at: std::time::Instant,
+    transaction_at: std::time::Instant,
+    observed_backend: DatabaseBackend,
+    observed_purpose: DatabasePurpose,
+    outcome: TransactionOutcome,
+    error_class: ErrorClass,
+    metrics: Arc<Metrics>,
+}
+
+struct AcquireObservation {
+    metrics: Arc<Metrics>,
+    backend: DatabaseBackend,
+    purpose: DatabasePurpose,
+    started: std::time::Instant,
+    finished: bool,
+}
+impl AcquireObservation {
+    fn finish(&mut self, outcome: AcquireOutcome, error_class: ErrorClass) {
+        self.metrics.grouped.duration(
+            SeriesKey::DbPoolAcquireSeconds {
+                backend: self.backend,
+                purpose: self.purpose,
+                outcome,
+                error_class,
+            },
+            self.started.elapsed(),
+        );
+        if outcome == AcquireOutcome::Failed {
+            self.metrics.increment(Metric::DatabaseAcquireFailed);
+            self.metrics
+                .grouped
+                .increment(SeriesKey::DbPoolAcquireFailuresTotal {
+                    backend: self.backend,
+                    purpose: self.purpose,
+                    error_class,
+                });
+        }
+        self.finished = true;
+    }
+}
+impl Drop for AcquireObservation {
+    fn drop(&mut self) {
+        if !self.finished {
+            self.finish(AcquireOutcome::Cancelled, ErrorClass::NotObserved);
+        }
+    }
+}
+fn observed_error(error: &TransactionError) -> ErrorClass {
+    match error {
+        TransactionError::Database(class) => (*class).into(),
+        TransactionError::CommitUnknown => ErrorClass::Connection,
+        _ => ErrorClass::Other,
+    }
 }
 impl DbTransaction {
     pub async fn begin(pool: &Pool) -> Result<Self, TransactionError> {
+        Self::begin_mode(pool, false).await
+    }
+
+    /// Read-side snapshots do not take SQLite's writer reservation.
+    pub async fn begin_read(pool: &Pool) -> Result<Self, TransactionError> {
+        Self::begin_mode(pool, true).await
+    }
+
+    async fn begin_mode(pool: &Pool, read_only: bool) -> Result<Self, TransactionError> {
+        Self::begin_observed(pool, read_only, metrics()).await
+    }
+    async fn begin_observed(
+        pool: &Pool,
+        read_only: bool,
+        observations: Arc<Metrics>,
+    ) -> Result<Self, TransactionError> {
         let backend = pool.backend();
+        let mut acquiring = AcquireObservation {
+            metrics: observations.clone(),
+            backend: backend.into(),
+            purpose: pool.purpose(),
+            started: std::time::Instant::now(),
+            finished: false,
+        };
         let mut result = Self {
             inner: match pool {
-                Pool::Postgres(pool) => OwnedTransaction::Postgres(
-                    pool.acquire()
-                        .await
-                        .map_err(|e| classify_error(backend, &e))?,
-                ),
-                Pool::Sqlite(pool) => OwnedTransaction::Sqlite(
-                    pool.acquire()
-                        .await
-                        .map_err(|e| classify_error(backend, &e))?,
-                ),
+                Pool::Postgres(pool, _) => {
+                    OwnedTransaction::Postgres(pool.acquire().await.map_err(|e| {
+                        let error = classify_error(backend, &e);
+                        acquiring.finish(AcquireOutcome::Failed, observed_error(&error));
+                        error
+                    })?)
+                }
+                Pool::Sqlite(pool, _) => {
+                    OwnedTransaction::Sqlite(pool.acquire().await.map_err(|e| {
+                        let error = classify_error(backend, &e);
+                        acquiring.finish(AcquireOutcome::Failed, observed_error(&error));
+                        error
+                    })?)
+                }
             },
             locks: LockProgress::default(),
             finished: false,
+            checkout_at: std::time::Instant::now(),
+            transaction_at: std::time::Instant::now(),
+            observed_backend: backend.into(),
+            observed_purpose: pool.purpose(),
+            outcome: TransactionOutcome::Cancelled,
+            error_class: ErrorClass::NotObserved,
+            metrics: observations,
         };
+        acquiring.finish(AcquireOutcome::Acquired, ErrorClass::None);
+        result
+            .metrics
+            .duration(Metric::DatabaseAcquireMs, acquiring.started.elapsed());
+        result.metrics.increment(Metric::DatabaseAttempts);
+        result
+            .metrics
+            .grouped
+            .increment(SeriesKey::DbTransactionAttemptsTotal {
+                backend: result.observed_backend,
+                purpose: result.observed_purpose,
+            });
         // guard 先于 BEGIN future 存在；开始阶段被取消也不会把半打开连接归池。
-        let statement = Some(std::borrow::Cow::Borrowed(db::begin_write_sql(backend)));
+        let statement = Some(std::borrow::Cow::Borrowed(if read_only {
+            db::begin_read_sql(backend)
+        } else {
+            db::begin_write_sql(backend)
+        }));
         match &mut result.inner {
             OwnedTransaction::Postgres(conn) => PgManager::begin(conn, statement).await,
             OwnedTransaction::Sqlite(conn) => SqliteManager::begin(conn, statement).await,
         }
-        .map_err(|e| classify_error(backend, &e))?;
+        .map_err(|e| {
+            let error = classify_error(backend, &e);
+            result.outcome = TransactionOutcome::BeginFailed;
+            result.error_class = observed_error(&error);
+            error
+        })?;
         if let Some(setup) = db::transaction_setup_sql(backend) {
-            result.connection().execute_raw(setup, &[]).await?;
+            result
+                .connection()
+                .execute_raw(setup, &[])
+                .await
+                .inspect_err(|error| {
+                    result.outcome = TransactionOutcome::BeginFailed;
+                    result.error_class = observed_error(error);
+                })?;
         }
+        result.outcome = TransactionOutcome::CancelledOrAbandoned;
         Ok(result)
     }
 
@@ -196,11 +317,28 @@ impl DbTransaction {
     }
 
     pub async fn rollback(mut self) -> Result<(), TransactionError> {
+        self.rollback_inner().await
+    }
+    pub(crate) async fn rollback_after(
+        mut self,
+        cause: &TransactionError,
+    ) -> Result<(), TransactionError> {
+        self.error_class = observed_error(cause);
+        self.rollback_inner().await
+    }
+    async fn rollback_inner(&mut self) -> Result<(), TransactionError> {
         let backend = self.connection().backend();
-        self.finish_driver(false)
-            .await
-            .map_err(|e| classify_error(backend, &e))?;
+        self.finish_driver(false).await.map_err(|e| {
+            let error = classify_error(backend, &e);
+            self.outcome = TransactionOutcome::RollbackFailed;
+            self.error_class = observed_error(&error);
+            error
+        })?;
         self.finished = true;
+        self.outcome = TransactionOutcome::RolledBack;
+        if self.error_class == ErrorClass::NotObserved {
+            self.error_class = ErrorClass::None;
+        }
         Ok(())
     }
 
@@ -226,8 +364,11 @@ impl DbTransaction {
     /// I/O 等提交错误不能推断服务器结果；任何失败都由 Drop 丢弃原连接。
     pub async fn commit(mut self) -> Result<(), TransactionError> {
         let backend = self.connection().backend();
+        // A cancelled COMMIT future cannot be classified as a rollback.
+        self.outcome = TransactionOutcome::CommitUnknown;
         self.finish_driver(true).await.map_err(|error| {
             let classified = classify_error(backend, &error);
+            self.error_class = observed_error(&classified);
             if backend == Backend::Postgres
                 && matches!(
                     classified,
@@ -236,12 +377,15 @@ impl DbTransaction {
                     )
                 )
             {
+                self.outcome = TransactionOutcome::CommitRejected;
                 classified
             } else {
                 TransactionError::CommitUnknown
             }
         })?;
         self.finished = true;
+        self.outcome = TransactionOutcome::Committed;
+        self.error_class = ErrorClass::None;
         Ok(())
     }
 
@@ -251,6 +395,8 @@ impl DbTransaction {
         mut self,
         persisted: bool,
     ) -> Result<(), TransactionError> {
+        self.outcome = TransactionOutcome::CommitUnknown;
+        self.error_class = ErrorClass::Connection;
         self.finish_driver(persisted)
             .await
             .map_err(|_| TransactionError::CommitUnknown)?;
@@ -260,6 +406,26 @@ impl DbTransaction {
 }
 impl Drop for DbTransaction {
     fn drop(&mut self) {
+        self.metrics
+            .duration(Metric::DatabaseHoldMs, self.checkout_at.elapsed());
+        self.metrics
+            .duration(Metric::DatabaseTransactionMs, self.transaction_at.elapsed());
+        self.metrics.grouped.duration(
+            SeriesKey::DbConnectionHoldSeconds {
+                backend: self.observed_backend,
+                purpose: self.observed_purpose,
+            },
+            self.checkout_at.elapsed(),
+        );
+        self.metrics.grouped.duration(
+            SeriesKey::DbTransactionSeconds {
+                backend: self.observed_backend,
+                purpose: self.observed_purpose,
+                outcome: self.outcome,
+                error_class: self.error_class,
+            },
+            self.transaction_at.elapsed(),
+        );
         if self.finished {
             return;
         }

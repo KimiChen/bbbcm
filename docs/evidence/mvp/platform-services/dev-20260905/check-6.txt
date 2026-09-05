@@ -1,0 +1,120 @@
+   Compiling platform v0.1.0 (<workspace>/crates/platform)
+   Compiling media v0.1.0 (<workspace>/crates/media)
+   Compiling support v0.1.0 (<workspace>/crates/support)
+   Compiling moderation v0.1.0 (<workspace>/crates/moderation)
+   Compiling platform-audit v0.1.0 (<workspace>/crates/platform-audit)
+   Compiling trust v0.1.0 (<workspace>/crates/trust)
+   Compiling interaction v0.1.0 (<workspace>/crates/interaction)
+   Compiling identity v0.1.0 (<workspace>/crates/identity)
+   Compiling content v0.1.0 (<workspace>/crates/content)
+   Compiling privacy v0.1.0 (<workspace>/crates/privacy)
+   Compiling platform-outbox v0.1.0 (<workspace>/crates/platform-outbox)
+   Compiling platform-db v0.1.0 (<workspace>/crates/platform-db)
+   Compiling bbbcm-web v0.1.0 (<workspace>/apps/web)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.17s
+     Running unittests src/main.rs (target/debug/deps/bbbcm_web-b4f38b049ae6febe)
+
+running 18 tests
+test error::tests::internal_response_body_is_generic ... ok
+test error::tests::maps_status_codes ... ok
+test middleware::tests::log_and_response_keep_generated_correlation_without_sensitive_input ... ok
+test router::tests::authentication_fixtures_have_no_submission_endpoint ... ok
+test assets::tests::symlinks_at_root_manifest_directory_and_file_are_rejected ... ok
+test router::tests::fixture_assets_are_allowlisted_and_local_only ... ok
+test router::tests::page_frames_and_topic_text_are_html_escaped ... ok
+test assets::tests::runtime_brand_contract_is_restricted_versioned_and_has_priority ... ok
+test router::tests::production_like_environments_never_mount_fixtures ... ok
+test router::tests::unknown_pages_and_invalid_themes_fail_closed ... ok
+test assets::tests::missing_helper_context_and_unknown_template_assets_are_errors ... ok
+test assets::tests::fingerprint_get_head_and_failure_cache_contract ... ok
+test status::tests::announcement_content_is_escaped_and_uses_frozen_local_assets ... ok
+test status::tests::status_empty_fault_theme_and_health_are_real_states ... ok
+test assets::tests::only_never_built_default_local_dist_can_use_source_mode ... ok
+test assets::tests::manifest_load_checks_hashes_names_mime_and_duplicate_entries ... ok
+test router::tests::every_fixture_is_html_and_deterministic_in_local_environments ... ok
+test assets::tests::ssr_uses_real_manifest_helper_and_production_isolation_is_preserved ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s
+
+     Running unittests src/lib.rs (target/debug/deps/platform_db-9c7fa6457cda5776)
+
+running 61 tests
+test analytics_repo::tests::utc_windows_and_typed_facts_reject_sensitive_or_invalid_inputs ... ok
+test acl::tests::all_initial_objects_have_explicit_acl_and_future_defaults_are_empty ... ok
+test command::tests::business_failure_and_invalid_response_roll_back_reserved_key ... ok
+test command::tests::command_applies_complete_lock_plan_and_rejects_stale_version_atomically ... ok
+test analytics_repo::tests::sink_uses_durable_processor_and_disabled_is_an_error ... ok
+test analytics_repo::tests::rolled_back_source_and_forged_envelope_cannot_be_projected ... ok
+test connection::tests::postgres_ipv6_and_whitelisted_parameters_are_applied ... ok
+test connection::tests::postgres_url_constructs_explicit_options_without_pgpass ... ok
+test connection::tests::raw_driver_entry_rejects_unknown_and_override_parameters_without_secrets ... ok
+test connection::tests::sqlite_driver_entry_refuses_nonpersistent_uri_paths ... ok
+test analytics_repo::tests::failure_after_receipt_insert_rolls_back_and_retry_applies_once ... ok
+test flags_repo::tests::postgres_flag_migration_snapshot_matches_registry_and_is_read_only ... ok
+test analytics_repo::tests::interrupted_projection_and_rebuild_rollback_do_not_leave_receipts_or_partial_counts ... ok
+test command::tests::retry_success_commits_only_last_attempt_and_expiry_never_reexecutes ... ok
+test flags_repo::tests::flags_snapshot_migration_registry_restart_missing_and_corruption ... FAILED
+test mail_repo::tests::complaints_soft_bounces_and_rollback_never_loosen_suppression ... ok
+test command::tests::same_payload_replays_original_result_different_payload_conflicts ... ok
+test mail_repo::tests::hard_bounces_are_deduplicated_persistent_and_stop_retry_with_outbox_alerts ... ok
+test command::tests::unknown_commit_simulation_requires_original_context_and_never_replays ... ok
+test migrations::tests::alignment_rejects_empty_active_tracks_and_accepts_only_mysql_placeholder ... ok
+test migrations::tests::alignment_rejects_duplicate_gap_zero_and_invalid_name ... ok
+test migrations::tests::actual_parent_rebuild_preserves_rows_and_restrict_relationship ... ok
+test analytics_repo::tests::committed_source_dedup_exclusions_late_arrival_and_restart ... ok
+test migrations::tests::changed_applied_migration_and_metadata_drift_are_refused ... ok
+test migrations::tests::invalid_registered_identifier_fails_before_database_creation ... ok
+test migrations::tests::failed_identical_content_can_retry_after_external_precondition_recovers ... ok
+test migrations::tests::hidden_generated_metadata_column_is_rejected ... ok
+test migrations::tests::failed_migration_rolls_back_changes_and_records_safe_failure ... ok
+test migrations::tests::metadata_constraints_reject_null_number_bad_checksum_and_unknown_state ... ok
+test migrations::tests::nested_block_comments_cannot_hide_sqlite_transaction_control ... ok
+test migrations::tests::postgres_escape_literals_and_transaction_aliases_are_rejected ... ok
+test migrations::tests::migration_content_checks_encoding_transactions_and_checksum ... ok
+test migrations::tests::rebuild_statement_failure_restores_same_connection ... ok
+test migrations::tests::rebuild_foreign_key_violation_rolls_back_and_restores_same_connection ... ok
+test migrations::tests::migration_source_cannot_rewrite_applied_history ... ok
+test migrations::tests::repository_migrations_are_real_and_aligned ... ok
+test mail_repo::tests::local_mail_writes_once_restarts_and_preserves_error_states ... ok
+test migrations::tests::rebuild_success_and_skip_restore_same_connection ... ok
+test migrations::tests::status_preserves_existing_delete_journal_mode ... ok
+test migrations::tests::unknown_metadata_shape_is_not_adopted ... ok
+test mail_repo::tests::metric_cohorts_separate_simulation_deduplicate_messages_and_bound_time ... ok
+test migrations::tests::status_does_not_create_database_and_both_prefixes_migrate_once ... ok
+test outbox_repo::tests::appending_outbox_prevents_reverse_business_lock_and_transaction_rolls_back ... ok
+test outbox_repo::tests::dedupe_survives_retry_and_completed_event_is_not_claimed_again ... ok
+test seed::tests::seed_denies_both_production_like_environments_before_validation_or_io ... ok
+test outbox_repo::tests::external_pause_and_cancel_release_without_consuming_retry_budget ... ok
+test mail_repo::tests::marketing_unsubscribe_does_not_suppress_security_or_transactions ... ok
+test tests::mysql8_is_refused ... ok
+test tests::sqlite_applies_pragmas_and_probes_fts5 ... ok
+test outbox_repo::tests::dlq_replay_requires_authorization_and_atomic_audit_preserves_dedupe ... ok
+test outbox_repo::tests::leases_isolate_batches_recover_expiry_and_reject_previous_holder ... ok
+test command::tests::retry_template_rolls_back_each_attempt_and_never_retries_unique_conflict ... ok
+test outbox_repo::tests::enqueue_rollback_and_persistence_use_actual_sqlite_and_both_prefixes ... ok
+test migrations::tests::upgrades_a03_database_to_engine_and_flags_without_changing_old_data ... ok
+test transaction::tests::cancellation_discards_connection_but_confirmed_completion_reuses_it ... ok
+test transaction::tests::malformed_time_and_boolean_rows_fail_closed ... ok
+test status_repo::tests::actual_sqlite_announcements_empty_boundaries_and_failure ... ok
+test transaction::tests::drop_and_explicit_rollback_remove_all_writes_and_borrower_cannot_commit ... ok
+test seed::tests::seeds_are_idempotent_restrict_references_and_preserve_edits ... ok
+test transaction::tests::sqlite_begin_is_immediate_and_locks_reject_reverse_order ... ok
+test transaction::tests::savepoint_recovers_unique_conflict_then_version_update_commits ... ok
+
+failures:
+
+---- flags_repo::tests::flags_snapshot_migration_registry_restart_missing_and_corruption stdout ----
+
+thread 'flags_repo::tests::flags_snapshot_migration_registry_restart_missing_and_corruption' (1776436) panicked at crates/platform-db/src/flags_repo/tests.rs:25:9:
+assertion `left == right` failed
+  left: [1, 2, 3, 4, 5, 6]
+ right: [1, 2, 3]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    flags_repo::tests::flags_snapshot_migration_registry_restart_missing_and_corruption
+
+test result: FAILED. 60 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.76s
+
+error: test failed, to rerun pass `-p platform-db --lib`

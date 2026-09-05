@@ -103,6 +103,8 @@ pub struct Config {
     pub features: FeaturesConfig,
     pub redis: RedisConfig,
     pub worker: WorkerConfig,
+    pub adapters: crate::integrations::AdapterConfig,
+    pub mail_alerts: crate::mail::MailAlertConfig,
 }
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -245,6 +247,19 @@ impl Config {
 
     /// 校验当前接入组件，不提前开发认证和外部 provider。
     pub fn validate(&self) -> Result<(), ConfigError> {
+        if self.worker.embedded && self.database.backend != Backend::Sqlite {
+            return Err(ConfigError::Invalid(
+                "内嵌 Worker 仅用于 SQLite 体验模式；完整模式必须使用独立 Worker 角色",
+            ));
+        }
+        self.mail_alerts.validate().map_err(|_| {
+            ConfigError::Invalid("mail_alerts 告警配置非法，率告警必须显式指定最小样本")
+        })?;
+        self.adapters
+            .validate(self.server.environment)
+            .map_err(|_| {
+                ConfigError::Invalid("adapters 配置非法；本地适配器只能在 development/test 使用")
+            })?;
         if !self.database.backend.is_implemented() {
             return Err(ConfigError::Invalid(
                 "database.backend=mysql8 是规范预留值，该后端尚未接入（DEC-022）",
@@ -575,3 +590,8 @@ pub fn decode_url_component(value: &str) -> Option<String> {
 
 #[cfg(test)]
 mod tests;
+
+/// Shared validation for direct Redis adapter construction; never expose URL in errors.
+pub fn validate_redis_connection(value: &str, environment: Environment) -> Result<(), ConfigError> {
+    validate_url(value, UrlKind::Redis, environment)
+}

@@ -372,7 +372,7 @@ impl ReadPolicy<String> for CommitRejectPolicy {
 #[tokio::test]
 async fn actual_sqlite_commit_rejection_returns_no_sensitive_projection() {
     let f = Fixture::new("commitfail_").await;
-    let Pool::Sqlite(sqlite) = &f.pool else {
+    let Pool::Sqlite(sqlite, _) = &f.pool else {
         unreachable!()
     };
     // A test-only deferred constraint creates a real COMMIT failure after the access append succeeds.

@@ -17,8 +17,8 @@
 - [ ] `WP-MVP-A02` 配置、Secrets、Feature Flag、只读和紧急关闭。（配置与Flag存储只读查询完成，受控写、审计审批及只读/紧急关闭仍依赖后续授权/A04/D04，见 `99` 第5.4/5.5节）
 - [x] `WP-MVP-A03` PostgreSQL schema、N 轨迁移（postgres/sqlite，mysql8 占位）、角色和 ACL。（开发期 Implemented：真实runner、CLI/种子/SQL lint及SQLite最小集，见 `99` 第5.4节；真实PG ACL等仍待硬化）
 - [x] `WP-MVP-A04` 事务、幂等、Outbox、审计和敏感读取。（开发期Implemented，双后端存储/Worker真实SQLite执行与独立复核见99 §5.5；真实PG/并发硬化与阶段门禁未通过）
-- [ ] `WP-MVP-A05` Redis、日志、指标、trace、健康检查和 /status。（本轮按DEC-047承接A02已交付技术切片，实施范围见99 §5.6）
-- [ ] `WP-MVP-A06` 数据事件、指标和外部 provider 适配器。（A05共享合同冻结后接线；平台分析与邮件代码面见99 §5.6，领域生产者/看板留后续）
+- [x] `WP-MVP-A05` Redis、日志、指标、trace、健康检查和 /status。（开发期Implemented；按DEC-047承接A02技术切片，实际交付/测试/独立复核见99 §5.6；真实服务及完整门禁仍留硬化）
+- [ ] `WP-MVP-A06` 数据事件、指标和外部 provider 适配器。（平台分析与本地适配器/邮件代码面已交付，见99 §5.6逐需求裁决；真实领域生产者、统计及看板未接线，整包In progress）
 
 退出：参考标的静态副本与冻结模板本地可浏览；空库和双前缀迁移、运行角色最小权限、Outbox 重放、Redis 重建、事件排除/去重和 provider 故障语义均有真实测试。
 

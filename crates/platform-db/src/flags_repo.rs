@@ -19,7 +19,7 @@ impl DbFlagReader {
             .map_err(|_| FlagReadError::Corrupt)?;
         let sql = format!("SELECT flag_key, enabled, version FROM {table} ORDER BY flag_key");
         let rows = match &self.pool {
-            Pool::Postgres(pool) => sqlx::query(&sql)
+            Pool::Postgres(pool, _) => sqlx::query(&sql)
                 .fetch_all(pool)
                 .await
                 .map_err(|_| FlagReadError::Unavailable)?
@@ -33,7 +33,7 @@ impl DbFlagReader {
                 })
                 .collect::<Result<Vec<_>, sqlx::Error>>()
                 .map_err(|_| FlagReadError::Corrupt)?,
-            Pool::Sqlite(pool) => {
+            Pool::Sqlite(pool, _) => {
                 let rows = sqlx::query(&sql)
                     .fetch_all(pool)
                     .await

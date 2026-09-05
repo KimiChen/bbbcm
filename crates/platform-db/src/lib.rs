@@ -2,7 +2,11 @@
 
 use platform::config::DatabaseConfig;
 use platform::db::{Backend, Capabilities};
+use platform::observability::{DatabasePurpose, PoolObserver};
+use std::sync::Arc;
 use thiserror::Error;
+
+mod pool_observation;
 
 #[derive(Debug, Error)]
 pub enum ConnectError {
@@ -21,15 +25,22 @@ impl From<sqlx::Error> for ConnectError {
 /// `sqlx` 的连接池本身是 `Arc` 语义，`Clone` 只增加引用计数，便于放入 axum 状态。
 #[derive(Clone, Debug)]
 pub enum Pool {
-    Postgres(sqlx::PgPool),
-    Sqlite(sqlx::SqlitePool),
+    Postgres(sqlx::PgPool, Arc<dyn PoolObserver>),
+    Sqlite(sqlx::SqlitePool, Arc<dyn PoolObserver>),
 }
 
 impl Pool {
     pub fn backend(&self) -> Backend {
         match self {
-            Pool::Postgres(_) => Backend::Postgres,
-            Pool::Sqlite(_) => Backend::Sqlite,
+            Pool::Postgres(..) => Backend::Postgres,
+            Pool::Sqlite(..) => Backend::Sqlite,
+        }
+    }
+
+    /// Construction context, never inferred from a URL or database credentials.
+    pub fn purpose(&self) -> DatabasePurpose {
+        match self {
+            Self::Postgres(_, observer) | Self::Sqlite(_, observer) => observer.purpose(),
         }
     }
 
@@ -56,7 +67,8 @@ impl Pool {
                     .max_connections(cfg.max_connections)
                     .connect_with(connection::sqlite_options(cfg, true)?)
                     .await?;
-                Ok(Pool::Sqlite(pool))
+                let observer = pool_observation::register(&pool, cfg.backend, purpose);
+                Ok(Pool::Sqlite(pool, observer))
             }
             Backend::Postgres => {
                 let renderer = platform::identifiers::SchemaRenderer::new(&cfg.schema_prefix)
@@ -75,7 +87,8 @@ impl Pool {
                     })
                     .connect_with(connection::postgres_options(cfg)?)
                     .await?;
-                Ok(Pool::Postgres(pool))
+                let observer = pool_observation::register(&pool, cfg.backend, purpose);
+                Ok(Pool::Postgres(pool, observer))
             }
         }
     }
@@ -92,7 +105,8 @@ impl Pool {
             .max_connections(1)
             .connect_with(connection::sqlite_options(cfg, false)?)
             .await?;
-        Ok(Pool::Sqlite(pool))
+        let observer = pool_observation::register(&pool, cfg.backend, connection::Purpose::App);
+        Ok(Pool::Sqlite(pool, observer))
     }
 
     /// 探测后端能力集。
@@ -103,7 +117,7 @@ impl Pool {
     /// 二者是完整模式全文检索的前提，缺失必须能被上层发现（`02` 第 4 节）。
     pub async fn capabilities(&self) -> Capabilities {
         match self {
-            Pool::Sqlite(pool) => {
+            Pool::Sqlite(pool, _) => {
                 let mut caps = Capabilities::default();
                 match pool.acquire().await {
                     Ok(mut conn) => {
@@ -128,7 +142,7 @@ impl Pool {
                 }
                 caps
             }
-            Pool::Postgres(pool) => {
+            Pool::Postgres(pool, _) => {
                 let installed: Vec<String> = sqlx::query_scalar("SELECT extname FROM pg_extension")
                     .fetch_all(pool)
                     .await
@@ -155,8 +169,8 @@ impl Pool {
 
     pub async fn close(&self) {
         match self {
-            Pool::Postgres(pool) => pool.close().await,
-            Pool::Sqlite(pool) => pool.close().await,
+            Pool::Postgres(pool, _) => pool.close().await,
+            Pool::Sqlite(pool, _) => pool.close().await,
         }
     }
 }
@@ -201,7 +215,7 @@ mod tests {
             .expect("SQLite 应可连接");
         assert_eq!(pool.backend(), Backend::Sqlite);
 
-        let Pool::Sqlite(ref sqlite) = pool else {
+        let Pool::Sqlite(ref sqlite, _) = pool else {
             panic!("应为 SQLite 池");
         };
         let journal: String = sqlx::query_scalar("PRAGMA journal_mode")
@@ -229,3 +243,7 @@ mod tests {
 }
 
 pub mod outbox_repo;
+
+pub mod analytics_repo;
+pub mod mail_repo;
+pub mod status_repo;

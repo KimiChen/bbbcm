@@ -44,6 +44,9 @@ mod tests {
             include_str!("../../../db/migrations/postgres/0001_init.sql"),
             include_str!("../../../db/migrations/postgres/0002_engine.sql"),
             include_str!("../../../db/migrations/postgres/0003_flags.sql"),
+            include_str!("../../../db/migrations/postgres/0004_status.sql"),
+            include_str!("../../../db/migrations/postgres/0005_analytics.sql"),
+            include_str!("../../../db/migrations/postgres/0006_adapters.sql"),
         ]
         .join("\n");
         for prefix in ["bcm_", "review42_"] {
@@ -86,6 +89,11 @@ mod tests {
             assert!(!sql.contains("GRANT UPDATE"));
             assert!(!sql.contains("GRANT DELETE"));
             assert!(!sql.contains("GRANT ALL"));
+            assert!(sql.contains(&format!(
+                "GRANT USAGE ON SCHEMA {} TO {}",
+                r.schema("operations").unwrap(),
+                r.role("app_rw").unwrap()
+            )));
         }
     }
 }

@@ -24,6 +24,7 @@ pub fn router(state: Arc<AppState>) -> Router {
     let app = Router::new()
         .route("/", get(home))
         .route("/health", get(health))
+        .merge(crate::status::router())
         .merge(crate::assets::router())
         .merge(identity::http::router())
         .merge(content::http::router())
@@ -45,12 +46,16 @@ pub fn router(state: Arc<AppState>) -> Router {
     } else {
         app
     };
-    app.with_state(state)
+    app.layer(axum::middleware::from_fn_with_state(
+        state.config.database.backend,
+        crate::middleware::observe,
+    ))
+    .with_state(state)
 }
 
 /// 渲染模板。渲染失败返回 500 并记录原因，不在请求内 panic——
 /// handler 里的 panic 会中断该连接，且把内部细节暴露给客户端。
-fn render<T: Template>(template: &T, assets: &Assets) -> Result<Html<String>, ApiError> {
+pub(crate) fn render<T: Template>(template: &T, assets: &Assets) -> Result<Html<String>, ApiError> {
     template
         .render_with_values(&("assets", assets as &dyn std::any::Any))
         .map(Html)

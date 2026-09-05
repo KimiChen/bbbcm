@@ -9,9 +9,14 @@ use std::time::Duration;
 use chrono::Utc;
 use platform::config::DatabaseConfig;
 use platform::db::Backend;
+use platform::observability::{
+    DatabaseBackend, OutboxOutcome, SeriesKey, SinkGroup, SinkOutcome, WorkerOutcome,
+};
+use platform::observability::{Metric, Metrics, metrics};
 pub use platform::outbox::{BoxFuture, OutboxEvent, Sink, SinkError};
 use platform::outbox::{Claim, Failure, FailureCode, LeasedEvent, OutboxError, OutboxStore};
 use tokio_util::sync::CancellationToken;
+use tracing::Instrument;
 
 #[derive(Default)]
 pub struct SinkRegistry {
@@ -94,6 +99,9 @@ pub struct Scheduler {
     effects: Arc<dyn ExternalEffects>,
     settings: Settings,
     owner: String,
+    wakeup: Option<Arc<dyn platform::cache::Wakeup>>,
+    observations: Arc<Metrics>,
+    backend: DatabaseBackend,
 }
 impl Scheduler {
     pub fn new(
@@ -121,15 +129,65 @@ impl Scheduler {
             effects,
             settings,
             owner,
+            wakeup: None,
+            observations: metrics(),
+            backend: DatabaseBackend::Unknown,
         })
     }
+    pub fn with_wakeup(mut self, wakeup: Arc<dyn platform::cache::Wakeup>) -> Self {
+        self.wakeup = Some(wakeup);
+        self
+    }
+    /// The host supplies its already validated database backend; injected test stores
+    /// without a known backend retain an explicit Unknown observation.
+    pub fn with_backend(mut self, backend: Backend) -> Self {
+        self.backend = backend.into();
+        self
+    }
     pub async fn run(&self, cancel: CancellationToken) -> Result<(), OutboxError> {
+        self.observations.grouped.observe_worker();
+        let mut exit = WorkerExitObservation {
+            observations: self.observations.clone(),
+            outcome: WorkerOutcome::Aborted,
+            backend: self.backend,
+        };
+        let mut previous_poll: Option<std::time::Instant> = None;
         loop {
             if cancel.is_cancelled() {
+                exit.outcome = WorkerOutcome::Cancelled;
                 return Ok(());
             }
-            self.tick(&cancel).await?;
-            tokio::select! { () = cancel.cancelled() => return Ok(()), () = tokio::time::sleep(self.settings.poll_interval) => {} }
+            let poll = std::time::Instant::now();
+            if let Some(previous) = previous_poll.replace(poll) {
+                self.observations.grouped.duration(
+                    SeriesKey::WorkerPollSeconds {
+                        backend: self.backend,
+                    },
+                    poll.duration_since(previous),
+                );
+            }
+            if let Err(error) = self.tick(&cancel).await {
+                exit.outcome = WorkerOutcome::Failed;
+                return Err(error);
+            }
+            let wait = async {
+                if let Some(wakeup) = &self.wakeup {
+                    if wakeup.wait(self.settings.poll_interval).await.is_err() {
+                        self.observations.increment(Metric::RedisError);
+                        tokio::time::sleep(self.settings.poll_interval).await;
+                    }
+                } else {
+                    tokio::time::sleep(self.settings.poll_interval).await;
+                }
+            };
+            tokio::select! {
+                biased;
+                () = cancel.cancelled() => {
+                    exit.outcome = WorkerOutcome::Cancelled;
+                    return Ok(());
+                }
+                () = wait => {}
+            }
         }
     }
     pub async fn tick(&self, cancel: &CancellationToken) -> Result<usize, OutboxError> {
@@ -149,13 +207,28 @@ impl Scheduler {
                 lease_until: until,
                 limit: self.settings.batch_size,
             })
-            .await?;
+            .await
+            .inspect_err(|error| self.observe_store_error(SinkGroup::All, error))?;
+        // Claims count the complete acquired batch, including leases released before
+        // execution because cancellation arrived after the database claim.
+        for _ in &leases {
+            self.observations.increment(Metric::OutboxClaimed);
+            self.observe_outbox(SinkGroup::All, OutboxOutcome::Claimed);
+        }
         for (index, lease) in leases.iter().enumerate() {
             if cancel.is_cancelled() {
                 self.release(&leases[index..]).await?;
                 break;
             }
-            match self.consume(lease, &leases[index..], cancel).await {
+            let span = tracing::info_span!("outbox", trace_id = %lease.event.trace_id, event_id = %lease.event.event_id);
+            match platform::observability::REQUEST_ID
+                .scope(
+                    lease.event.trace_id.clone(),
+                    self.consume(lease, &leases[index..], cancel)
+                        .instrument(span),
+                )
+                .await
+            {
                 Ok(()) | Err(OutboxError::LeaseLost) => {}
                 Err(error) => return Err(error),
             }
@@ -168,7 +241,16 @@ impl Scheduler {
             + chrono::Duration::from_std(self.settings.lease_duration)
                 .map_err(|_| OutboxError::InvalidInput)?;
         for lease in batch {
-            self.store.renew(lease, now, until).await?;
+            match self.store.renew(lease, now, until).await {
+                Ok(()) => {
+                    self.observations.increment(Metric::OutboxLeaseRenewed);
+                    self.observe_outbox(SinkGroup::All, OutboxOutcome::Renewed);
+                }
+                Err(error) => {
+                    self.observe_store_error(SinkGroup::All, &error);
+                    return Err(error);
+                }
+            }
         }
         Ok(())
     }
@@ -188,8 +270,13 @@ impl Scheduler {
                 )
                 .await
             {
-                Ok(()) | Err(OutboxError::LeaseLost) => {}
-                Err(error) => return Err(error),
+                Ok(()) => self.observe_outbox(SinkGroup::All, OutboxOutcome::Cancelled),
+                Err(error) => {
+                    self.observe_store_error(SinkGroup::All, &error);
+                    if error != OutboxError::LeaseLost {
+                        return Err(error);
+                    }
+                }
             }
         }
         Ok(())
@@ -200,54 +287,124 @@ impl Scheduler {
         batch: &[LeasedEvent],
         cancel: &CancellationToken,
     ) -> Result<(), OutboxError> {
+        let _active_job = self.observations.grouped.active_job();
         self.renew_batch(batch).await?;
         for name in &lease.pending_sinks {
+            let group = SinkGroup::from_name(name);
             let Some(sink) = self.registry.sinks.get(name) else {
-                return self.fail(lease, FailureCode::UnregisteredSink, true).await;
+                return self
+                    .fail(lease, FailureCode::UnregisteredSink, true, group)
+                    .await;
+            };
+            let mut observation = SinkObservation {
+                observations: self.observations.clone(),
+                sink: group,
+                started: std::time::Instant::now(),
+                outcome: SinkOutcome::Cancelled,
+                backend: self.backend,
             };
             if sink.is_external() && !self.effects.allowed() {
-                return self.fail(lease, FailureCode::ExternalDisabled, false).await;
+                observation.outcome = SinkOutcome::Disabled;
+                self.observations.increment(Metric::SinkDisabled);
+                drop(observation);
+                return self
+                    .fail(lease, FailureCode::ExternalDisabled, false, group)
+                    .await;
             }
-            let delivered = sink.deliver(&lease.event);
+            let delivered = sink
+                .deliver(&lease.event)
+                .instrument(tracing::info_span!("sink", kind = %safe_sink_kind(name)));
             tokio::pin!(delivered);
             let mut renewal = tokio::time::interval(self.settings.renew_interval);
             renewal.tick().await;
             let result = loop {
                 tokio::select! {
                     biased;
-                    () = cancel.cancelled() => { self.release(std::slice::from_ref(lease)).await?; return Ok(()); }
+                    () = cancel.cancelled() => {
+                        drop(observation);
+                        self.release(std::slice::from_ref(lease)).await?;
+                        return Ok(());
+                    }
                     _ = renewal.tick() => {
-                        self.renew_batch(batch).await?;
-                        if sink.is_external() && !self.effects.allowed() { return self.fail(lease, FailureCode::ExternalDisabled, false).await; }
+                        if let Err(error) = self.renew_batch(batch).await {
+                            observation.outcome = if error == OutboxError::LeaseLost {
+                                SinkOutcome::LeaseLost
+                            } else {
+                                SinkOutcome::StoreError
+                            };
+                            return Err(error);
+                        }
+                        if sink.is_external() && !self.effects.allowed() {
+                            observation.outcome = SinkOutcome::Disabled;
+                            self.observations.increment(Metric::SinkDisabled);
+                            drop(observation);
+                            return self.fail(lease, FailureCode::ExternalDisabled, false, group).await;
+                        }
                     }
                     result = &mut delivered => break result,
                 }
             };
+            observation.outcome = match result {
+                Ok(()) => SinkOutcome::Success,
+                Err(SinkError::Disabled) => SinkOutcome::Disabled,
+                Err(SinkError::Permanent) => SinkOutcome::Permanent,
+                Err(SinkError::Retryable) => SinkOutcome::Retryable,
+            };
+            // Sink timing ends at the provider result; durable Outbox acknowledgement
+            // has its own outcome and cannot turn a failed DB write into completion.
+            drop(observation);
             match result {
-                Ok(()) => self.store.delivery_done(lease, name, Utc::now()).await?,
+                Ok(()) => {
+                    self.observations.increment(Metric::SinkSuccess);
+                    tracing::info!(outcome = "success", "sink finished");
+                    self.store
+                        .delivery_done(lease, name, Utc::now())
+                        .await
+                        .inspect_err(|error| self.observe_store_error(group, error))?;
+                }
+                Err(SinkError::Disabled) => {
+                    self.observations.increment(Metric::SinkDisabled);
+                    return self
+                        .fail(lease, FailureCode::ExternalDisabled, false, group)
+                        .await;
+                }
                 Err(SinkError::Permanent) => {
-                    return self.fail(lease, FailureCode::Permanent, true).await;
+                    self.observations.increment(Metric::SinkPermanent);
+                    return self.fail(lease, FailureCode::Permanent, true, group).await;
                 }
                 Err(SinkError::Retryable) => {
+                    self.observations.increment(Metric::SinkRetryable);
                     return self
                         .fail(
                             lease,
                             FailureCode::Retryable,
                             lease.attempts >= self.settings.max_attempts,
+                            group,
                         )
                         .await;
                 }
             }
         }
-        self.store.complete(lease, Utc::now()).await
+        self.store
+            .complete(lease, Utc::now())
+            .await
+            .inspect_err(|error| self.observe_store_error(SinkGroup::All, error))?;
+        self.observations.increment(Metric::OutboxCompleted);
+        self.observe_outbox(SinkGroup::All, OutboxOutcome::Completed);
+        Ok(())
     }
     async fn fail(
         &self,
         lease: &LeasedEvent,
         code: FailureCode,
         dead_letter: bool,
+        sink: SinkGroup,
     ) -> Result<(), OutboxError> {
         let now = Utc::now();
+        tracing::warn!(
+            failure = code.as_str(),
+            "outbox delivery deferred or failed"
+        );
         let backoff = chrono::Duration::from_std(self.settings.backoff(lease.attempts))
             .map_err(|_| OutboxError::InvalidInput)?;
         self.store
@@ -261,6 +418,84 @@ impl Scheduler {
                 },
             )
             .await
+            .inspect_err(|error| self.observe_store_error(sink, error))?;
+        self.observations.increment(Metric::OutboxFailed);
+        self.observe_outbox(
+            sink,
+            match code {
+                FailureCode::Retryable if dead_letter => OutboxOutcome::RetryExhausted,
+                FailureCode::Retryable => OutboxOutcome::Retryable,
+                FailureCode::Permanent => OutboxOutcome::Permanent,
+                FailureCode::UnregisteredSink => OutboxOutcome::Unregistered,
+                FailureCode::ExternalDisabled => OutboxOutcome::ExternalDisabled,
+                FailureCode::Cancelled => OutboxOutcome::Cancelled,
+            },
+        );
+        Ok(())
+    }
+    fn observe_outbox(&self, sink: SinkGroup, outcome: OutboxOutcome) {
+        self.observations.grouped.increment(SeriesKey::OutboxTotal {
+            backend: self.backend,
+            sink,
+            outcome,
+        });
+    }
+    fn observe_store_error(&self, sink: SinkGroup, error: &OutboxError) {
+        let outcome = if *error == OutboxError::LeaseLost {
+            self.observations.increment(Metric::OutboxLeaseLost);
+            OutboxOutcome::LeaseLost
+        } else {
+            OutboxOutcome::StoreError
+        };
+        self.observe_outbox(sink, outcome);
+    }
+}
+
+struct SinkObservation {
+    observations: Arc<Metrics>,
+    sink: SinkGroup,
+    started: std::time::Instant,
+    outcome: SinkOutcome,
+    backend: DatabaseBackend,
+}
+impl Drop for SinkObservation {
+    fn drop(&mut self) {
+        let duration = self.started.elapsed();
+        self.observations.duration(Metric::SinkLatencyMs, duration);
+        self.observations.grouped.duration(
+            SeriesKey::SinkSeconds {
+                backend: self.backend,
+                sink: self.sink,
+                outcome: self.outcome,
+            },
+            duration,
+        );
+    }
+}
+struct WorkerExitObservation {
+    observations: Arc<Metrics>,
+    outcome: WorkerOutcome,
+    backend: DatabaseBackend,
+}
+impl Drop for WorkerExitObservation {
+    fn drop(&mut self) {
+        self.observations
+            .grouped
+            .increment(SeriesKey::WorkerExitTotal {
+                backend: self.backend,
+                outcome: self.outcome,
+            });
+    }
+}
+
+fn safe_sink_kind(name: &str) -> &'static str {
+    match name {
+        "local.probe" => "local",
+        "cache.invalidate" => "cache",
+        "analytics.project" => "analytics",
+        "mail.delivery" | "mail.alert" => "mail",
+        "audit.replica" => "audit",
+        _ => "other",
     }
 }
 
@@ -329,3 +564,6 @@ pub enum HostLockError {
     #[error("此 SQLite 数据库已有 Worker 宿主；内嵌与独立模式互斥")]
     AlreadyRunning,
 }
+
+#[cfg(test)]
+mod observation_tests;

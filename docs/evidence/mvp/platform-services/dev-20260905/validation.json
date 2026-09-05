@@ -1,0 +1,42 @@
+{
+  "scope": "development minimum only",
+  "rust_passed": 182,
+  "rust_failed": 0,
+  "rust_ignored": 1,
+  "http_routes": 55,
+  "capacity_tests": 10,
+  "asset_freeze": "pass; original hashes unchanged; no visual gate",
+  "full_check": "dev-check-3.txt; final source and explicit staged index checked; exit 0",
+  "decision_commits": [
+    "6fa32f7",
+    "bb0b584"
+  ],
+  "local_only": true,
+  "flags": "14 business flags closed; no write interface added",
+  "not_executed": [
+    "real Redis8 contract (ignored)",
+    "real PostgreSQL integration / ACL matrix",
+    "real providers, email delivery and DNS",
+    "full security / multi-instance / cross-platform / performance / visual gates"
+  ],
+  "requirements": {
+    "A05": "Implemented (development)",
+    "A06": "In progress",
+    "A02": "In progress"
+  },
+  "review": "independent-review.md",
+  "staging": "staged-review.json; reviewed index files, not an empty-index claim",
+  "log_sanitization": "home/workspace paths replaced; trailing empty lines normalized; synthetic sentinels retained",
+  "platform_dependency_edges": {
+    "platform": [],
+    "platform-audit": [
+      "platform"
+    ],
+    "platform-db": [
+      "platform"
+    ],
+    "platform-outbox": [
+      "platform"
+    ]
+  }
+}

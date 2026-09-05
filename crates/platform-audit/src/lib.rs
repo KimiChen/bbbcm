@@ -89,7 +89,10 @@ impl platform::outbox::Sink for ReplicaSink {
             self.replica
                 .append(&record)
                 .await
-                .map_err(|_| SinkError::Retryable)
+                .map_err(|error| match error {
+                    AuditError::ReplicaDisabled => SinkError::Disabled,
+                    _ => SinkError::Retryable,
+                })
         })
     }
 }

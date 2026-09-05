@@ -13,3 +13,10 @@ pub mod transaction;
 pub mod types;
 
 pub mod outbox;
+
+pub mod analytics;
+pub mod commit_signal;
+pub mod integrations;
+pub mod mail;
+pub mod observability;
+pub mod status;

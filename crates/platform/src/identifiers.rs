@@ -33,6 +33,51 @@ pub struct TableRegistration {
 
 pub const TABLES: &[TableRegistration] = &[
     TableRegistration {
+        schema: "operations",
+        table: "status_announcements",
+        identity_column: None,
+    },
+    TableRegistration {
+        schema: "analytics",
+        table: "event_facts",
+        identity_column: None,
+    },
+    TableRegistration {
+        schema: "analytics",
+        table: "projection_receipts",
+        identity_column: None,
+    },
+    TableRegistration {
+        schema: "analytics",
+        table: "aggregates",
+        identity_column: None,
+    },
+    TableRegistration {
+        schema: "analytics",
+        table: "watermarks",
+        identity_column: None,
+    },
+    TableRegistration {
+        schema: "platform",
+        table: "mail_dispatches",
+        identity_column: None,
+    },
+    TableRegistration {
+        schema: "platform",
+        table: "mail_feedback",
+        identity_column: None,
+    },
+    TableRegistration {
+        schema: "platform",
+        table: "mail_suppressions",
+        identity_column: None,
+    },
+    TableRegistration {
+        schema: "platform",
+        table: "mail_alerts",
+        identity_column: None,
+    },
+    TableRegistration {
         schema: "platform",
         table: "idempotency_records",
         identity_column: Some("id"),
@@ -81,6 +126,9 @@ pub const TABLES: &[TableRegistration] = &[
 
 /// 仅本轮引擎所需索引；迁移与表注册同时版本化。
 pub const INDEXES: &[(&str, &str)] = &[
+    ("platform", "mail_recipient_idx"),
+    ("platform", "mail_observed_idx"),
+    ("platform", "mail_feedback_time_idx"),
     ("platform", "outbox_ready_idx"),
     ("platform", "outbox_lease_idx"),
     ("platform", "outbox_batch_idx"),

@@ -55,7 +55,7 @@ impl AppError {
     /// 可安全展示给客户端的文案。
     ///
     /// `Internal` 与 `Unavailable` 的原文可能含连接串、SQL 片段或内部路径，
-    /// 一律替换为固定文案；原文只进日志。
+    /// 一律替换为固定文案；日志同样不得记录原文。
     pub fn public_message(&self) -> &str {
         match self {
             AppError::Accepted(_) => "请求已受理，请凭幂等键查询结果",
@@ -72,7 +72,7 @@ impl AppError {
         }
     }
 
-    /// 该错误的原文是否只能进日志。
+    /// 该错误是否需要内部固定分类而非公开原文。
     pub fn is_internal(&self) -> bool {
         matches!(self, AppError::Internal(_) | AppError::Unavailable(_))
     }

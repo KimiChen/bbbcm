@@ -35,6 +35,39 @@ fn parse(text: &str) -> Result<Config, ConfigError> {
     let fixture = Fixture::new();
     Config::load(&fixture.file("config.toml", text))
 }
+
+#[test]
+fn local_adapters_and_unapproved_alert_thresholds_remain_explicit() {
+    let checked = |text: &str| {
+        parse(text).and_then(|config| {
+            config.validate()?;
+            Ok(config)
+        })
+    };
+    let default = checked("").unwrap();
+    assert_eq!(
+        default.adapters.mode,
+        crate::integrations::AdapterMode::Disabled
+    );
+    assert!(default.mail_alerts.bounce_rate.is_none());
+    assert!(checked("[adapters]\nmode='local_test'\n").is_err());
+    assert!(checked("[adapters]\nmode='unknown'\n").is_err());
+    assert!(checked("[adapters]\nmode='disabled'\nsecret='PRIVATE_SENTINEL'\n").is_err());
+    assert!(checked("[mail_alerts]\nbounce_rate=0.1\n").is_err());
+    assert!(checked("[mail_alerts]\nbounce_rate=0.1\nmin_samples=20\n").is_ok());
+    let mut config = Config::default();
+    config.adapters.mode = crate::integrations::AdapterMode::LocalTest;
+    config.adapters.local_root = Some(".local/synthetic-adapters".into());
+    assert!(config.validate().is_ok());
+    config.server.environment = Environment::Production;
+    assert!(config.validate().is_err());
+    let mut config = Config::default();
+    config.database.backend = Backend::Postgres;
+    assert!(
+        config.validate().is_err(),
+        "PostgreSQL embedded must not borrow the app role for worker projections"
+    );
+}
 fn postgres_secrets() -> SecretOverrides {
     SecretOverrides {
         postgres_url: Some(
@@ -62,7 +95,7 @@ fn precedence_defaults_file_local_environment_and_secret() {
     let fixture = Fixture::new();
     let base = fixture.file(
         "base.toml",
-        "[server]\nbind='127.0.0.1:18001'\n[database]\nbackend='postgres'\nmax_connections=4\n",
+        "[server]\nbind='127.0.0.1:18001'\n[database]\nbackend='postgres'\nmax_connections=4\n[worker]\nembedded=false\n",
     );
     let local = fixture.file(
         "local.toml",
@@ -204,7 +237,10 @@ fn secret_debug_and_parse_errors_never_disclose_values() {
     let secrets = SecretOverrides::from_variables(&variables);
     assert!(!format!("{secrets:?}").contains("do-not-print"));
     let fixture = Fixture::new();
-    let base = fixture.file("base.toml", "[database]\nbackend='postgres'");
+    let base = fixture.file(
+        "base.toml",
+        "[database]\nbackend='postgres'\n[worker]\nembedded=false",
+    );
     let config = Config::load_layers(&base, None, &variables, secrets).unwrap();
     assert!(!format!("{config:?}").contains("do-not-print"));
     for text in [
@@ -223,7 +259,7 @@ fn secret_debug_and_parse_errors_never_disclose_values() {
 fn backend_connections_prefix_path_and_bind_validation() {
     for text in [
         "[database]\nbackend='mysql8'",
-        "[database]\nbackend='postgres'",
+        "[database]\nbackend='postgres'\n[worker]\nembedded=false",
         "[database]\nmax_connections=0",
         "[database]\nmax_connections=2",
         "[database]\nschema_prefix='BCM'",

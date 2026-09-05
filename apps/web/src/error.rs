@@ -19,9 +19,9 @@ impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         let status =
             StatusCode::from_u16(self.0.http_status()).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
-        // 内部错误的原文只进日志：它可能含连接串、SQL 片段或内部路径。
+        // 原始错误可能含Secret、连接串或C3，日志只记录受控状态码。
         if self.0.is_internal() {
-            tracing::error!(status = status.as_u16(), detail = %self.0, "请求失败");
+            tracing::error!(status = status.as_u16(), "请求失败");
         }
         (status, self.0.public_message().to_string()).into_response()
     }

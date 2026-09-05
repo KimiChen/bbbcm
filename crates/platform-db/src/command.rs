@@ -5,11 +5,13 @@ use crate::idempotency_repo::{self, Reservation};
 use crate::transaction::{DbTransaction, TransactionConnection, TransactionError};
 use chrono::{DateTime, Utc};
 use platform::identifiers::SchemaRenderer;
+use platform::observability::{Metric, metrics};
 use platform::transaction::{
     CommandIdentity, CommitOutcome, DbErrorClass, LockPlan, RetryBudget, StoredResponse,
 };
 use std::future::Future;
 use std::pin::Pin;
+use tracing::Instrument;
 
 pub type CommandFuture<'a> =
     Pin<Box<dyn Future<Output = Result<StoredResponse, TransactionError>> + Send + 'a>>;
@@ -34,7 +36,13 @@ pub async fn execute_command<F>(
 where
     F: for<'a, 'c> FnMut(&'a mut TransactionConnection<'c>) -> CommandFuture<'a>,
 {
-    execute_inner(
+    if !command.is_valid() {
+        return Err(TransactionError::InvalidInput);
+    }
+    let trace_id = platform::observability::current_trace_id()
+        .filter(|value| platform::transaction::validate_operation_id(value))
+        .unwrap_or_else(|| command.operation_id.clone());
+    let outcome = execute_inner(
         pool,
         renderer,
         command,
@@ -43,7 +51,12 @@ where
         work,
         CommitTestMode::Normal,
     )
-    .await
+    .instrument(tracing::info_span!("command", trace_id = %trace_id))
+    .await?;
+    if matches!(&outcome, CommitOutcome::Committed(result) if !result.replayed) {
+        platform::commit_signal::notify_committed(&outcome).await;
+    }
+    Ok(outcome)
 }
 
 #[derive(Clone, Copy)]
@@ -113,7 +126,7 @@ where
         let result = match attempt {
             Ok(result) => result,
             Err(error) => {
-                let rollback_confirmed = tx.rollback().await.is_ok();
+                let rollback_confirmed = tx.rollback_after(&error).await.is_ok();
                 if can_retry(&mut budget, pool, &error, rollback_confirmed) {
                     backoff(&budget).await;
                     continue;
@@ -137,9 +150,13 @@ where
         };
         match committed {
             Ok(()) => {
+                metrics().increment(Metric::TransactionCommitted);
+                tracing::info!(outcome = "committed", "transaction finished");
                 return Ok(CommitOutcome::Committed(result));
             }
             Err(TransactionError::CommitUnknown) => {
+                metrics().increment(Metric::TransactionUnknown);
+                tracing::warn!(outcome = "unknown", "transaction finished");
                 return Ok(CommitOutcome::Unknown {
                     operation_id: command.operation_id.clone(),
                 });
@@ -163,7 +180,19 @@ fn can_retry(
     confirmed: bool,
 ) -> bool {
     if let TransactionError::Database(class) = error {
-        budget.take(pool.backend(), *class, true, confirmed)
+        let retry = budget.take(pool.backend(), *class, true, confirmed);
+        if retry {
+            metrics().increment(Metric::TransactionRetry);
+            metrics().grouped.increment(
+                platform::observability::SeriesKey::DbTransactionRetriesTotal {
+                    backend: pool.backend().into(),
+                    purpose: pool.purpose(),
+                    error_class: (*class).into(),
+                },
+            );
+            tracing::warn!(error_class = ?class, "transaction retry");
+        }
+        retry
     } else {
         false
     }

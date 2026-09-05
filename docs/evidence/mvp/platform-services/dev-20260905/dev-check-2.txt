@@ -1,0 +1,506 @@
+
+== 1/7 格式化检查
+
+== 2/7 Clippy -D warnings
+    Checking platform v0.1.0 (<workspace>/crates/platform)
+    Checking platform-db v0.1.0 (<workspace>/crates/platform-db)
+    Checking platform-outbox v0.1.0 (<workspace>/crates/platform-outbox)
+    Checking platform-audit v0.1.0 (<workspace>/crates/platform-audit)
+    Checking trust v0.1.0 (<workspace>/crates/trust)
+    Checking identity v0.1.0 (<workspace>/crates/identity)
+    Checking interaction v0.1.0 (<workspace>/crates/interaction)
+    Checking content v0.1.0 (<workspace>/crates/content)
+    Checking moderation v0.1.0 (<workspace>/crates/moderation)
+    Checking support v0.1.0 (<workspace>/crates/support)
+    Checking media v0.1.0 (<workspace>/crates/media)
+    Checking privacy v0.1.0 (<workspace>/crates/privacy)
+    Checking manage v0.1.0 (<workspace>/crates/manage)
+    Checking bbbcm-cli v0.1.0 (<workspace>/apps/bbbcm-cli)
+    Checking bbbcm-web v0.1.0 (<workspace>/apps/web)
+    Checking bbbcm-worker v0.1.0 (<workspace>/apps/bbbcm-worker)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.89s
+
+== 3/7 单元测试
+   Compiling platform v0.1.0 (<workspace>/crates/platform)
+   Compiling platform-db v0.1.0 (<workspace>/crates/platform-db)
+   Compiling platform-outbox v0.1.0 (<workspace>/crates/platform-outbox)
+   Compiling platform-audit v0.1.0 (<workspace>/crates/platform-audit)
+   Compiling moderation v0.1.0 (<workspace>/crates/moderation)
+   Compiling interaction v0.1.0 (<workspace>/crates/interaction)
+   Compiling media v0.1.0 (<workspace>/crates/media)
+   Compiling privacy v0.1.0 (<workspace>/crates/privacy)
+   Compiling trust v0.1.0 (<workspace>/crates/trust)
+   Compiling identity v0.1.0 (<workspace>/crates/identity)
+   Compiling support v0.1.0 (<workspace>/crates/support)
+   Compiling content v0.1.0 (<workspace>/crates/content)
+   Compiling manage v0.1.0 (<workspace>/crates/manage)
+   Compiling bbbcm-cli v0.1.0 (<workspace>/apps/bbbcm-cli)
+   Compiling bbbcm-worker v0.1.0 (<workspace>/apps/bbbcm-worker)
+   Compiling bbbcm-web v0.1.0 (<workspace>/apps/web)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 12.48s
+     Running unittests src/main.rs (target/debug/deps/bbbcm_cli-ee791bc011b572e1)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/a05_trace.rs (target/debug/deps/a05_trace-8855a321c0f23f94)
+
+running 2 tests
+test upstream_trace_is_preserved_and_invalid_task_ids_never_enter_events ... ok
+test generated_request_trace_reaches_committed_event_and_real_sink_with_background_fallback ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/database_cli.rs (target/debug/deps/database_cli-95672e17b94ab8cf)
+
+running 6 tests
+test production_seed_rejected_before_database_connection ... ok
+test cli_uses_local_override_and_rejects_secrets_in_files ... ok
+test flag_list_distinguishes_persisted_value_and_missing_row ... ok
+test flag_list_reads_storage_and_fails_without_schema ... ok
+test implicit_postgres_environment_cannot_bypass_shared_config ... ok
+test cli_migrates_reports_and_seeds_repeatedly ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.17s
+
+     Running tests/engine.rs (target/debug/deps/engine-0234d1b129a87d92)
+
+running 5 tests
+test failed_projection_cannot_commit_a_successful_access_record ... ok
+test sensitive_read_requires_authorization_and_committed_access_audit ... ok
+test actual_sqlite_commit_rejection_returns_no_sensitive_projection ... ok
+test audit_redacts_secret_appends_correction_and_copies_only_with_explicit_test_adapter ... ok
+test business_idempotency_outbox_audit_commit_or_wholly_rollback ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running unittests src/main.rs (target/debug/deps/bbbcm_web-b4f38b049ae6febe)
+
+running 18 tests
+test error::tests::internal_response_body_is_generic ... ok
+test error::tests::maps_status_codes ... ok
+test middleware::tests::log_and_response_keep_generated_correlation_without_sensitive_input ... ok
+test router::tests::authentication_fixtures_have_no_submission_endpoint ... ok
+test assets::tests::symlinks_at_root_manifest_directory_and_file_are_rejected ... ok
+test router::tests::fixture_assets_are_allowlisted_and_local_only ... ok
+test router::tests::page_frames_and_topic_text_are_html_escaped ... ok
+test router::tests::production_like_environments_never_mount_fixtures ... ok
+test router::tests::unknown_pages_and_invalid_themes_fail_closed ... ok
+test status::tests::announcement_content_is_escaped_and_uses_frozen_local_assets ... ok
+test assets::tests::runtime_brand_contract_is_restricted_versioned_and_has_priority ... ok
+test assets::tests::fingerprint_get_head_and_failure_cache_contract ... ok
+test status::tests::status_empty_fault_theme_and_health_are_real_states ... ok
+test assets::tests::missing_helper_context_and_unknown_template_assets_are_errors ... ok
+test assets::tests::only_never_built_default_local_dist_can_use_source_mode ... ok
+test assets::tests::manifest_load_checks_hashes_names_mime_and_duplicate_entries ... ok
+test router::tests::every_fixture_is_html_and_deterministic_in_local_environments ... ok
+test assets::tests::ssr_uses_real_manifest_helper_and_production_isolation_is_preserved ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.15s
+
+     Running unittests src/main.rs (target/debug/deps/bbbcm_worker-660d6e9a0a8049bb)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/platform_services.rs (target/debug/deps/platform_services-3f6fff6dc33613ed)
+
+running 4 tests
+test disabled_audit_replica_preserves_attempt_budget_when_local_effects_gate_is_open ... ok
+test adapter_disabled_keeps_queued_without_attempt_budget_and_scheduler_cancels ... ok
+test committed_mail_and_object_effects_produce_files_and_survive_scheduler_restart ... ok
+test failed_or_lost_wakeup_recovers_new_commits_by_database_polling_and_cancels ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.18s
+
+     Running tests/scheduler.rs (target/debug/deps/scheduler-50b5c4ab55e055d8)
+
+running 6 tests
+test retry_backoff_is_bounded_and_registry_rejects_duplicate_names ... ok
+test shared_scheduler_consumes_persistent_events_and_deduplicates_on_restart ... ok
+test local_sink_executes_failure_dlq_authorized_audited_replay_and_success ... ok
+test scheduler_applies_backoff_retry_budget_dlq_and_external_stop_check ... ok
+test renews_long_running_batch_and_cancellation_releases_unfinished_work ... ok
+test actual_worker_process_consumes_and_os_lock_rejects_other_host_then_recovers ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.22s
+
+     Running unittests src/lib.rs (target/debug/deps/content-ef9ccac6b54d2792)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/identity-fb6b6bb2700fd1e1)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/interaction-2fdba31409dbf5a4)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/manage-dc6cc6c8f9dfb08a)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/media-d538a1e63ce8d493)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/moderation-828d6daa9cdaa875)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/platform-014d58171505a0fc)
+
+running 73 tests
+test analytics::tests::dictionary_and_storage_boundary_have_no_arbitrary_text ... ok
+test cache::tests::controlled_keys_reject_namespace_injection_private_and_unversioned_content ... ok
+test cache::tests::synthetic_high_risk_fails_closed_public_reads_return_real_origin_and_disabled_is_explicit ... ok
+test cache::tests::invalidation_sink_retries_failures_and_rejects_unrelated_events ... ok
+test commit_signal::tests::unknown_commit_does_not_signal_and_failed_hint_does_not_undo_commit ... ok
+test cache::tests::assembly_distinguishes_disabled_and_enabled_but_unavailable_without_secret_errors ... ok
+test config::tests::all_four_environments_and_production_boundaries ... ok
+test config::tests::defaults_are_safe_experience_mode ... ok
+test config::tests::environment_mappings_are_strict_and_allow_asset_isolation ... ok
+test config::tests::explicit_file_missing_fails_optional_local_missing_succeeds ... ok
+test config::tests::invalid_layer_is_not_hidden_by_later_overrides ... ok
+test cache::tests::async_wakeup_timeout_notify_and_cancellation ... ok
+test cache::tests::leases_reject_expiry_and_old_owner_after_reacquire ... ok
+test config::tests::local_adapters_and_unapproved_alert_thresholds_remain_explicit ... ok
+test config::tests::production_postgres_requires_tls_without_plaintext_fallback ... ok
+test cache::tests::memory_cache_ttl_lru_all_version_invalidation_and_input_bounds ... ok
+test config::tests::precedence_defaults_file_local_environment_and_secret ... ok
+test config::tests::sqlite_worker_mode_is_mutually_exclusive ... ok
+test config::tests::urls_require_real_connection_parameters_without_disclosing_them ... ok
+test db::tests::block_comment_question_mark_is_not_a_placeholder ... ok
+test db::tests::double_quoted_identifier_is_rejected ... ok
+test db::tests::encoded_times_sort_lexicographically ... ok
+test db::tests::escaped_quote_does_not_leak_out_of_string ... ok
+test config::tests::backend_connections_prefix_path_and_bind_validation ... ok
+test config::tests::secret_debug_and_parse_errors_never_disclose_values ... ok
+test db::tests::explicit_dollar_placeholder_is_rejected ... ok
+test db::tests::line_comment_question_mark_is_not_a_placeholder ... ok
+test db::tests::mysql8_is_reserved_but_not_implemented ... ok
+test db::tests::nested_block_comment_is_tracked ... ok
+test db::tests::quoted_placeholders_are_literal ... ok
+test db::tests::postgres_renders_numbered_placeholders ... ok
+test db::tests::sqlite_keeps_question_marks ... ok
+test db::tests::unterminated_string_is_rejected ... ok
+test db::tests::time_encoding_is_fixed_width_and_roundtrips ... ok
+test error::tests::client_errors_keep_their_message ... ok
+test error::tests::internal_detail_never_reaches_the_client ... ok
+test error::tests::status_codes_cover_the_contract ... ok
+test flags::tests::all_flags_default_off ... ok
+test flags::tests::flag_keys_are_unique ... ok
+test identifiers::tests::refuses_unregistered_identifiers_and_invalid_prefixes ... ok
+test identifiers::tests::template_replaces_only_registered_objects ... ok
+test identifiers::tests::registered_objects_render_under_both_prefixes ... ok
+test config::tests::repository_templates_cover_four_environments_and_require_deployment_values ... ok
+test cache::redis::tests::wakeup_deadline_includes_connection_setup ... ok
+test integrations::local::tests::image_decodes_resizes_reencodes_and_rejects_bad_mime_budget ... ok
+test mail::local::tests::mail_classification_headers_brand_and_sensitive_debug ... ok
+test mail::local::tests::no_guessed_alert_thresholds ... ok
+test observability::tests::missing_measurements_are_not_zero_and_labels_are_closed ... ok
+test observability::grouped::tests::closed_dimensions_separate_routes_statuses_and_units ... ok
+test cache::tests::test_limiter_replenishes_is_bounded_and_does_not_reset_on_policy_change ... ok
+test outbox::tests::payload_admits_references_and_refuses_sensitive_fields ... ok
+test outbox::tests::webhook_has_version_and_fixed_time_without_live_delivery ... ok
+test sql_lint::tests::malformed_sql_is_rejected ... ok
+test sql_lint::tests::global_rules_cover_migrations_without_rejecting_acl ... ok
+test sql_lint::tests::all_forbidden_syntax_and_semantic_differences_fail ... ok
+test sql_lint::tests::source_extracts_literals_and_ignores_comments_and_messages ... ok
+test sql_lint::tests::portable_queries_ctes_windows_and_subqueries_pass ... ok
+test sql_lint::tests::source_rejects_split_or_dynamic_sql_fail_closed ... ok
+test sql_lint::tests::workspace_migrations_obey_global_bans ... ok
+test status::tests::redis_failure_degrades_without_blocking_readiness ... ok
+test transaction::tests::lock_plan_uses_registry_order_and_numeric_ids ... ok
+test transaction::tests::operation_ids_are_canonical_uuid_v7 ... ok
+test transaction::tests::retry_is_bounded_backend_specific_and_requires_safe_rollback ... ok
+test types::tests::display_is_decimal ... ok
+test types::tests::deserialization_rejects_non_canonical ... ok
+test types::tests::rejects_non_positive ... ok
+test types::tests::serialization_roundtrips_as_string ... ok
+test integrations::local::tests::disabled_unavailable_and_symlink_boundaries_do_not_succeed ... ok
+test config::tests::unknown_keys_types_environments_and_secret_files_are_rejected ... ok
+test sql_lint::tests::workspace_repository_sql_obeys_portable_subset ... ok
+test integrations::local::tests::objects_are_private_bounded_durable_and_idempotent ... ok
+test integrations::local::tests::scanner_and_telemetry_have_actual_inspectable_results ... ok
+test cache::redis::tests::timed_out_operation_does_not_block_on_connection_cleanup ... ok
+
+test result: ok. 73 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.01s
+
+     Running tests/redis_contract.rs (target/debug/deps/redis_contract-db00ebfc7eecc750)
+
+running 1 test
+test redis8_contract_atomicity_namespace_and_recovery ... ignored, requires explicit isolated Redis 8 endpoint; see docs/development/redis.md
+
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/platform_audit-23097e37ebf8a7d4)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/platform_db-9c7fa6457cda5776)
+
+running 62 tests
+test analytics_repo::tests::utc_windows_and_typed_facts_reject_sensitive_or_invalid_inputs ... ok
+test acl::tests::all_initial_objects_have_explicit_acl_and_future_defaults_are_empty ... ok
+test analytics_repo::tests::sink_uses_durable_processor_and_disabled_is_an_error ... ok
+test command::tests::command_applies_complete_lock_plan_and_rejects_stale_version_atomically ... ok
+test command::tests::business_failure_and_invalid_response_roll_back_reserved_key ... ok
+test analytics_repo::tests::failure_after_receipt_insert_rolls_back_and_retry_applies_once ... ok
+test connection::tests::postgres_ipv6_and_whitelisted_parameters_are_applied ... ok
+test connection::tests::postgres_url_constructs_explicit_options_without_pgpass ... ok
+test connection::tests::raw_driver_entry_rejects_unknown_and_override_parameters_without_secrets ... ok
+test connection::tests::sqlite_driver_entry_refuses_nonpersistent_uri_paths ... ok
+test analytics_repo::tests::interrupted_projection_and_rebuild_rollback_do_not_leave_receipts_or_partial_counts ... ok
+test flags_repo::tests::postgres_flag_migration_snapshot_matches_registry_and_is_read_only ... ok
+test analytics_repo::tests::rolled_back_source_and_forged_envelope_cannot_be_projected ... ok
+test command::tests::same_payload_replays_original_result_different_payload_conflicts ... ok
+test command::tests::retry_success_commits_only_last_attempt_and_expiry_never_reexecutes ... ok
+test command::tests::unknown_commit_simulation_requires_original_context_and_never_replays ... ok
+test mail_repo::tests::complaints_soft_bounces_and_rollback_never_loosen_suppression ... ok
+test mail_repo::tests::hard_bounces_are_deduplicated_persistent_and_stop_retry_with_outbox_alerts ... ok
+test migrations::tests::alignment_rejects_duplicate_gap_zero_and_invalid_name ... ok
+test migrations::tests::alignment_rejects_empty_active_tracks_and_accepts_only_mysql_placeholder ... ok
+test analytics_repo::tests::committed_source_dedup_exclusions_late_arrival_and_restart ... ok
+test migrations::tests::actual_parent_rebuild_preserves_rows_and_restrict_relationship ... ok
+test mail_repo::tests::metric_cohorts_separate_simulation_deduplicate_messages_and_bound_time ... ok
+test migrations::tests::changed_applied_migration_and_metadata_drift_are_refused ... ok
+test migrations::tests::invalid_registered_identifier_fails_before_database_creation ... ok
+test mail_repo::tests::local_mail_writes_once_restarts_and_preserves_error_states ... ok
+test migrations::tests::failed_migration_rolls_back_changes_and_records_safe_failure ... ok
+test migrations::tests::failed_identical_content_can_retry_after_external_precondition_recovers ... ok
+test migrations::tests::hidden_generated_metadata_column_is_rejected ... ok
+test migrations::tests::metadata_constraints_reject_null_number_bad_checksum_and_unknown_state ... ok
+test migrations::tests::migration_content_checks_encoding_transactions_and_checksum ... ok
+test migrations::tests::nested_block_comments_cannot_hide_sqlite_transaction_control ... ok
+test migrations::tests::postgres_escape_literals_and_transaction_aliases_are_rejected ... ok
+test flags_repo::tests::flags_snapshot_migration_registry_restart_missing_and_corruption ... ok
+test migrations::tests::repository_migrations_are_real_and_aligned ... ok
+test migrations::tests::status_preserves_existing_delete_journal_mode ... ok
+test migrations::tests::migration_source_cannot_rewrite_applied_history ... ok
+test migrations::tests::rebuild_foreign_key_violation_rolls_back_and_restores_same_connection ... ok
+test migrations::tests::rebuild_success_and_skip_restore_same_connection ... ok
+test migrations::tests::rebuild_statement_failure_restores_same_connection ... ok
+test migrations::tests::unknown_metadata_shape_is_not_adopted ... ok
+test mail_repo::tests::marketing_unsubscribe_does_not_suppress_security_or_transactions ... ok
+test migrations::tests::status_does_not_create_database_and_both_prefixes_migrate_once ... ok
+test outbox_repo::tests::appending_outbox_prevents_reverse_business_lock_and_transaction_rolls_back ... ok
+test seed::tests::seed_denies_both_production_like_environments_before_validation_or_io ... ok
+test command::tests::retry_template_rolls_back_each_attempt_and_never_retries_unique_conflict ... ok
+test outbox_repo::tests::dedupe_survives_retry_and_completed_event_is_not_claimed_again ... ok
+test tests::mysql8_is_refused ... ok
+test outbox_repo::tests::dlq_replay_requires_authorization_and_atomic_audit_preserves_dedupe ... ok
+test tests::sqlite_applies_pragmas_and_probes_fts5 ... ok
+test outbox_repo::tests::external_pause_and_cancel_release_without_consuming_retry_budget ... ok
+test outbox_repo::tests::leases_isolate_batches_recover_expiry_and_reject_previous_holder ... ok
+test transaction::tests::cancellation_discards_connection_but_confirmed_completion_reuses_it ... ok
+test outbox_repo::tests::enqueue_rollback_and_persistence_use_actual_sqlite_and_both_prefixes ... ok
+test transaction::tests::malformed_time_and_boolean_rows_fail_closed ... ok
+test transaction::tests::actual_transaction_outcomes_and_acquire_failures_remain_separate ... ok
+test transaction::tests::drop_and_explicit_rollback_remove_all_writes_and_borrower_cannot_commit ... ok
+test migrations::tests::upgrades_a03_database_to_engine_and_flags_without_changing_old_data ... ok
+test transaction::tests::sqlite_begin_is_immediate_and_locks_reject_reverse_order ... ok
+test seed::tests::seeds_are_idempotent_restrict_references_and_preserve_edits ... ok
+test status_repo::tests::actual_sqlite_announcements_empty_boundaries_and_failure ... ok
+test transaction::tests::savepoint_recovers_unique_conflict_then_version_update_commits ... ok
+
+test result: ok. 62 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.63s
+
+     Running tests/pool_observations.rs (target/debug/deps/pool_observations-eea77c099c006999)
+
+running 1 test
+test actual_pool_gauges_preserve_purpose_clone_identity_and_lifetime ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src/lib.rs (target/debug/deps/platform_outbox-36fad1ca30488db5)
+
+running 5 tests
+test observation_tests::provider_success_with_failed_acknowledgement_is_never_completed ... ok
+test observation_tests::graceful_cancellation_and_task_abort_release_active_job_gauges ... ok
+test observation_tests::sink_outcomes_have_finite_dimensions_and_confirmed_outbox_transitions ... ok
+test observation_tests::lease_loss_during_delivery_records_lost_lease_without_completion ... ok
+test observation_tests::actual_poll_intervals_include_work_and_failed_claims_have_explicit_exit ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running unittests src/lib.rs (target/debug/deps/privacy-36261513ead59f15)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/support-5d8fb286232b3d20)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/trust-7acae59727d9c036)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests content
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests identity
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests interaction
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests manage
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests media
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests moderation
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests platform
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests platform_audit
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests platform_db
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests platform_outbox
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests privacy
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests support
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests trust
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+== 4/7 SQLite 冒烟
+  SQLite 真实迁移已执行
+  /health → 200
+  /assets/unknown.css → 404
+  /assets/manifest.json → 404
+  /assets/%2e%2e%2f.env → 400
+  / → 200
+  /__fixtures/a00/home → 200
+  /__fixtures/a00/new → 200
+  /__fixtures/a00/pinned → 200
+  /__fixtures/a00/featured → 200
+  /__fixtures/a00/forum → 200
+  /__fixtures/a00/topic → 200
+  /__fixtures/a00/login → 200
+  /__fixtures/a00/register → 200
+  /__fixtures/a00/reset → 200
+  /__fixtures/a00/policy → 200
+  /__fixtures/a00/search → 200
+  /__fixtures/a00/empty → 200
+  /__fixtures/a00/error → 200
+  /__fixtures/a00/profile → 200
+  /__fixtures/a00/assets/fonts.css → 200
+  /__fixtures/a00/assets/pages.css → 200
+  /__fixtures/a00/assets/profile.css → 200
+  /__fixtures/a00/assets/site.css → 200
+  /__fixtures/a00/assets/space-mono-latin-400-normal.woff2 → 200
+  /__fixtures/a00/assets/space-mono-latin-700-normal.woff2 → 200
+  /__fixtures/a00/assets/space-mono-latin-ext-400-normal.woff2 → 200
+  /__fixtures/a00/assets/space-mono-latin-ext-700-normal.woff2 → 200
+  /__fixtures/a00/assets/brand-mark.svg → 200
+  /__fixtures/a00/assets/theme-sun.svg → 200
+  /__fixtures/a00/assets/theme-moon.svg → 200
+  /__fixtures/a00/assets/ui-eye.svg → 200
+  /__fixtures/a00/assets/ui-chat.svg → 200
+  /__fixtures/a00/assets/ui-search.svg → 200
+  /__fixtures/a00/assets/ui-menu.svg → 200
+  /__fixtures/a00/assets/ui-chevron-up.svg → 200
+  /__fixtures/a00/assets/ui-user.svg → 200
+  /__fixtures/a00/assets/ui-document.svg → 200
+  /__fixtures/a00/assets/ui-forum.svg → 200
+  /__fixtures/a00/assets/oauth-google.svg → 200
+  /__fixtures/a00/assets/oauth-github.svg → 200
+  /__fixtures/a00/assets/oauth-x.svg → 200
+  /__fixtures/a00/assets/brand-symbol.svg → 200
+  /__fixtures/a00/assets/favicon-16.png → 200
+  /__fixtures/a00/assets/favicon-32.png → 200
+  /__fixtures/a00/assets/apple-touch-icon.png → 200
+  /__fixtures/a00/assets/favicon.ico → 200
+  /__fixtures/a00/assets/og-image.svg → 200
+  /__fixtures/a00/assets/og-image.png → 200
+  /__fixtures/a00/assets/email-header.svg → 200
+  /__fixtures/a00/unknown → 404
+  /__fixtures/a00/assets/unknown.css → 404
+  /status → 200
+  /status?theme=dark → 200
+  /health/live → 200
+  /health/ready → 200
+
+== 5/7 git diff --check
+
+== 6/7 暂存区复核
+
+== 7/7 静态守卫
+  handler 无 sqlx 引用
+
+✓ 开发期最小集全部通过

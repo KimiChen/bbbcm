@@ -18,3 +18,11 @@ redis = true
 
 [worker]
 embedded = false
+
+# DEC-011 未选定真实供应商；本地测试实现只能在 development/test 装配。
+[adapters]
+mode = "disabled"
+# local_root 仅在本机覆盖文件中填写，且必须处于不被静态服务暴露的私有目录。
+
+# 生产告警阈值未批准，不提供猜测默认值。率阈值须同时显式提供 min_samples。
+[mail_alerts]

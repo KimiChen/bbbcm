@@ -54,3 +54,9 @@
 /__fixtures/a00/assets/email-header.svg 200
 /__fixtures/a00/unknown 404
 /__fixtures/a00/assets/unknown.css 404
+
+# A05 live data status and distinct health endpoints
+/status 200
+/status?theme=dark 200
+/health/live 200
+/health/ready 200

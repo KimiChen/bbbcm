@@ -109,8 +109,8 @@
 | `WP-MVP-A02` | In progress（开发期，2026-09-05） | 本轮配置前置完成：三程序共用安全默认/主文件/local/环境/Secret分层，四环境模板、严格解析、连接/前缀/Redis/Worker校验、Secret脱敏、PostgreSQL启动检查与手册；配置13项及CLI/连接回归随最小集通过。本轮另完成版本化Flag存储、一致只读加载与实际CLI list（第5.5节）；整包剩余受控flag set与/manage/config、审计接线/审批、只读/紧急关闭及提示态，依赖后续授权/A04/D04；14个MVP Flag仍默认全关。配置前置见第5.4节。 |
 | `WP-MVP-A03` | Implemented（开发期，2026-09-05） | 已修复有效轨为空豁免；交付PG/SQLite真实迁移、15逻辑schema映射与3张必要初始表、专用单连接/前缀锁/元数据/漂移拒绝/失败回滚/FK恢复、受信表注册、PG组角色bootstrap与显式/默认ACL、实际migrate/status/seed、4版块规则占位和共享SQL lint。迁移20项及种子/ACL/CLI回归、真实SQLite与HTTP冒烟通过；角色与IAM区分，mysql8只占位，真实PG ACL/并发等留硬化。版本、设计和证据见第5.4节。 |
 | `WP-MVP-A04` | Implemented（开发期，2026-09-05） | 事务/幂等/未知提交、Outbox调度/受控重放、追加审计/敏感读取、双宿主恢复与Webhook版本模型完成；独立复核及真实SQLite最小集通过，见第5.5节。无真实provider或授权路由，不授Verified。 |
-| `WP-MVP-A05` | In progress | Redis、观测、健康与状态页；实施前设计见第5.6节，依赖按DEC-047细化。 |
-| `WP-MVP-A06` | In progress | 分析及本地适配器/邮件代码面；实施前设计见第5.6节，不推进尚缺领域接线的产品需求。 |
+| `WP-MVP-A05` | Implemented（开发期） | Redis异步合同、故障/轮询、有限观测、真实健康与C0状态公告；开发期验证和独立复核通过，代码/测试/证据见第5.6节。依赖按DEC-047细化，真实服务与完整门禁留硬化。 |
+| `WP-MVP-A06` | In progress | 分析持久流水线与本地适配器/邮件代码面已交付；领域生产者、真实指标与看板仍缺，第5.6节逐需求裁决，不批量标完成。 |
 | `WP-MVP-B01..B06` | Not started | - |
 | `WP-MVP-C01..C05` | Not started | - |
 | `WP-MVP-D01..D04` | Not started | - |
@@ -237,7 +237,29 @@
 | 开发验证与复核 | 异步合同/装配/禁用不可用/命名空间/TTL/失效/令牌过期/唤醒丢失轮询/取消，日志脱敏/关联/采集/健康及/status空故障；提供真实Redis8可复现测试入口但本轮不假称已执行真实合同。 | 合成事件+真实临时SQLite去重/排除/边界/延迟/聚合/水位/重建；本地适配器实际输入输出/失败关闭；邮件分类/反馈去重/抑制/硬退信停止重试告警。交叉独立复核接口、Redis故障/敏感日志、分析正确性和邮件规则后修复。 |
 | Flag与状态条件 | 14项业务Flag保持关闭，Redis测试只隔离配置，A02整包始终In progress。全部约定开发交付、最小集和独立复核后A05才可Implemented，不授Verified。 | DATA/INTEG逐条裁决，合成测试不证明真实领域生产者/看板完成；平台切片完成但领域接线缺口则A06整包In progress。未批准口径/阈值暂停依赖计算，继续显式参数合同与合成处理。 |
 
-共同最小集：适用单元、真实临时SQLite冒烟、./scripts/dev-check.sh、git diff --check、逐文件暂存复核。原迁移/种子/Flag list/事务审计/Worker恢复/A00/A01回归；无独立构建或完整资产构建。真实PG/Redis全矩阵、多实例、安全、跨平台、性能与视觉留E01/E02/E04。AGENTS.md、g.md、本机配置/Secrets/数据库/缓存/处理产物仍忽略，不做保留期或自动清理批准。实现、验证和证据结果完成后在本节补登记；当前不声称已通过。
+共同最小集设计：适用单元、真实临时SQLite冒烟、./scripts/dev-check.sh、git diff --check、逐文件暂存复核。原迁移/种子/Flag list/事务审计/Worker恢复/A00/A01回归；无独立构建或完整资产构建。真实PG/Redis全矩阵、多实例、安全、跨平台、性能与视觉留E01/E02/E04。AGENTS.md、g.md、本机配置/Secrets/数据库/缓存/处理产物仍忽略，不做保留期或自动清理批准。以下登记本轮实际结果。
+
+#### 实际交付、逐需求裁决与证据
+
+- A05 完成本轮开发交付：四个异步 Result 合同、Redis8适配/受控环境namespace、默认30秒公开版本缓存/失效、令牌短租约、共享限流及关闭/失败分流；确定提交提示和已有Outbox缓存失效路径，丢提示/持续断连仍轮询。JSON日志、请求至sink及子事件trace、有限HTTP/DB/Worker/sink分组、秒制series与显式ms汇总、进程重置标识、真实App/Worker池、事件与delivery分别计数、缺失状态、健康和真实C0公告读路径已接线。没有新身份、管理写口或A02运行控制；[Redis](../docs/development/redis.md)、[健康与观测](../docs/development/observability.md)给出复现和边界。
+- A06 平台切片已接已有Worker：版本化七事件字典、受信排除、已提交来源校验、投影根锁/持久receipt/聚合/水位共同事务、迟到事件、脱敏窗口原语与原子重建；六类关闭/本地异步适配，真实隔离文件/PNG与JPEG处理、明确模拟扫描、品牌MIME与本地JSON。邮件反馈持久去重、营销退订不屏蔽安全邮件、硬退信停止重试及同事务Outbox告警、模拟/真实分组和显式告警配置。操作说明见[分析](../docs/development/analytics.md)、[适配器与邮件](../docs/development/adapters.md)。真实领域来源未接线时明确Disabled；不把本地邮件标Sent。
+- 数据/依赖：只新增0004/0005/0006三对PG/SQLite迁移、受信注册及列级最小ACL，旧迁移未改；mysql8空占位。新引入redis1.6.0、image0.25.10及必要传递依赖，subscriber启用JSON；锁文件无已有包移除或升级，crate无横向依赖。PG内嵌Worker启动拒绝与02体验模式一致，避免Web承担Worker权限。A00原模板/资产哈希未变；冻结检查仅明确允许新status模板，并限制它复用原类名，不改视觉基准。
+- 最小集完整通过：182项Rust测试、55条HTTP冒烟、真实临时SQLite六迁移/重放/双前缀/种子/Flag list/审计/Worker恢复、Clippy/rustfmt/SQL lint/handler守卫/diff；1项真实Redis8合同测试明确ignored、未执行。另10项容量模型测试与A00冻结检查通过。已读取实际合成MIME（plain/HTML/CID品牌）和对象输出；原始处理产物在Git忽略的data/adapter-probe，本仓库只存摘要。增量复核和最终逐文件暂存审查见证据。
+- 三名代理交叉独立复核后修正Redis时间精度/断连取消、分析来源校验/SQL拼接、图片元数据预算/符号链接/放大预算、邮件窗口/抑制状态/回执丢失重放、audit停用错误分类、PG公告schema权限、trace继承、状态故障文案、指标有限分组/池用途/事务取消与RetryExhausted。现无未关闭的本轮代码阻断。早期编译、过期迁移断言、转义断言、配置测试与SQL lint失败保留在证据中，不伪造一次全过。
+- 版本为本节证据所在的 `新增：交付 A05 平台服务及 A06 分析邮件底座` 本机提交；决策先行提交6fa32f7与bb0b584。证据：[summary.md](../docs/evidence/mvp/platform-services/dev-20260905/summary.md)、同目录validation.json、开发检查/失败日志、独立复核及staged-review.json。开发检查的空暂存阶段不代替最后显式暂存后的逐文件复核。
+- A02继续In progress，A06整包继续In progress，14项业务Flag全关；不授Verified或阶段/发布门禁。未执行真实PG/Redis集成、真实provider/DNS、生产IAM、安全/并发/跨平台/性能/视觉完整矩阵；精确数据库commit-to-sink、PG专项统计、完整客户端延迟、真正业务埋点与看板仍明确未接入。保留期、供应商、生产阈值、法律与正式视觉等Pending不被本轮批准；自然周起点和Unicode折算按DEC-049等待用户答复。
+
+| 精确需求 | 本轮状态裁决 | 实际交付与剩余依赖 |
+|---|---|---|
+| `DATA-001` | In progress | 注册/验证/邀请/阅读/回复/有效贡献字典和去重基础已交付；首次行为判定、真实生产者及漏斗展示仍依赖B/C/D。 |
+| `DATA-002` | In progress | UTC日/月窗口与脱敏去重主体原语已交付；WAU/MAU/果农指数自然周/月已批准，真实活跃/有效性/分层计算和看板未交付，字符折算与自然周起点待明确。 |
+| `DATA-003` | In progress | 主题/回复事件投影、迟到恢复和重建已有测试；有效回复、零回复率和首次回复时间需要内容事实及领域接线。 |
+| `DATA-004` | In progress | 固定版块/标签/渠道/设备维度与聚合合同已交付；真实受信目录、生产事件和管理统计未接线。 |
+| `DATA-005` | Implemented（开发期） | 版本化字典、生产者/发生/接收时间、UTC、去重/排除、处理延迟与重建来源均有代码和操作说明；开发合同测试通过，不据此宣称真实埋点上线或延迟达标。 |
+| `DATA-006` | In progress | 四类排除来自不可HTTP反序列化的受信合同，持久消费及合成测试通过；真实身份/管理员/机器人/活动事实读取及管理选择尚未接线。 |
+| `INTEG-001` | Implemented（开发期） | 可替换合同、明确关闭/不可用及六类可检查本地实现，实际Worker输出通过；符合未批准供应商时的本地交付边界，真实provider与领域业务仍关闭。 |
+| `INTEG-005` | In progress（代码面已交付） | 事务/营销分类和适用头、品牌MIME、送达/延迟/退信/投诉及配置告警已实现；发送域SPF/DKIM/DMARC、真实投递和反馈接入继续DEC-011。 |
+| `INTEG-006` | In progress | 持久抑制/反馈去重、营销与安全隔离、硬退信永久停止和告警完整；真实账号偏好/退订入口、provider反馈鉴权/接线未交付，不以模拟证明真实用户流程完成。 |
 
 ## 6. 门禁状态
 
@@ -245,7 +267,7 @@
 |---|---|---|
 | M0 Repository Ready | In progress | `WP-M0-01`、`WP-M0-03`、`WP-M0-04` 已为 `Implemented`；`WP-M0-02` 受 `DEC-019` 阻塞，`WP-M0-05` 模型已交付，`WP-M0-06` 尚未完成，统一硬化证据和阶段门禁尚未通过。 |
 | M0 Production Approved | Blocked | 多项决策、人员和生产事项待定 |
-| MVP Repository Ready | In progress | `WP-MVP-A00/A01/A03/A04` 已完成开发期交付，`A02` 仍为部分交付，其余 MVP 工作包及统一硬化尚未完成；DEC-045/046本机版本化不代替正式门禁。 |
+| MVP Repository Ready | In progress | `WP-MVP-A00/A01/A03/A04/A05` 已完成开发期交付，`A02/A06` 仍为部分交付，其余 MVP 工作包及统一硬化尚未完成；DEC-045/046本机版本化不代替正式门禁。 |
 | MVP Production Approved | Blocked | 依赖 M0、真实依赖和 18 条门槛 |
 | P1-A/P1-B/P2/Later | Closed | 前置阶段和 `DEC-014` 未满足 |
 

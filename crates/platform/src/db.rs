@@ -197,6 +197,14 @@ pub fn last_insert_id_sql(backend: Backend) -> &'static str {
     }
 }
 
+pub fn begin_read_sql(backend: Backend) -> &'static str {
+    match backend {
+        Backend::Postgres => "BEGIN READ ONLY",
+        Backend::Sqlite => "BEGIN",
+        Backend::Mysql8 => "START TRANSACTION READ ONLY",
+    }
+}
+
 pub fn begin_write_sql(backend: Backend) -> &'static str {
     match backend {
         Backend::Postgres => "BEGIN ISOLATION LEVEL READ COMMITTED",

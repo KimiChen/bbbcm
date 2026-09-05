@@ -15,6 +15,10 @@ uuid.workspace = true
 sha2.workspace = true
 serde_json.workspace = true
 url = "2"
+redis.workspace = true
+image.workspace = true
+tokio.workspace = true
+tracing.workspace = true
 
 [dev-dependencies]
 serde_json = "1"

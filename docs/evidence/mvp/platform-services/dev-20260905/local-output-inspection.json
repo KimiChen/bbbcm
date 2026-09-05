@@ -1,0 +1,20 @@
+{
+  "synthetic_local_only": true,
+  "eml_bytes": 2785,
+  "parts": [
+    {
+      "content_type": "text/plain",
+      "bytes": 154
+    },
+    {
+      "content_type": "text/html",
+      "bytes": 278
+    },
+    {
+      "content_type": "image/svg+xml",
+      "bytes": 1022
+    }
+  ],
+  "object_bytes": 52,
+  "mail_sha256": "a3255e62624b640f086e1e04875e104cb31636fac50e300ad02f5a048e9411df"
+}

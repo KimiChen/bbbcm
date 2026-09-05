@@ -104,6 +104,18 @@ pub struct OutboxEvent {
     pub trace_id: String,
 }
 impl OutboxEvent {
+    /// Trusted producer normalization. HTTP middleware owns the task-local ID;
+    /// background/CLI producers without a request use this event's opaque UUID.
+    /// Explicit upstream trace IDs are preserved and validated.
+    pub fn with_inherited_trace(mut self) -> Result<Self, OutboxError> {
+        if self.trace_id.is_empty() {
+            self.trace_id =
+                crate::observability::current_trace_id().unwrap_or_else(|| self.event_id.clone());
+        }
+        self.validate()?;
+        Ok(self)
+    }
+
     pub fn validate(&self) -> Result<(), OutboxError> {
         if !crate::transaction::validate_operation_id(&self.event_id)
             || !is_machine_name(&self.aggregate_type)
@@ -214,6 +226,7 @@ pub enum OutboxError {
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SinkError {
+    Disabled,
     Retryable,
     Permanent,
 }

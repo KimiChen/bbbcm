@@ -1,0 +1,57 @@
+   Compiling platform v0.1.0 (<workspace>/crates/platform)
+   Compiling platform-db v0.1.0 (<workspace>/crates/platform-db)
+error[E0599]: no method named `purpose` found for reference `&Pool` in the current scope
+   --> crates/platform-db/src/transaction.rs:236:27
+    |
+236 |             purpose: pool.purpose(),
+    |                           ^^^^^^^ method not found in `&Pool`
+    |
+    = help: items from traits can only be used if the trait is implemented and in scope
+    = note: the following trait defines an item `purpose`, perhaps you need to implement it:
+            candidate #1: `PoolObserver`
+
+error[E0023]: this pattern has 2 fields, but the corresponding tuple variant has 1 field
+   --> crates/platform-db/src/transaction.rs:242:32
+    |
+242 |                 Pool::Postgres(pool, _) => {
+    |                                ^^^^  ^ expected 1 field, found 2
+    |
+   ::: crates/platform-db/src/lib.rs:24:14
+    |
+ 24 |     Postgres(sqlx::PgPool),
+    |              ------------ tuple variant has 1 field
+
+error[E0023]: this pattern has 2 fields, but the corresponding tuple variant has 1 field
+   --> crates/platform-db/src/transaction.rs:249:30
+    |
+249 |                 Pool::Sqlite(pool, _) => {
+    |                              ^^^^  ^ expected 1 field, found 2
+    |
+   ::: crates/platform-db/src/lib.rs:25:12
+    |
+ 25 |     Sqlite(sqlx::SqlitePool),
+    |            ---------------- tuple variant has 1 field
+
+error[E0599]: no method named `purpose` found for reference `&Pool` in the current scope
+   --> crates/platform-db/src/transaction.rs:262:36
+    |
+262 |             observed_purpose: pool.purpose(),
+    |                                    ^^^^^^^ method not found in `&Pool`
+    |
+    = help: items from traits can only be used if the trait is implemented and in scope
+    = note: the following trait defines an item `purpose`, perhaps you need to implement it:
+            candidate #1: `PoolObserver`
+
+error[E0599]: no method named `purpose` found for reference `&Pool` in the current scope
+   --> crates/platform-db/src/command.rs:189:35
+    |
+189 |                     purpose: pool.purpose(),
+    |                                   ^^^^^^^ method not found in `&Pool`
+    |
+    = help: items from traits can only be used if the trait is implemented and in scope
+    = note: the following trait defines an item `purpose`, perhaps you need to implement it:
+            candidate #1: `PoolObserver`
+
+Some errors have detailed explanations: E0023, E0599.
+For more information about an error, try `rustc --explain E0023`.
+error: could not compile `platform-db` (lib test) due to 5 previous errors

@@ -223,7 +223,7 @@ async fn unknown_commit_simulation_requires_original_context_and_never_replays()
         (CommitTestMode::LoseAcknowledgementAfterCommit, true),
         (CommitTestMode::LoseAcknowledgementAfterRollback, false),
     ] {
-        let Pool::Sqlite(sqlite) = &f.pool else {
+        let Pool::Sqlite(sqlite, _) = &f.pool else {
             panic!("SQLite fixture");
         };
         sqlx::query("CREATE TEMP TABLE connection_marker (id INTEGER)")

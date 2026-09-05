@@ -10,6 +10,9 @@ mod fixtures;
 mod jobs;
 mod middleware;
 mod router;
+mod status;
+#[path = "../../worker_services.rs"]
+mod worker_services;
 
 use std::process::ExitCode;
 use std::sync::Arc;
@@ -19,6 +22,7 @@ use tracing_subscriber::EnvFilter;
 #[tokio::main]
 async fn main() -> ExitCode {
     tracing_subscriber::fmt()
+        .json()
         .with_env_filter(EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()))
         .init();
 
@@ -48,12 +52,16 @@ async fn run() -> Result<(), String> {
         Arc::new(assets::NoBrandOverrides),
     )
     .map_err(|err| format!("静态资产加载失败: {err}"))?;
-    let state = Arc::new(app_state::AppState::new(config.clone(), assets));
+    let runtime = platform::cache::RedisRuntime::from_config(&config).map_err(|e| e.to_string())?;
+    platform::commit_signal::install(runtime.wakeup.clone()).map_err(|e| e.to_string())?;
+    let mut state = app_state::AppState::new(config.clone(), assets);
+    state.runtime = Some(runtime.clone());
+    let state = Arc::new(state);
 
     // 内嵌任务循环与 HTTP 服务共享同一取消令牌：优雅退出时先停任务循环再落地。
     let cancel = CancellationToken::new();
     let prepared_jobs = if config.worker.embedded {
-        Some(jobs::prepare(&config).await?)
+        Some(jobs::prepare(&config, &runtime).await?)
     } else {
         None
     };
@@ -64,9 +72,12 @@ async fn run() -> Result<(), String> {
     tracing::info!("bbbcm-web 监听 http://{}", config.server.bind);
 
     let jobs = prepared_jobs.map(|prepared| tokio::spawn(prepared.run(cancel.clone())));
-    let serve = axum::serve(listener, router::router(state))
-        .with_graceful_shutdown(shutdown_signal(cancel.clone()))
-        .await;
+    let serve = axum::serve(
+        listener,
+        router::router(state).into_make_service_with_connect_info::<std::net::SocketAddr>(),
+    )
+    .with_graceful_shutdown(shutdown_signal(cancel.clone()))
+    .await;
 
     cancel.cancel();
     if let Some(handle) = jobs {

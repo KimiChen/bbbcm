@@ -1,17 +1,17 @@
 //! bbbcm-worker：后台任务宿主（Outbox 消费、邮件、媒体、清理、聚合）。
 //! 使用与内嵌 jobs 相同的调度器；本进程不写业务规则。
 
-use platform_outbox::{
-    ClosedExternalEffects, HostLock, LocalSink, Scheduler, Settings, SinkRegistry,
-};
+#[path = "../../worker_services.rs"]
+mod worker_services;
+use platform_outbox::HostLock;
 use std::process::ExitCode;
-use std::sync::Arc;
 use tokio_util::sync::CancellationToken;
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 async fn main() -> ExitCode {
     tracing_subscriber::fmt()
+        .json()
         .with_env_filter(EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()))
         .init();
     match run().await {
@@ -35,37 +35,14 @@ async fn run() -> Result<(), String> {
     .await
     .map_err(|err| err.to_string())?;
 
+    let runtime = platform::cache::RedisRuntime::from_config(&config).map_err(|e| e.to_string())?;
+    platform::commit_signal::install(runtime.wakeup.clone()).map_err(|e| e.to_string())?;
     let pool =
         platform_db::Pool::connect_for(&config.database, platform_db::connection::Purpose::Worker)
             .await
             .map_err(|error| error.to_string())?;
     let _host_lock = HostLock::acquire(&config.database).map_err(|error| error.to_string())?;
-    let renderer = platform::identifiers::SchemaRenderer::new(&config.database.schema_prefix)
-        .map_err(|error| error.to_string())?;
-    let store = Arc::new(platform_db::outbox_repo::DbOutboxStore::new(
-        pool.clone(),
-        renderer.clone(),
-    ));
-    let mut registry = SinkRegistry::default();
-    registry
-        .register(Arc::new(LocalSink::default()))
-        .map_err(|error| error.to_string())?;
-    registry
-        .register(Arc::new(platform_audit::ReplicaSink::new(
-            Arc::new(platform_db::audit_repo::DbAuditExport::new(
-                pool.clone(),
-                renderer,
-            )),
-            Arc::new(platform_audit::DisabledReplica),
-        )))
-        .map_err(|error| error.to_string())?;
-    let scheduler = Scheduler::new(
-        store,
-        registry,
-        Arc::new(ClosedExternalEffects),
-        Settings::default(),
-    )
-    .map_err(|error| error.to_string())?;
+    let scheduler = worker_services::scheduler(&config, pool.clone(), &runtime)?;
     let cancel = CancellationToken::new();
     let signal_cancel = cancel.clone();
     let signal = tokio::spawn(async move {
@@ -73,11 +50,18 @@ async fn run() -> Result<(), String> {
         tracing::info!("收到 {name}，停止领取并释放未完成租约");
         signal_cancel.cancel();
     });
-    tracing::info!("bbbcm-worker Outbox 轮询启动，外部副作用关闭");
+    tracing::info!(adapter_mode=?config.adapters.mode, "bbbcm-worker Outbox 调度启动");
+    let observer = tokio::spawn(worker_services::observe_mail(
+        config,
+        pool.clone(),
+        cancel.clone(),
+    ));
     let result = scheduler
-        .run(cancel)
+        .run(cancel.clone())
         .await
         .map_err(|error| error.to_string());
+    cancel.cancel();
+    let _ = observer.await;
     signal.abort();
     pool.close().await;
     result?;

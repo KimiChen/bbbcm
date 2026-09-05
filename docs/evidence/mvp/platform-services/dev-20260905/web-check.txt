@@ -1,0 +1,92 @@
+ Downloading crates ...
+  Downloaded tracing-serde v0.2.0
+   Compiling chrono v0.4.45
+   Compiling redis v1.6.0
+   Compiling tracing-serde v0.2.0
+   Compiling tracing-subscriber v0.3.23
+   Compiling sqlx-core v0.8.6
+   Compiling sqlx-postgres v0.8.6
+   Compiling sqlx-sqlite v0.8.6
+   Compiling sqlx v0.8.6
+   Compiling platform v0.1.0 (<workspace>/crates/platform)
+   Compiling platform-outbox v0.1.0 (<workspace>/crates/platform-outbox)
+   Compiling identity v0.1.0 (<workspace>/crates/identity)
+   Compiling interaction v0.1.0 (<workspace>/crates/interaction)
+   Compiling moderation v0.1.0 (<workspace>/crates/moderation)
+   Compiling privacy v0.1.0 (<workspace>/crates/privacy)
+   Compiling platform-db v0.1.0 (<workspace>/crates/platform-db)
+   Compiling support v0.1.0 (<workspace>/crates/support)
+error[E0432]: unresolved import `tracing`
+  --> crates/platform-outbox/src/lib.rs:16:5
+   |
+16 | use tracing::Instrument;
+   |     ^^^^^^^ use of unresolved module or unlinked crate `tracing`
+   |
+   = help: if you wanted to use a crate named `tracing`, use `cargo add tracing` to add it to your `Cargo.toml`
+
+error[E0433]: cannot find module or crate `tracing` in this scope
+   --> crates/platform-outbox/src/lib.rs:230:67
+    |
+230 |             let delivered = sink.deliver(&lease.event).instrument(tracing::info_span!("sink", kind = %safe_sink_kind(name)));
+    |                                                                   ^^^^^^^ use of unresolved module or unlinked crate `tracing`
+
+error[E0433]: cannot find module or crate `tracing` in this scope
+   --> crates/platform-outbox/src/lib.rs:175:24
+    |
+175 |             let span = tracing::info_span!("outbox", trace_id = %lease.event.trace_id, event_id = %lease.event.event_id);
+    |                        ^^^^^^^ use of unresolved module or unlinked crate `tracing`
+
+error[E0433]: cannot find module or crate `tracing` in this scope
+   --> crates/platform-outbox/src/lib.rs:284:9
+    |
+284 |         tracing::warn!(failure = code.as_str(), "outbox delivery deferred or failed");
+    |         ^^^^^^^ use of unresolved module or unlinked crate `tracing`
+
+error[E0433]: cannot find module or crate `tracing` in this scope
+   --> crates/platform-outbox/src/lib.rs:249:21
+    |
+249 |                     tracing::info!(outcome = "success", "sink finished");
+    |                     ^^^^^^^ use of unresolved module or unlinked crate `tracing`
+
+   Compiling trust v0.1.0 (<workspace>/crates/trust)
+   Compiling content v0.1.0 (<workspace>/crates/content)
+   Compiling platform-audit v0.1.0 (<workspace>/crates/platform-audit)
+   Compiling media v0.1.0 (<workspace>/crates/media)
+error[E0599]: no method named `instrument` found for struct `Pin<Box<dyn Future<Output = Result<(), SinkError>> + Send>>` in the current scope
+   --> crates/platform-outbox/src/lib.rs:230:56
+    |
+230 |             let delivered = sink.deliver(&lease.event).instrument(tracing::info_span!("sink", kind = %safe_sink_kind(name)));
+    |                                                        ^^^^^^^^^^ method not found in `Pin<Box<dyn Future<Output = Result<(), SinkError>> + Send>>`
+    |
+   ::: <home>/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tracing-0.1.44/src/instrument.rs:86:8
+    |
+ 86 |     fn instrument(self, span: Span) -> Instrumented<Self> {
+    |        ---------- the method is available for `Pin<Box<dyn Future<Output = Result<(), SinkError>> + Send>>` here
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: trait `Instrument` which provides `instrument` is implemented but not in scope; perhaps you want to import it
+    |
+  3 + use tracing::instrument::Instrument;
+    |
+
+error[E0599]: no method named `instrument` found for opaque type `impl Future<Output = Result<(), OutboxError>>` in the current scope
+   --> crates/platform-outbox/src/lib.rs:176:65
+    |
+176 |             match self.consume(lease, &leases[index..], cancel).instrument(span).await {
+    |                                                                 ^^^^^^^^^^ method not found in `impl Future<Output = Result<(), OutboxError>>`
+    |
+   ::: <home>/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tracing-0.1.44/src/instrument.rs:86:8
+    |
+ 86 |     fn instrument(self, span: Span) -> Instrumented<Self> {
+    |        ---------- the method is available for `impl Future<Output = Result<(), OutboxError>>` here
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: trait `Instrument` which provides `instrument` is implemented but not in scope; perhaps you want to import it
+    |
+  3 + use tracing::instrument::Instrument;
+    |
+
+Some errors have detailed explanations: E0432, E0433, E0599.
+For more information about an error, try `rustc --explain E0432`.
+error: could not compile `platform-outbox` (lib) due to 7 previous errors
+warning: build failed, waiting for other jobs to finish...

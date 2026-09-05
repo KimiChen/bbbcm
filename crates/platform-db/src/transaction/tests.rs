@@ -231,7 +231,7 @@ async fn malformed_time_and_boolean_rows_fail_closed() {
 #[tokio::test]
 async fn cancellation_discards_connection_but_confirmed_completion_reuses_it() {
     let f = Fixture::new().await;
-    let Pool::Sqlite(sqlite) = &f.pool else {
+    let Pool::Sqlite(sqlite, _) = &f.pool else {
         panic!("SQLite fixture");
     };
     sqlx::query("CREATE TEMP TABLE connection_marker (id INTEGER)")
@@ -279,4 +279,128 @@ async fn cancellation_discards_connection_but_confirmed_completion_reuses_it() {
     .await
     .unwrap();
     assert_eq!(marker, 0);
+}
+
+#[tokio::test]
+async fn actual_transaction_outcomes_and_acquire_failures_remain_separate() {
+    let f = Fixture::new().await;
+    let observed = Arc::new(Metrics::default());
+    DbTransaction::begin_observed(&f.pool, false, observed.clone())
+        .await
+        .unwrap()
+        .commit()
+        .await
+        .unwrap();
+    DbTransaction::begin_observed(&f.pool, true, observed.clone())
+        .await
+        .unwrap()
+        .rollback()
+        .await
+        .unwrap();
+    DbTransaction::begin_observed(&f.pool, false, observed.clone())
+        .await
+        .unwrap()
+        .rollback_after(&TransactionError::Database(DbErrorClass::UniqueConflict))
+        .await
+        .unwrap();
+    assert_eq!(
+        DbTransaction::begin_observed(&f.pool, false, observed.clone())
+            .await
+            .unwrap()
+            .simulate_lost_ack(true)
+            .await,
+        Err(TransactionError::CommitUnknown)
+    );
+
+    let pool = f.pool.clone();
+    let observations = observed.clone();
+    let table = f.forums();
+    let (ready, started) = tokio::sync::oneshot::channel();
+    let task = tokio::spawn(async move {
+        let mut tx = DbTransaction::begin_observed(&pool, false, observations)
+            .await
+            .unwrap();
+        tx.connection().execute(&format!("INSERT INTO {table} (slug, name, position, status, version) VALUES (?, ?, ?, ?, ?)"), &["metric-cancel".into(), "fixture".into(), 1_i64.into(), "draft".into(), 1_i64.into()]).await.unwrap();
+        ready.send(()).unwrap();
+        std::future::pending::<()>().await;
+        drop(tx);
+    });
+    started.await.unwrap();
+    task.abort();
+    assert!(task.await.unwrap_err().is_cancelled());
+    assert_eq!(f.count("community", "forums").await, 0);
+
+    let held = DbTransaction::begin(&f.pool).await.unwrap();
+    assert!(
+        tokio::time::timeout(
+            std::time::Duration::from_millis(10),
+            DbTransaction::begin_observed(&f.pool, false, observed.clone())
+        )
+        .await
+        .is_err()
+    );
+    held.rollback().await.unwrap();
+    f.pool.close().await;
+    assert!(
+        DbTransaction::begin_observed(&f.pool, false, observed.clone())
+            .await
+            .is_err()
+    );
+
+    let series = observed.grouped.snapshot();
+    for (outcome, error_class) in [
+        (TransactionOutcome::Committed, ErrorClass::None),
+        (TransactionOutcome::RolledBack, ErrorClass::None),
+        (TransactionOutcome::RolledBack, ErrorClass::UniqueConflict),
+        (TransactionOutcome::CommitUnknown, ErrorClass::Connection),
+        (
+            TransactionOutcome::CancelledOrAbandoned,
+            ErrorClass::NotObserved,
+        ),
+    ] {
+        let sample = series
+            .iter()
+            .find(|s| {
+                s.dimensions
+                    == SeriesKey::DbTransactionSeconds {
+                        backend: DatabaseBackend::Sqlite,
+                        purpose: DatabasePurpose::App,
+                        outcome,
+                        error_class,
+                    }
+            })
+            .expect("each actual outcome has its own series");
+        assert_eq!(sample.sample.count, 1);
+        assert!(sample.sample.sum > 0.);
+    }
+    for (outcome, error_class) in [
+        (AcquireOutcome::Cancelled, ErrorClass::NotObserved),
+        (AcquireOutcome::Failed, ErrorClass::Connection),
+    ] {
+        let sample = series
+            .iter()
+            .find(|s| {
+                s.dimensions
+                    == SeriesKey::DbPoolAcquireSeconds {
+                        backend: DatabaseBackend::Sqlite,
+                        purpose: DatabasePurpose::App,
+                        outcome,
+                        error_class,
+                    }
+            })
+            .unwrap();
+        assert_eq!(sample.sample.count, 1);
+        if outcome == AcquireOutcome::Cancelled {
+            assert!(sample.sample.sum >= 0.01);
+        }
+    }
+    let attempts = series
+        .iter()
+        .find(|s| matches!(s.dimensions, SeriesKey::DbTransactionAttemptsTotal { .. }))
+        .unwrap();
+    assert_eq!(
+        attempts.sample.count, 5,
+        "failed/cancelled acquire never started BEGIN"
+    );
+    assert_ne!(observed.instance_id(), Metrics::default().instance_id());
 }

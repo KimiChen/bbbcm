@@ -1,0 +1,28 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.09s
+     Running unittests src/lib.rs (target/debug/deps/platform-0d9391d623327be9)
+
+running 8 tests
+test sql_lint::tests::global_rules_cover_migrations_without_rejecting_acl ... ok
+test sql_lint::tests::malformed_sql_is_rejected ... ok
+test sql_lint::tests::source_rejects_split_or_dynamic_sql_fail_closed ... ok
+test sql_lint::tests::all_forbidden_syntax_and_semantic_differences_fail ... ok
+test sql_lint::tests::portable_queries_ctes_windows_and_subqueries_pass ... ok
+test sql_lint::tests::source_extracts_literals_and_ignores_comments_and_messages ... ok
+test sql_lint::tests::workspace_migrations_obey_global_bans ... ok
+test sql_lint::tests::workspace_repository_sql_obeys_portable_subset ... FAILED
+
+failures:
+
+---- sql_lint::tests::workspace_repository_sql_obeys_portable_subset stdout ----
+
+thread 'sql_lint::tests::workspace_repository_sql_obeys_portable_subset' (1797964) panicked at crates/platform/src/sql_lint.rs:930:62:
+<workspace>/crates/platform/../../crates/platform-db/src/status_repo.rs: SQL lint: Repository 禁止动态 SQL 拼接或自行编码时间（字节 7400）
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    sql_lint::tests::workspace_repository_sql_obeys_portable_subset
+
+test result: FAILED. 7 passed; 1 failed; 0 ignored; 0 measured; 64 filtered out; finished in 0.02s
+
+error: test failed, to rerun pass `-p platform --lib`

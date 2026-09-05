@@ -37,7 +37,7 @@ impl Fixture {
         DbOutboxStore::new(self.pool.clone(), self.renderer.clone())
     }
     async fn event(&self, sinks: &[&str]) -> OutboxEvent {
-        let event = event();
+        let event = event().with_inherited_trace().unwrap();
         let mut tx = DbTransaction::begin(&self.pool).await.unwrap();
         enqueue(&mut tx.connection(), &self.renderer, &event, sinks)
             .await

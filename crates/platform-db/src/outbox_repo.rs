@@ -39,7 +39,7 @@ pub async fn enqueue(
     event: &OutboxEvent,
     sinks: &[&str],
 ) -> Result<(), OutboxError> {
-    event.validate()?;
+    let event = event.clone().with_inherited_trace()?;
     if sinks.is_empty()
         || sinks.len() > 32
         || sinks.iter().any(|s| !platform::outbox::is_machine_name(s))
