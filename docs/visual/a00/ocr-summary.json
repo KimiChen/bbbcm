@@ -1,0 +1,99 @@
+{
+  "engine": "macOS Vision VNRecognizeTextRequest accurate",
+  "terms": [
+    "LZ.SB",
+    "bbbcm_",
+    "forum-cli",
+    "forum-worker",
+    "lz.sb",
+    "plan2",
+    "sb dot sb",
+    "sb.sb",
+    "sb:",
+    "sb。sb",
+    "sb．sb",
+    "烧饼",
+    "燒餅"
+  ],
+  "scope": "Seven synthetic SSR previews, four source PNG assets, localized symbol light/dark previews, the 48px ICO frame PNG and shared email-header preview; raw reference postprocessing belongs to user under DEC-044",
+  "manual_review": "Codex visually reviewed all 15 images: seven synthetic pages, four source raster assets, two symbol themes, 48px ICO frame and the shared project email header. Only synthetic/project brand content; no old brand glyphs or reference user data. Tiny favicon text cannot be reliably recognized by OCR; manual review and source glyph checks supplement it.",
+  "images": [
+    {
+      "path": "docs/visual/a00/implementation/home-1440-dark.png",
+      "sha256": "2db8c35c7159d8bb73fd1c480fc030bb6c4c726cf40339424e1299288344196f",
+      "review_hits": 0
+    },
+    {
+      "path": "docs/visual/a00/implementation/home-1440-light.png",
+      "sha256": "4a618913502ffc698202c98e8695643404e4780807c662bb3e6204b8bcf39f36",
+      "review_hits": 0
+    },
+    {
+      "path": "docs/visual/a00/implementation/home-390-light.png",
+      "sha256": "633567b9bdd8ba67a20ad1fac90c0d8b4782a59a701cde594d844c3c48bea1f0",
+      "review_hits": 0
+    },
+    {
+      "path": "docs/visual/a00/implementation/login-1440-light.png",
+      "sha256": "5423ba91c044a5a5f4ad8e01f5d5af5f29bb3ab1e5e74395a99c9584c3bcc947",
+      "review_hits": 0
+    },
+    {
+      "path": "docs/visual/a00/implementation/profile-1440-light.png",
+      "sha256": "71a855e225a394c813816f183c0bc112b57aec31bb3d3fa0da305990fc88441e",
+      "review_hits": 0
+    },
+    {
+      "path": "docs/visual/a00/implementation/profile-390-light.png",
+      "sha256": "72ab71d56267ec06097298e5e7c0e75da06208f6aa235ad116c80f1d06e2367b",
+      "review_hits": 0
+    },
+    {
+      "path": "docs/visual/a00/implementation/topic-1440-light.png",
+      "sha256": "25b7face5524722d0d356756571aee3a93a128f1cec431b4dbc2ea912dce9a7e",
+      "review_hits": 0
+    },
+    {
+      "path": "apps/web/static/img/apple-touch-icon.png",
+      "sha256": "7395823edc71fc612141d795ca5c5218b9588b1431687281ff532b66ec5b3a0e",
+      "review_hits": 0
+    },
+    {
+      "path": "apps/web/static/img/favicon-16.png",
+      "sha256": "1c1547f5c0bad97c5362db9086691cca8defa41c89334ff2025052023a8dfa21",
+      "review_hits": 0
+    },
+    {
+      "path": "apps/web/static/img/favicon-32.png",
+      "sha256": "7acc6eabbf26542b611325a560ae09b35f02d7e219f0d0807abb8d63695f28ec",
+      "review_hits": 0
+    },
+    {
+      "path": "apps/web/static/img/og-image.png",
+      "sha256": "ae9e33ff6c973253c8577779b84b5c4fad8e35eddef9eb48b1ed9edecb7be1fe",
+      "review_hits": 0
+    },
+    {
+      "path": ".local/a00-redo/email-header-preview.png",
+      "sha256": "fd4d01e0a24584d741734e02928a1b17d020bdeb21e79886a1d87981f120d1e9",
+      "review_hits": 0
+    },
+    {
+      "path": ".local/a00-redo/brand-preview/brand-symbol-dark.png",
+      "sha256": "e010a96bd95f78c8672bed244558a58945833d7af20f9ac5894dfe58841072eb",
+      "review_hits": 0
+    },
+    {
+      "path": ".local/a00-redo/brand-preview/brand-symbol-light.png",
+      "sha256": "a2d712a24b0d9aeed11f4911373b58c25990a61257b62716eb7151526fd70dbf",
+      "review_hits": 0
+    },
+    {
+      "path": ".local/a00-redo/brand-preview/favicon-48-frame.png",
+      "sha256": "780a8c3511cc810d55260853d1dfc95a311818c7afac2dd0713608baf66d3cfa",
+      "review_hits": 0
+    }
+  ],
+  "result": "pass",
+  "reproduce": "swift scripts/a00-ocr.swift --terms docs/visual/a00/old-names.json docs/visual/a00/implementation/*.png apps/web/static/img/*.png .local/a00-redo/email-header-preview.png .local/a00-redo/brand-preview/*.png"
+}

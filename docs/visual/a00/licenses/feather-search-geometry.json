@@ -1,0 +1,92 @@
+{
+  "logical_name": "ui-search",
+  "source_commit": "3dc050d97405062eba78aa57115c0a15c63abdaa",
+  "reference_source": "https://sb.sb/",
+  "reference_observation": ".local/a00-redo/public-ui-svg-shapes.json (current anonymous A00 observation; no user text)",
+  "recipe": {
+    "circle": {
+      "scale": "9/16",
+      "translate": [
+        "-3/16",
+        "-3/16"
+      ]
+    },
+    "handle": {
+      "scale": "70/87",
+      "translate": [
+        "-113/29",
+        "-113/29"
+      ]
+    },
+    "output_view_box": [
+      0,
+      0,
+      14,
+      14
+    ],
+    "output_stroke_width": "1.4",
+    "retain_round_caps_joins": true
+  },
+  "source_geometry": {
+    "circle": {
+      "center": [
+        11,
+        11
+      ],
+      "radius": 8
+    },
+    "handle": [
+      [
+        21,
+        21
+      ],
+      [
+        16.65,
+        16.65
+      ]
+    ]
+  },
+  "transformed_geometry": {
+    "circle": {
+      "center": [
+        6,
+        6
+      ],
+      "radius": 4.5
+    },
+    "handle": [
+      [
+        13,
+        13
+      ],
+      [
+        9.5,
+        9.5
+      ]
+    ]
+  },
+  "observed_reference_geometry": {
+    "circle": {
+      "center": [
+        6,
+        6
+      ],
+      "radius": 4.5
+    },
+    "handle": [
+      [
+        9.5,
+        9.5
+      ],
+      [
+        13,
+        13
+      ]
+    ]
+  },
+  "comparison": "Circle center/radius and both line endpoints computed with exact Fraction arithmetic; handle direction reversal is geometrically equivalent. No rounding tolerance. Not a single whole-icon affine transform.",
+  "ownership_boundary": "The delivered SVG is a documented modification of the independently obtained official MIT Feather source. The reference-site original remains of unconfirmed licensing origin.",
+  "comparison_scope": "Exact primitive geometry and stroke/cap construction only; no E04 pixel or WCAG conclusion.",
+  "all_visible_geometry_exact": true,
+  "stroke_width_equal": true
+}

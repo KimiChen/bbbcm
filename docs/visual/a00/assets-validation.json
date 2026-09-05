@@ -1,0 +1,147 @@
+{
+  "work_package": "WP-MVP-A00",
+  "validator": "scripts/a00-assets.py",
+  "validation_scope": "Development only; all 30 source assets, 16 isolated Feather source/geometry mutations and 11 DEC-045/PNG/ICO negative checks. No third-party authorization, production or E04 pixel/WCAG conclusion.",
+  "baseline_asset_count": 30,
+  "baseline_result": "pass: all current assets satisfy source completeness/hash/MIME/dimensions/rights checks",
+  "validator_sha256": "a73b0695dda6094c163a339a81efa5a9a841d3791b5ed4f565772c88e3fa5e4d",
+  "previous_negative_validation_commit": "bdf87f0",
+  "previous_validation_note": "The previous 8 menu/chevron-specific negative checks remain recorded in commit bdf87f0; the earlier 15-case baseline is retained in c4dd9b3. This report does not claim those old mutations were rerun.",
+  "checks": [
+    {
+      "check": "search missing dedicated provenance evidence",
+      "result": "pass",
+      "rejected_with": "Feather 搜索缺少专属许可/原字节/配方证据"
+    },
+    {
+      "check": "search unreviewed upstream commit",
+      "result": "pass",
+      "rejected_with": "Feather 搜索固定版本/许可/来源与分发哈希链不符"
+    },
+    {
+      "check": "search altered original source bytes",
+      "result": "pass",
+      "rejected_with": "Feather 搜索官方源 SVG 原字节不符"
+    },
+    {
+      "check": "search incorrect circle transform",
+      "result": "pass",
+      "rejected_with": "Feather 搜索独立组件变换配方或归属说明不符"
+    },
+    {
+      "check": "search incorrect independent handle transform",
+      "result": "pass",
+      "rejected_with": "Feather 搜索独立组件变换配方或归属说明不符"
+    },
+    {
+      "check": "search forged reference radius",
+      "result": "pass",
+      "rejected_with": "Feather 搜索圆/手柄目标几何或比较证据不符"
+    },
+    {
+      "check": "search rehashed unauthorized circle radius",
+      "result": "pass",
+      "rejected_with": "Feather 搜索 SVG 不等于固定组件变换结果"
+    },
+    {
+      "check": "search moved to unreviewed path",
+      "result": "pass",
+      "rejected_with": "Feather 搜索图标路径未经确认"
+    },
+    {
+      "check": "eye altered original source bytes",
+      "result": "pass",
+      "rejected_with": "Feather 参数改编官方源 SVG 原字节不符"
+    },
+    {
+      "check": "eye undeclared half width",
+      "result": "pass",
+      "rejected_with": "Feather 参数改编原始/目标参数或归属说明不符"
+    },
+    {
+      "check": "eye rehashed unauthorized control offset",
+      "result": "pass",
+      "rejected_with": "Feather 参数改编 SVG 不等于独立重算结果"
+    },
+    {
+      "check": "eye forged reference cubic control",
+      "result": "pass",
+      "rejected_with": "Feather 参数改编与参考绝对几何证据不符"
+    },
+    {
+      "check": "chat altered original source bytes",
+      "result": "pass",
+      "rejected_with": "Feather 参数改编官方源 SVG 原字节不符"
+    },
+    {
+      "check": "chat undeclared corner radius",
+      "result": "pass",
+      "rejected_with": "Feather 参数改编原始/目标参数或归属说明不符"
+    },
+    {
+      "check": "chat rehashed unauthorized arc flag",
+      "result": "pass",
+      "rejected_with": "Feather 参数改编 SVG 不等于独立重算结果"
+    },
+    {
+      "check": "chat forged reference arc flag",
+      "result": "pass",
+      "rejected_with": "Feather 参数改编与参考绝对几何证据不符"
+    },
+    {
+      "check": "unknown-license local_versioning_decision invalid",
+      "result": "pass",
+      "rejected_with": "未知许可必须完整记录 DEC-045 本机版本化与未批准公开发布的边界：apps/web/static/img/ui-user.svg"
+    },
+    {
+      "check": "unknown-license public_release invalid",
+      "result": "pass",
+      "rejected_with": "未知许可必须完整记录 DEC-045 本机版本化与未批准公开发布的边界：apps/web/static/img/ui-user.svg"
+    },
+    {
+      "check": "unknown-license redistributable invalid",
+      "result": "pass",
+      "rejected_with": "未知许可必须完整记录 DEC-045 本机版本化与未批准公开发布的边界：apps/web/static/img/ui-user.svg"
+    },
+    {
+      "check": "unknown-license source_url invalid",
+      "result": "pass",
+      "rejected_with": "未知许可资产必须固定来源与分发 SHA-256：apps/web/static/img/ui-user.svg"
+    },
+    {
+      "check": "unknown-license sha256 invalid",
+      "result": "pass",
+      "rejected_with": "参考 UI 来源/分发哈希链不一致"
+    },
+    {
+      "check": "missing local-versioning decision evidence",
+      "result": "pass",
+      "rejected_with": "未知许可必须完整记录 DEC-045 本机版本化与未批准公开发布的边界：apps/web/static/img/ui-user.svg"
+    },
+    {
+      "check": "PNG false dimensions",
+      "result": "pass",
+      "rejected_with": "PNG 尺寸与清单不一致：apps/web/static/img/favicon-16.png"
+    },
+    {
+      "check": "PNG invalid signature",
+      "result": "pass",
+      "rejected_with": "PNG 文件头无效：apps/web/static/img/favicon-16.png"
+    },
+    {
+      "check": "PNG false MIME",
+      "result": "pass",
+      "rejected_with": "MIME 与扩展名不符：apps/web/static/img/favicon-16.png"
+    },
+    {
+      "check": "ICO trailing unparsed bytes",
+      "result": "pass",
+      "rejected_with": "ICO 尺寸或尾随数据与清单不符"
+    },
+    {
+      "check": "ICO invalid first frame offset",
+      "result": "pass",
+      "rejected_with": "ICO 目录/帧范围无效"
+    }
+  ]
+}

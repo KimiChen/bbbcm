@@ -1,0 +1,134 @@
+[
+  {
+    "logical_name": "ui-user",
+    "path": "apps/web/static/img/ui-user.svg",
+    "sha256": "fd7df217bde48c11e4b129c00e1a38d8a651809260bb17edff9fbaa650492960",
+    "content_hash_filename": "fd7df217bde48c11e4b129c00e1a38d8a651809260bb17edff9fbaa650492960.svg",
+    "mime": "image/svg+xml",
+    "width": 24.0,
+    "height": 24.0,
+    "theme": "light/dark; currentColor or CSS mask",
+    "accessible_name": "用户",
+    "source": "Current anonymous public reference SVG; license unconfirmed; locally versioned under DEC-045 without a third-party permission claim",
+    "source_url": "https://sb.sb/",
+    "license": "unconfirmed",
+    "redistributable": "pending",
+    "local_versioning_decision": "DEC-045",
+    "public_release": "not-approved",
+    "evidence": [
+      "docs/visual/a00/licenses/reference-ui-pending-source.json",
+      "plan/06-decisions-and-risks.md"
+    ],
+    "modification": "Preserve every captured primitive, path coordinate and stroke/fill attribute. Add SVG namespace and explicit 24x24 intrinsic dimensions for standalone asset delivery; CSS retains the observed display size."
+  },
+  {
+    "logical_name": "ui-document",
+    "path": "apps/web/static/img/ui-document.svg",
+    "sha256": "6bb04d925da839ab046da5d0c073b5edd2d8cdbf3468566a0a0ce605423603bb",
+    "content_hash_filename": "6bb04d925da839ab046da5d0c073b5edd2d8cdbf3468566a0a0ce605423603bb.svg",
+    "mime": "image/svg+xml",
+    "width": 24.0,
+    "height": 24.0,
+    "theme": "light/dark; currentColor or CSS mask",
+    "accessible_name": "主题分页",
+    "source": "Current anonymous public reference SVG; license unconfirmed; locally versioned under DEC-045 without a third-party permission claim",
+    "source_url": "https://sb.sb/",
+    "license": "unconfirmed",
+    "redistributable": "pending",
+    "local_versioning_decision": "DEC-045",
+    "public_release": "not-approved",
+    "evidence": [
+      "docs/visual/a00/licenses/reference-ui-pending-source.json",
+      "plan/06-decisions-and-risks.md"
+    ],
+    "modification": "Preserve every captured primitive, path coordinate and stroke/fill attribute. Add SVG namespace and explicit 24x24 intrinsic dimensions for standalone asset delivery; CSS retains the observed display size."
+  },
+  {
+    "logical_name": "ui-forum",
+    "path": "apps/web/static/img/ui-forum.svg",
+    "sha256": "5aed982332bbe153959ced443d5c2b57ee41816858018fb6aa31ac48dea17357",
+    "content_hash_filename": "5aed982332bbe153959ced443d5c2b57ee41816858018fb6aa31ac48dea17357.svg",
+    "mime": "image/svg+xml",
+    "width": 24.0,
+    "height": 24.0,
+    "theme": "light/dark; currentColor or CSS mask",
+    "accessible_name": "版块",
+    "source": "Current anonymous public reference SVG; license unconfirmed; locally versioned under DEC-045 without a third-party permission claim",
+    "source_url": "https://sb.sb/",
+    "license": "unconfirmed",
+    "redistributable": "pending",
+    "local_versioning_decision": "DEC-045",
+    "public_release": "not-approved",
+    "evidence": [
+      "docs/visual/a00/licenses/reference-ui-pending-source.json",
+      "plan/06-decisions-and-risks.md"
+    ],
+    "modification": "Preserve every captured primitive, path coordinate and stroke/fill attribute. Add SVG namespace and explicit 24x24 intrinsic dimensions for standalone asset delivery; CSS retains the observed display size."
+  },
+  {
+    "logical_name": "oauth-github",
+    "path": "apps/web/static/img/oauth-github.svg",
+    "sha256": "45adca1e3d9efade1b7e183d0defac90b2c01db154140d023b14358e0a27fae6",
+    "content_hash_filename": "45adca1e3d9efade1b7e183d0defac90b2c01db154140d023b14358e0a27fae6.svg",
+    "mime": "image/svg+xml",
+    "width": 24.0,
+    "height": 24.0,
+    "theme": "light/dark; currentColor or CSS mask",
+    "accessible_name": "GitHub",
+    "source": "Current anonymous public reference SVG; license unconfirmed; locally versioned under DEC-045 without a third-party permission claim",
+    "source_url": "https://sb.sb/login/",
+    "license": "unconfirmed",
+    "redistributable": "pending",
+    "local_versioning_decision": "DEC-045",
+    "public_release": "not-approved",
+    "evidence": [
+      "docs/visual/a00/licenses/reference-ui-pending-source.json",
+      "plan/06-decisions-and-risks.md"
+    ],
+    "modification": "Preserve every captured primitive, path coordinate and stroke/fill attribute. Add SVG namespace and explicit 24x24 intrinsic dimensions for standalone asset delivery; CSS retains the observed display size. Set root fill=currentColor to preserve the reference inherited OAuth fill when used standalone or as a CSS mask."
+  },
+  {
+    "logical_name": "oauth-x",
+    "path": "apps/web/static/img/oauth-x.svg",
+    "sha256": "20137d3a12f24d221c84584884b0820d41519fe4112fd9771ea5500bf34b3822",
+    "content_hash_filename": "20137d3a12f24d221c84584884b0820d41519fe4112fd9771ea5500bf34b3822.svg",
+    "mime": "image/svg+xml",
+    "width": 24.0,
+    "height": 24.0,
+    "theme": "light/dark; currentColor or CSS mask",
+    "accessible_name": "X",
+    "source": "Current anonymous public reference SVG; license unconfirmed; locally versioned under DEC-045 without a third-party permission claim",
+    "source_url": "https://sb.sb/login/",
+    "license": "unconfirmed",
+    "redistributable": "pending",
+    "local_versioning_decision": "DEC-045",
+    "public_release": "not-approved",
+    "evidence": [
+      "docs/visual/a00/licenses/reference-ui-pending-source.json",
+      "plan/06-decisions-and-risks.md"
+    ],
+    "modification": "Preserve every captured primitive, path coordinate and stroke/fill attribute. Add SVG namespace and explicit 24x24 intrinsic dimensions for standalone asset delivery; CSS retains the observed display size. Set root fill=currentColor to preserve the reference inherited OAuth fill when used standalone or as a CSS mask."
+  },
+  {
+    "logical_name": "oauth-google",
+    "path": "apps/web/static/img/oauth-google.svg",
+    "sha256": "4f7c08e70540d22b723aa4ebc26748b61269da40fc55e6558b9b9f471916ceb6",
+    "content_hash_filename": "4f7c08e70540d22b723aa4ebc26748b61269da40fc55e6558b9b9f471916ceb6.svg",
+    "mime": "image/svg+xml",
+    "width": 20.0,
+    "height": 20.0,
+    "theme": "light/dark; preserve multicolor appearance",
+    "accessible_name": "Google",
+    "source": "Current anonymous public reference SVG; license unconfirmed; locally versioned under DEC-045 without a third-party permission claim",
+    "source_url": "https://sb.sb.sb/assets/google-g.svg",
+    "license": "unconfirmed",
+    "redistributable": "pending",
+    "local_versioning_decision": "DEC-045",
+    "public_release": "not-approved",
+    "evidence": [
+      "docs/visual/a00/licenses/reference-ui-pending-source.json",
+      "plan/06-decisions-and-risks.md"
+    ],
+    "modification": "none; exact source bytes retained"
+  }
+]

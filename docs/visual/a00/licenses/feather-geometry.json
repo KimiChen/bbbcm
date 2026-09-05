@@ -1,0 +1,155 @@
+{
+  "method": "Parse the fixed upstream SVGs; scale every source line/polyline coordinate by exactly 2/3; translate menu by (1.5,1.5). Set target viewport and stroke width 1.7. Compare every resulting vertex to current public observations, allowing line order and polyline direction reversal only. Retain round cap/join style.",
+  "icons": [
+    {
+      "logical_name": "ui-menu",
+      "reference_source": "https://sb.sb/",
+      "reference_observation": ".local/a00-redo/public-ui-svg-shapes.json (current A00 anonymous public observation; no user text)",
+      "source_commit": "3dc050d97405062eba78aa57115c0a15c63abdaa",
+      "modifications": {
+        "coordinate_scale": "2/3",
+        "coordinate_translate": [
+          1.5,
+          1.5
+        ],
+        "output_view_box": [
+          0,
+          0,
+          19,
+          19
+        ],
+        "output_stroke_width": 1.7,
+        "retain_round_caps_joins": true
+      },
+      "transformed_geometry": [
+        [
+          [
+            3.5,
+            9.5
+          ],
+          [
+            15.5,
+            9.5
+          ]
+        ],
+        [
+          [
+            3.5,
+            5.5
+          ],
+          [
+            15.5,
+            5.5
+          ]
+        ],
+        [
+          [
+            3.5,
+            13.5
+          ],
+          [
+            15.5,
+            13.5
+          ]
+        ]
+      ],
+      "observed_reference_geometry": [
+        [
+          [
+            3.5,
+            5.5
+          ],
+          [
+            15.5,
+            5.5
+          ]
+        ],
+        [
+          [
+            3.5,
+            9.5
+          ],
+          [
+            15.5,
+            9.5
+          ]
+        ],
+        [
+          [
+            3.5,
+            13.5
+          ],
+          [
+            15.5,
+            13.5
+          ]
+        ]
+      ],
+      "all_visible_vertex_coordinates_exact": true,
+      "stroke_width_equal": true,
+      "caps": "round",
+      "joins": "round",
+      "ownership_boundary": "This delivered asset is an adaptation of the independently obtained licensed Feather original. The reference-site graphic itself remains of unconfirmed licensing origin.",
+      "comparison_scope": "Exact coordinate/stroke/cap/join construction check; no E04 pixel or WCAG conclusion."
+    },
+    {
+      "logical_name": "ui-chevron-up",
+      "reference_source": "https://sb.sb/",
+      "reference_observation": ".local/a00-redo/public-ui-svg-shapes.json (current A00 anonymous public observation; no user text)",
+      "source_commit": "3dc050d97405062eba78aa57115c0a15c63abdaa",
+      "modifications": {
+        "coordinate_scale": "2/3",
+        "coordinate_translate": [
+          0,
+          0
+        ],
+        "output_view_box": [
+          0,
+          0,
+          16,
+          16
+        ],
+        "output_stroke_width": 1.7,
+        "retain_round_caps_joins": true
+      },
+      "transformed_geometry": [
+        [
+          [
+            12.0,
+            10.0
+          ],
+          [
+            8.0,
+            6.0
+          ],
+          [
+            4.0,
+            10.0
+          ]
+        ]
+      ],
+      "observed_reference_geometry": [
+        [
+          [
+            4,
+            10
+          ],
+          [
+            8,
+            6
+          ],
+          [
+            12,
+            10
+          ]
+        ]
+      ],
+      "all_visible_vertex_coordinates_exact": true,
+      "stroke_width_equal": true,
+      "caps": "round",
+      "joins": "round",
+      "ownership_boundary": "This delivered asset is an adaptation of the independently obtained licensed Feather original. The reference-site graphic itself remains of unconfirmed licensing origin.",
+      "comparison_scope": "Exact coordinate/stroke/cap/join construction check; no E04 pixel or WCAG conclusion."
+    }
+  ]
+}

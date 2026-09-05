@@ -1,0 +1,87 @@
+{
+  "work_package": "WP-MVP-A00",
+  "comparison_method": "Parse SVG XML; expand relative/absolute M/L/H/V/C/S/Z path syntax to absolute M/L/C/Z coordinates (4 decimal places), retaining every shape and animation. Canonicalize time syntax .4s/0.4s, local mask identifier names, and default black mask fill. Ignore only root class/width/height/aria-hidden and the transparent canvas path. Compare the complete normalized node tree and all remaining attributes.",
+  "matches": [
+    {
+      "logical_name": "theme-sun",
+      "reference_source": "https://sb.sb/",
+      "reference_svg_class": "icon-sun",
+      "reference_sha256": "6f98fea247c0ecce637126aad266a86defecdcb9bdab2af7b7ed798e23e64e49",
+      "upstream_icon": "moon-filled-to-sunny-filled-loop-transition",
+      "canonical_tree_sha256": "1a61b51ebf76c15c5a83d0d1ed84629501928e9de064962555cc60289951a93e",
+      "geometry_paths_matched": 4,
+      "all_geometry_paths_matched": true,
+      "canonical_tree_equal": true,
+      "animation_attributes_equal": true,
+      "scope": "Complete SVG shape/animation tree after the documented syntactic normalization; no pixel/WCAG result",
+      "reference_evidence": "docs/visual/a00/licenses/reference-ui/theme-sun.svg"
+    },
+    {
+      "logical_name": "theme-moon",
+      "reference_source": "https://sb.sb/",
+      "reference_svg_class": "icon-moon",
+      "reference_sha256": "1adc4824707f789e9ab05898518a454db49dda1654967498cb45f579f4f33d51",
+      "upstream_icon": "moon-filled-loop",
+      "canonical_tree_sha256": "0913f018504fc0e904b2e50b3ad77797f4822c2bab2be48557f3786af846b3b9",
+      "geometry_paths_matched": 5,
+      "all_geometry_paths_matched": true,
+      "canonical_tree_equal": true,
+      "animation_attributes_equal": true,
+      "scope": "Complete SVG shape/animation tree after the documented syntactic normalization; no pixel/WCAG result",
+      "reference_evidence": "docs/visual/a00/licenses/reference-ui/theme-moon.svg"
+    }
+  ],
+  "unmatched": [
+    {
+      "logical_name": "menu",
+      "reason": "Reference viewBox 19 and path M3.5 5.5h12... differ from Lucide menu and Tabler menu-2; no exact licensed source confirmed."
+    },
+    {
+      "logical_name": "search",
+      "reason": "Reference viewBox 14, circle center 6/6 radius 4.5 differ from Lucide/Tabler search; no exact licensed source confirmed."
+    },
+    {
+      "logical_name": "user",
+      "reason": "Reference circle center 12/8 radius 4 and cubic shoulder path differ from Lucide user-round and Tabler user; no exact licensed source confirmed."
+    },
+    {
+      "logical_name": "eye",
+      "reason": "Reference outline path and radius-3 pupil differ from the complete Lucide/Tabler eye geometry; no exact licensed source confirmed."
+    },
+    {
+      "logical_name": "chat",
+      "reason": "Reference corner radius 4 / tail / outline differ from Lucide message-square and Tabler message; no exact licensed source confirmed."
+    },
+    {
+      "logical_name": "document / topic / chevron-up",
+      "reason": "Current reference shapes captured without page text; no exact complete licensed source confirmed during bounded review."
+    },
+    {
+      "logical_name": "OAuth Google / GitHub / X",
+      "reason": "Brand glyph rights not established; no new glyph imported."
+    }
+  ],
+  "candidate_sources": [
+    "https://lucide.dev/license",
+    "https://github.com/lucide-icons/lucide/tree/main/icons",
+    "https://github.com/tabler/tabler-icons/tree/main/icons/outline",
+    "https://github.com/cyberalien/line-md"
+  ],
+  "license_scope_note": "Lucide current main uses ISC; some inherited Feather icons also carry MIT. Neither license is assigned to an unmatched reference glyph. Tabler MIT and Line MD MIT likewise apply only to corresponding upstream work.",
+  "licensed_adaptations": {
+    "scope": "Exact observed geometry recreated from a licensed upstream work with documented transformations; does not identify or license the unknown reference original.",
+    "logical_names": [
+      "ui-menu",
+      "ui-chevron-up",
+      "ui-search",
+      "ui-eye",
+      "ui-chat"
+    ],
+    "evidence": "docs/visual/a00/licenses/feather-geometry.json",
+    "source": "docs/visual/a00/licenses/feather-source.json",
+    "additional_recipe_evidence": [
+      "docs/visual/a00/licenses/feather-search-provenance.md",
+      "docs/visual/a00/licenses/feather-shape-provenance.md"
+    ]
+  }
+}

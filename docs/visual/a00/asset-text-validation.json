@@ -1,0 +1,329 @@
+{
+  "schema_version": 1,
+  "work_package": "WP-MVP-A00",
+  "status": "pass",
+  "scope": "Targeted development validation of the static PNG/ICC and ICO additions to the asset text scanner; not pixel OCR, E04, WCAG or visual baseline validation.",
+  "executed_date": "2026-09-05",
+  "recorded_at_utc": "2026-09-05T00:50:07Z",
+  "execution_time_note": "The successful original inline command did not emit an exact execution timestamp. recorded_at_utc is report assembly time.",
+  "scanner": "scripts/a00-asset-text-scan.py",
+  "scanner_sha256": "ff3c867cb5457be001cd20d1996807d80ac997a7d0159b50cf6b852a68ae3614",
+  "fingerprint_note": "Current scanner SHA-256 recorded at report assembly. The original inline output did not contain a fingerprint; these checks were run after the scanner additions and no further scanner edit was made for this report.",
+  "counts": {
+    "total": 35,
+    "rejection_cases": 27,
+    "positive_cases": 8
+  },
+  "checks": [
+    {
+      "name": "ico_reserved",
+      "mode": "reject",
+      "assertion": "ICO reserved header set to 1",
+      "result": "pass",
+      "observed": "The inline harness caught a parser rejection; it did not save the individual exception class/message."
+    },
+    {
+      "name": "ico_zero_frames",
+      "mode": "reject",
+      "assertion": "ICO declares zero frames",
+      "result": "pass",
+      "observed": "The inline harness caught a parser rejection; it did not save the individual exception class/message."
+    },
+    {
+      "name": "ico_short_directory",
+      "mode": "reject",
+      "assertion": "ICO directory truncated to 30 bytes",
+      "result": "pass",
+      "observed": "The inline harness caught a parser rejection; it did not save the individual exception class/message."
+    },
+    {
+      "name": "ico_entry_reserved",
+      "mode": "reject",
+      "assertion": "Frame directory reserved byte set to 1",
+      "result": "pass",
+      "observed": "The inline harness caught a parser rejection; it did not save the individual exception class/message."
+    },
+    {
+      "name": "ico_out_of_bounds",
+      "mode": "reject",
+      "assertion": "First frame offset points at end of file",
+      "result": "pass",
+      "observed": "The inline harness caught a parser rejection; it did not save the individual exception class/message."
+    },
+    {
+      "name": "ico_header_overlap",
+      "mode": "reject",
+      "assertion": "First frame offset points into directory",
+      "result": "pass",
+      "observed": "The inline harness caught a parser rejection; it did not save the individual exception class/message."
+    },
+    {
+      "name": "ico_frame_overlap",
+      "mode": "reject",
+      "assertion": "Second frame offset overlaps first frame",
+      "result": "pass",
+      "observed": "The inline harness caught a parser rejection; it did not save the individual exception class/message."
+    },
+    {
+      "name": "ico_dib_header",
+      "mode": "reject",
+      "assertion": "Unsupported 108-byte DIB header",
+      "result": "pass",
+      "observed": "The inline harness caught a parser rejection; it did not save the individual exception class/message."
+    },
+    {
+      "name": "ico_dib_planes",
+      "mode": "reject",
+      "assertion": "DIB planes set to 2",
+      "result": "pass",
+      "observed": "The inline harness caught a parser rejection; it did not save the individual exception class/message."
+    },
+    {
+      "name": "ico_dib_bpp",
+      "mode": "reject",
+      "assertion": "Unsupported 24-bit DIB",
+      "result": "pass",
+      "observed": "The inline harness caught a parser rejection; it did not save the individual exception class/message."
+    },
+    {
+      "name": "ico_dib_compression",
+      "mode": "reject",
+      "assertion": "DIB compression set to BI_BITFIELDS",
+      "result": "pass",
+      "observed": "The inline harness caught a parser rejection; it did not save the individual exception class/message."
+    },
+    {
+      "name": "ico_dimensions",
+      "mode": "reject",
+      "assertion": "DIB stored height disagrees with directory",
+      "result": "pass",
+      "observed": "The inline harness caught a parser rejection; it did not save the individual exception class/message."
+    },
+    {
+      "name": "ico_size_image",
+      "mode": "reject",
+      "assertion": "DIB sizeImage set to 1",
+      "result": "pass",
+      "observed": "The inline harness caught a parser rejection; it did not save the individual exception class/message."
+    },
+    {
+      "name": "ico_palette",
+      "mode": "reject",
+      "assertion": "DIB declares a palette in the supported 32-bit subset",
+      "result": "pass",
+      "observed": "The inline harness caught a parser rejection; it did not save the individual exception class/message."
+    },
+    {
+      "name": "ico_truncated_mask",
+      "mode": "reject",
+      "assertion": "Final AND mask truncated by one byte",
+      "result": "pass",
+      "observed": "The inline harness caught a parser rejection; it did not save the individual exception class/message."
+    },
+    {
+      "name": "ico_trailer",
+      "mode": "reject",
+      "assertion": "Unexplained byte appended to ICO container",
+      "result": "pass",
+      "observed": "The inline harness caught a parser rejection; it did not save the individual exception class/message."
+    },
+    {
+      "name": "ico_frame_trailer",
+      "mode": "reject",
+      "assertion": "Final frame length extended with an unexplained byte",
+      "result": "pass",
+      "observed": "The inline harness caught a parser rejection; it did not save the individual exception class/message."
+    },
+    {
+      "name": "ico_gap",
+      "mode": "reject",
+      "assertion": "One-byte gap inserted after directory; all frame offsets adjusted",
+      "result": "pass",
+      "observed": "The inline harness caught a parser rejection; it did not save the individual exception class/message."
+    },
+    {
+      "name": "ico_pixels_are_not_text",
+      "mode": "positive",
+      "assertion": "Literal sb.sb inserted into valid XOR pixel range; metadata remains empty and three frames parse",
+      "result": "pass",
+      "observed": "The inline assertion completed successfully."
+    },
+    {
+      "name": "png_crc",
+      "mode": "reject",
+      "assertion": "IHDR CRC overwritten",
+      "result": "pass",
+      "observed": "The inline harness caught a parser rejection; it did not save the individual exception class/message."
+    },
+    {
+      "name": "png_truncation",
+      "mode": "reject",
+      "assertion": "PNG truncated by one byte",
+      "result": "pass",
+      "observed": "The inline harness caught a parser rejection; it did not save the individual exception class/message."
+    },
+    {
+      "name": "png_trailer",
+      "mode": "reject",
+      "assertion": "Unexplained byte appended after IEND",
+      "result": "pass",
+      "observed": "The inline harness caught a parser rejection; it did not save the individual exception class/message."
+    },
+    {
+      "name": "png_exif_fail_closed",
+      "mode": "reject",
+      "assertion": "Unsupported eXIf metadata does not silently pass",
+      "result": "pass",
+      "observed": "The inline harness caught a parser rejection; it did not save the individual exception class/message."
+    },
+    {
+      "name": "png_invalid_ztxt",
+      "mode": "reject",
+      "assertion": "Invalid compressed zTXt data",
+      "result": "pass",
+      "observed": "The inline harness caught a parser rejection; it did not save the individual exception class/message."
+    },
+    {
+      "name": "png_text",
+      "mode": "positive",
+      "assertion": "tEXt SB.SB is returned and matched after normalization",
+      "result": "pass",
+      "observed": "The inline assertion completed successfully."
+    },
+    {
+      "name": "png_ztxt",
+      "mode": "positive",
+      "assertion": "Compressed zTXt SB.SB is returned and matched after normalization",
+      "result": "pass",
+      "observed": "The inline assertion completed successfully."
+    },
+    {
+      "name": "png_itxt",
+      "mode": "positive",
+      "assertion": "Compressed UTF-8 iTXt Chinese legacy term is decoded",
+      "result": "pass",
+      "observed": "The inline assertion completed successfully."
+    },
+    {
+      "name": "icc_profile_name",
+      "mode": "positive",
+      "assertion": "PNG iCCP profile name is returned as searchable text",
+      "result": "pass",
+      "observed": "The inline assertion completed successfully."
+    },
+    {
+      "name": "icc_unicode_mluc",
+      "mode": "positive",
+      "assertion": "ICC mluc UTF-16BE Chinese legacy term is decoded",
+      "result": "pass",
+      "observed": "The inline assertion completed successfully."
+    },
+    {
+      "name": "icc_declared_size",
+      "mode": "reject",
+      "assertion": "ICC declared length disagrees with decompressed bytes",
+      "result": "pass",
+      "observed": "The inline harness caught a parser rejection; it did not save the individual exception class/message."
+    },
+    {
+      "name": "icc_text_range",
+      "mode": "reject",
+      "assertion": "ICC mluc text offset exceeds tag range",
+      "result": "pass",
+      "observed": "The inline harness caught a parser rejection; it did not save the individual exception class/message."
+    },
+    {
+      "name": "icc_unknown_type",
+      "mode": "reject",
+      "assertion": "Unsupported ICC tag type does not silently pass",
+      "result": "pass",
+      "observed": "The inline harness caught a parser rejection; it did not save the individual exception class/message."
+    },
+    {
+      "name": "icc_unparsed_tail",
+      "mode": "reject",
+      "assertion": "ICC declared size updated but unexplained trailing byte remains",
+      "result": "pass",
+      "observed": "The inline harness caught a parser rejection; it did not save the individual exception class/message."
+    },
+    {
+      "name": "scan_static_png_routing",
+      "mode": "positive",
+      "assertion": "scan() includes static PNG text metadata in matches and reports one static PNG plus three ICO frames",
+      "result": "pass",
+      "observed": "The inline assertion completed successfully."
+    },
+    {
+      "name": "scan_ico_error_routing",
+      "mode": "positive",
+      "assertion": "scan() records malformed static ICO as an error",
+      "result": "pass",
+      "observed": "The inline assertion completed successfully."
+    }
+  ],
+  "execution_evidence": {
+    "invocation": "functions.exec -> exec_command; inline Python via the pinned asset-scan virtual environment",
+    "exit_code": 0,
+    "stdout": {
+      "passed": 35,
+      "cases": [
+        "ico_reserved",
+        "ico_zero_frames",
+        "ico_short_directory",
+        "ico_entry_reserved",
+        "ico_out_of_bounds",
+        "ico_header_overlap",
+        "ico_frame_overlap",
+        "ico_dib_header",
+        "ico_dib_planes",
+        "ico_dib_bpp",
+        "ico_dib_compression",
+        "ico_dimensions",
+        "ico_size_image",
+        "ico_palette",
+        "ico_truncated_mask",
+        "ico_trailer",
+        "ico_frame_trailer",
+        "ico_gap",
+        "ico_pixels_are_not_text",
+        "png_crc",
+        "png_truncation",
+        "png_trailer",
+        "png_exif_fail_closed",
+        "png_invalid_ztxt",
+        "png_text",
+        "png_ztxt",
+        "png_itxt",
+        "icc_profile_name",
+        "icc_unicode_mluc",
+        "icc_declared_size",
+        "icc_text_range",
+        "icc_unknown_type",
+        "icc_unparsed_tail",
+        "scan_static_png_routing",
+        "scan_ico_error_routing"
+      ],
+      "repository_reports_written": false
+    }
+  },
+  "reproduction": {
+    "original_command_form": ".local/a00-redo/asset-scan-venv/bin/python - <<'PY'\\n[inline_python below]\\nPY",
+    "code_origin": "Executed inline in this A00 session. No standalone test script existed at execution time; the exact successful inline Python body is preserved below for reproducibility.",
+    "inline_python": "import hashlib,importlib.util,json,shutil,struct,sys,tempfile,zlib\nfrom pathlib import Path\nsys.dont_write_bytecode=True\nspec=importlib.util.spec_from_file_location('scan','scripts/a00-asset-text-scan.py');m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)\nbase=Path('docs/visual/a00/implementation/profile-390-light.png').read_bytes();ico=Path('apps/web/static/img/favicon.ico').read_bytes();passed=[]\ndef chunk(k,p): return struct.pack('>I',len(p))+k+p+struct.pack('>I',zlib.crc32(k+p)&0xffffffff)\ndef png_add(k,p): return base[:-12]+chunk(k,p)+base[-12:]\ndef change(b,o,f,v): b=bytearray(b);struct.pack_into(f,b,o,v);return bytes(b)\nwith tempfile.TemporaryDirectory(prefix='a00-parser-') as t:\n p=Path(t)/'candidate'\n def rejected(name,b,reader):\n  p.write_bytes(b)\n  try: reader(p)\n  except (ValueError,UnicodeError,struct.error,zlib.error): passed.append(name)\n  else: raise AssertionError('accepted malformed '+name)\n first=struct.unpack_from('<I',ico,18)[0];lastentry=38\n for name,b in [\n  ('ico_reserved',change(ico,0,'<H',1)),('ico_zero_frames',change(ico,4,'<H',0)),('ico_short_directory',ico[:30]),\n  ('ico_entry_reserved',change(ico,9,'B',1)),('ico_out_of_bounds',change(ico,18,'<I',len(ico))),('ico_header_overlap',change(ico,18,'<I',10)),\n  ('ico_frame_overlap',change(ico,34,'<I',first)),('ico_dib_header',change(ico,first,'<I',108)),('ico_dib_planes',change(ico,first+12,'<H',2)),\n  ('ico_dib_bpp',change(ico,first+14,'<H',24)),('ico_dib_compression',change(ico,first+16,'<I',3)),('ico_dimensions',change(ico,first+8,'<i',31)),\n  ('ico_size_image',change(ico,first+20,'<I',1)),('ico_palette',change(ico,first+32,'<I',1)),('ico_truncated_mask',ico[:-1]),('ico_trailer',ico+b'x'),\n  ('ico_frame_trailer',change(ico,lastentry+8,'<I',struct.unpack_from('<I',ico,lastentry+8)[0]+1)+b'x')]: rejected(name,b,m.ico_fields)\n gap=ico\n for o in [18,34,50]: gap=change(gap,o,'<I',struct.unpack_from('<I',ico,o)[0]+1)\n rejected('ico_gap',gap[:first]+b'\\0'+gap[first:],m.ico_fields)\n pixels=bytearray(ico);pixels[first+40:first+45]=b'sb.sb';p.write_bytes(pixels);fields,d=m.ico_fields(p);assert fields==[] and d['frame_count']==3;passed.append('ico_pixels_are_not_text')\n for name,b in [('png_crc',change(base,29,'>I',0)),('png_truncation',base[:-1]),('png_trailer',base+b'x'),('png_exif_fail_closed',png_add(b'eXIf',b'sb.sb')),('png_invalid_ztxt',png_add(b'zTXt',b'Comment\\0\\0invalid'))]: rejected(name,b,m.png_fields)\n for name,k,payload,term in [('png_text',b'tEXt',b'Comment\\0SB.SB','sb.sb'),('png_ztxt',b'zTXt',b'Comment\\0\\0'+zlib.compress(b'SB.SB'),'sb.sb'),('png_itxt',b'iTXt',b'Comment\\0\\1\\0zh\\0\\0'+zlib.compress('烧饼'.encode()),'烧饼')]:\n  p.write_bytes(png_add(k,payload));fields,_=m.png_fields(p);assert any(term in m.normalize(v) for _,v in fields);passed.append(name)\n i=8\n while base[i+4:i+8]!=b'iCCP': i+=struct.unpack_from('>I',base,i)[0]+12\n n=struct.unpack_from('>I',base,i)[0];name,packed=base[i+8:i+8+n].split(b'\\0',1);profile=zlib.decompress(packed[1:])\n def with_icc(profile,name=name): return base[:i]+chunk(b'iCCP',name+b'\\0\\0'+zlib.compress(profile))+base[i+n+12:]\n p.write_bytes(with_icc(profile,b'sb.sb'));fields,_=m.png_fields(p);assert any(v=='sb.sb' for _,v in fields);passed.append('icc_profile_name')\n off=struct.unpack_from('>I',profile,136)[0];record=off+16;start=struct.unpack_from('>I',profile,record+8)[0];length=struct.unpack_from('>I',profile,record+4)[0]\n modified=bytearray(profile);modified[off+start:off+start+length]=bytes(length);value='烧饼'.encode('utf-16-be');modified[off+start:off+start+len(value)]=value;struct.pack_into('>I',modified,record+4,len(value))\n p.write_bytes(with_icc(modified));fields,_=m.png_fields(p);assert any('烧饼' in v for _,v in fields);passed.append('icc_unicode_mluc')\n for name,b in [('icc_declared_size',with_icc(change(profile,0,'>I',511))),('icc_text_range',with_icc(change(profile,record+8,'>I',99999))),('icc_unknown_type',with_icc(profile[:off]+b'????'+profile[off+4:])),('icc_unparsed_tail',with_icc(change(profile+b'x',0,'>I',len(profile)+1)))]: rejected(name,b,m.png_fields)\n root=Path(t)/'root';static=root/'apps/web/static';doc=root/'docs/visual/a00';impl=doc/'implementation';(static/'fonts').mkdir(parents=True);(static/'img').mkdir();impl.mkdir(parents=True)\n (doc/'old-names.json').write_text(json.dumps({'terms':['sb.sb','烧饼']}));font=next(Path('apps/web/static/fonts').glob('*.woff2'));shutil.copyfile(font,static/'fonts'/font.name)\n (impl/'preview.png').write_bytes(base);(impl/'manifest.json').write_text(json.dumps({'captures':[{'screenshot':'preview.png','sha256':hashlib.sha256(base).hexdigest()}]}))\n (static/'img'/'candidate.png').write_bytes(png_add(b'tEXt',b'Comment\\0sb.sb'));(static/'img'/'candidate.ico').write_bytes(ico)\n report=m.scan(root);assert report['counts']['static_png']==1 and report['counts']['ico_frames']==3\n assert any(x['path']=='apps/web/static/img/candidate.png' and x['field'].endswith('.text') for x in report['matches']);passed.append('scan_static_png_routing')\n (static/'img'/'candidate.png').write_bytes(base);(static/'img'/'candidate.ico').write_bytes(ico+b'x');report=m.scan(root);assert any('candidate.ico' in x for x in report['errors']);passed.append('scan_ico_error_routing')\n print(json.dumps({'passed':len(passed),'cases':passed,'repository_reports_written':False},indent=2))\n",
+    "command_to_rerun": "python3 -c 'import json; print(json.load(open(\"docs/visual/a00/asset-text-validation.json\"))[\"reproduction\"][\"inline_python\"], end=\"\")' | .local/a00-redo/asset-scan-venv/bin/python",
+    "run_directory": "repository root",
+    "dependencies": "Use the fixed virtual environment documented at the top of scripts/a00-asset-text-scan.py.",
+    "input_requirements": [
+      "Current three-frame 16/32/48 BI_RGB32 favicon.ico",
+      "profile-390-light implementation PNG containing the current ICC profile",
+      "At least one current local WOFF2 font"
+    ],
+    "filesystem_effects": "Creates and deletes an isolated temporary directory; imports scanner helpers and scan(), does not call scanner main() or overwrite repository scan reports."
+  },
+  "limits": [
+    "Reject cases validate the documented supported PNG/ICC/ICO subset; unsupported metadata or DIB forms fail closed.",
+    "ICO color pixels and masks are deliberately not treated as textual metadata; raster OCR/manual review are separate.",
+    "The original helper harness had an earlier setup failure when an optional ICC profile had been removed from a regenerated favicon. The successful 35-case invocation uses the implementation PNG with ICC; only that completed invocation is recorded here.",
+    "This file records parser and scan-routing checks, not the final repository-wide asset scan."
+  ]
+}

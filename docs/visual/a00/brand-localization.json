@@ -1,0 +1,448 @@
+{
+  "purpose": "Code-native A00 brand localization and deterministic local rasterization; not a visual-baseline or E04 approval",
+  "decision": "DEC-045",
+  "license": "unconfirmed",
+  "redistributable": "pending",
+  "public_release": "not-approved",
+  "source": {
+    "url": "https://sb.sb.sb/assets/index.svg",
+    "retrieved_utc": "2026-09-04T20:35:34.074511+00:00",
+    "evidence": ".local/a00-redo/reference-index.svg",
+    "sha256": "3ac1426ddaa8208ef0c5bc83ca2432d9eb79f5de87c458283cab016262137f42",
+    "width": 512,
+    "height": 512,
+    "viewBox": "0 0 200 200",
+    "polygon_points": "6.5,6.5 193.5,6.5 193.5,76 177.5,100 193.5,124 193.5,193.5 6.5,193.5 6.5,124 22.5,100 6.5,76",
+    "stroke_width": 13,
+    "light": "#0a0a0a",
+    "dark": "#ffffff"
+  },
+  "method": "Keep the observed seal polygon coordinates, stroke-width 13 and light/dark colors exactly. Remove the complete original glyph path group. Add only 草莓 and 论坛 as two system-font rows in the same central region. Render the new SVG at each target size with local Chrome; no reference PNG is edited or used as pixel input.",
+  "source_background_observations": {
+    "favicon_16": {
+      "sha256": "6f6945b19cbc12d3cef76f34b96faea35e697cf1a692f266bfc50b13e8e47bf3",
+      "dimensions": [
+        16,
+        16
+      ],
+      "alpha_extrema": [
+        5,
+        255
+      ],
+      "corner_alpha": [
+        6,
+        5,
+        6,
+        5
+      ]
+    },
+    "favicon_32": {
+      "sha256": "ca3ed9fd9697edd9512b026e57f5d775332f6f0b53cc2d45c7d31df0ff174037",
+      "dimensions": [
+        32,
+        32
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "app_180": {
+      "sha256": "543420c0bb95d53cd0748317341a72e226b368d7c83f4a67aa6a12d28c6a2f30",
+      "dimensions": [
+        180,
+        180
+      ],
+      "corner_rgba": [
+        10,
+        10,
+        10,
+        255
+      ],
+      "white_seal_extent": [
+        30,
+        30,
+        150,
+        150
+      ]
+    },
+    "ico": {
+      "sha256": "aaf15ba528a6236f926da1618bc66f3c0679f7072ba1e016b22b0f6c2d195228",
+      "format": "32-bit DIB",
+      "dimensions": [
+        [
+          16,
+          16
+        ],
+        [
+          32,
+          32
+        ],
+        [
+          48,
+          48
+        ]
+      ]
+    },
+    "interpretation": "Reference raster icons use a fixed #0a0a0a background with a white seal. App icon has a square canvas and a centered 120px seal. Favicon rounded-canvas radius 20% and seal inset 10% are geometric reconstruction from the observed raster edge positions, not captured vector declarations; native-Chrome edge antialiasing can differ from the source raster."
+  },
+  "renderer": {
+    "command": "node scripts/a00-brand-render.mjs",
+    "node": "v26.5.0",
+    "browser": "Chrome/152.0.7977.76",
+    "javascript": false,
+    "method": "CDP diagnostic evaluation serializes the locally authored inline SVG into a data SVG image and draws it directly to an explicit sRGB canvas; PNG output comes from canvas.toDataURL. This avoids host-display color conversion in page screenshots.",
+    "color_space": "srgb",
+    "page_network_requests": [],
+    "local_data_image_decodes": 5,
+    "scale": 1,
+    "zoom": 1,
+    "language": "zh-CN",
+    "os": {
+      "platform": "darwin",
+      "arch": "arm64",
+      "kernel": "25.6.0"
+    },
+    "fonts": [
+      {
+        "familyName": "PingFang SC",
+        "postScriptName": "PingFangSC-Semibold",
+        "isCustomFont": false,
+        "glyphCount": 2
+      }
+    ],
+    "font_note": "Uses the installed OS font only; no font binary is copied or redistributed. Reproduction on another OS/font build is not guaranteed.",
+    "script_sha256": "63f468c059f9737bfdcdea1ab82eac046de85703ebaba17145bc15499fd4c9f4"
+  },
+  "outputs": [
+    {
+      "logical_name": "brand-symbol",
+      "path": "apps/web/static/img/brand-symbol.svg",
+      "sha256": "f5952515e24fcc527c6cbb26bffb0df8b967defdf1cb0d3adb3f1b5684512a65",
+      "bytes": 839,
+      "mime": "image/svg+xml",
+      "width": 512,
+      "height": 512,
+      "theme": "adaptive-light-dark",
+      "accessible_name": "草莓论坛",
+      "source": "Localized current public reference seal; target system-font text and code-native raster generation",
+      "license": "unconfirmed",
+      "redistributable": "pending",
+      "public_release": "not-approved",
+      "decision": "DEC-045",
+      "evidence": [
+        "docs/visual/a00/brand-localization.json",
+        "docs/visual/a00/brand-localization.md"
+      ]
+    },
+    {
+      "logical_name": "favicon-16",
+      "path": "apps/web/static/img/favicon-16.png",
+      "sha256": "1c1547f5c0bad97c5362db9086691cca8defa41c89334ff2025052023a8dfa21",
+      "bytes": 466,
+      "mime": "image/png",
+      "width": 16,
+      "height": 16,
+      "theme": "fixed-dark-background",
+      "accessible_name": "草莓论坛",
+      "source": "Localized current public reference seal; target system-font text and code-native raster generation",
+      "license": "unconfirmed",
+      "redistributable": "pending",
+      "public_release": "not-approved",
+      "decision": "DEC-045",
+      "evidence": [
+        "docs/visual/a00/brand-localization.json",
+        "docs/visual/a00/brand-localization.md"
+      ]
+    },
+    {
+      "logical_name": "favicon-32",
+      "path": "apps/web/static/img/favicon-32.png",
+      "sha256": "7acc6eabbf26542b611325a560ae09b35f02d7e219f0d0807abb8d63695f28ec",
+      "bytes": 976,
+      "mime": "image/png",
+      "width": 32,
+      "height": 32,
+      "theme": "fixed-dark-background",
+      "accessible_name": "草莓论坛",
+      "source": "Localized current public reference seal; target system-font text and code-native raster generation",
+      "license": "unconfirmed",
+      "redistributable": "pending",
+      "public_release": "not-approved",
+      "decision": "DEC-045",
+      "evidence": [
+        "docs/visual/a00/brand-localization.json",
+        "docs/visual/a00/brand-localization.md"
+      ]
+    },
+    {
+      "logical_name": "app-icon-180",
+      "path": "apps/web/static/img/apple-touch-icon.png",
+      "sha256": "7395823edc71fc612141d795ca5c5218b9588b1431687281ff532b66ec5b3a0e",
+      "bytes": 4766,
+      "mime": "image/png",
+      "width": 180,
+      "height": 180,
+      "theme": "fixed-dark-background",
+      "accessible_name": "草莓论坛",
+      "source": "Localized current public reference seal; target system-font text and code-native raster generation",
+      "license": "unconfirmed",
+      "redistributable": "pending",
+      "public_release": "not-approved",
+      "decision": "DEC-045",
+      "evidence": [
+        "docs/visual/a00/brand-localization.json",
+        "docs/visual/a00/brand-localization.md"
+      ]
+    },
+    {
+      "logical_name": "favicon-ico",
+      "path": "apps/web/static/img/favicon.ico",
+      "sha256": "4dab9fb9411281b92d46891b9de2dcc3ceb568b97c18047bcdf0884ccd210cfd",
+      "bytes": 15086,
+      "mime": "image/x-icon",
+      "width": 48,
+      "height": 48,
+      "theme": "fixed-dark-background",
+      "accessible_name": "草莓论坛",
+      "source": "Localized current public reference seal; target system-font text and code-native raster generation",
+      "license": "unconfirmed",
+      "redistributable": "pending",
+      "public_release": "not-approved",
+      "decision": "DEC-045",
+      "evidence": [
+        "docs/visual/a00/brand-localization.json",
+        "docs/visual/a00/brand-localization.md"
+      ]
+    }
+  ],
+  "renders": [
+    {
+      "kind": "symbol",
+      "size": 512,
+      "theme": "light",
+      "appearance": {
+        "seal": "rgb(10, 10, 10)",
+        "glyphs": [
+          {
+            "text": "草莓",
+            "fill": "rgb(10, 10, 10)",
+            "fontFamily": "\"PingFang SC\", system-ui, sans-serif",
+            "fontWeight": "600",
+            "bbox": {
+              "x": 46.000003814697266,
+              "y": 55.8046875,
+              "width": 108,
+              "height": 50.39061737060547
+            }
+          },
+          {
+            "text": "论坛",
+            "fill": "rgb(10, 10, 10)",
+            "fontFamily": "\"PingFang SC\", system-ui, sans-serif",
+            "fontWeight": "600",
+            "bbox": {
+              "x": 46.000003814697266,
+              "y": 93.80467987060547,
+              "width": 108,
+              "height": 50.39063262939453
+            }
+          }
+        ]
+      },
+      "png_sha256": "75451f9e5f962955db3061b452c1e5cdb12aed4f638c3103389464a26b2a8a28",
+      "deterministic_repeat": true
+    },
+    {
+      "kind": "symbol",
+      "size": 512,
+      "theme": "dark",
+      "appearance": {
+        "seal": "rgb(255, 255, 255)",
+        "glyphs": [
+          {
+            "text": "草莓",
+            "fill": "rgb(255, 255, 255)",
+            "fontFamily": "\"PingFang SC\", system-ui, sans-serif",
+            "fontWeight": "600",
+            "bbox": {
+              "x": 46.000003814697266,
+              "y": 55.8046875,
+              "width": 108,
+              "height": 50.39061737060547
+            }
+          },
+          {
+            "text": "论坛",
+            "fill": "rgb(255, 255, 255)",
+            "fontFamily": "\"PingFang SC\", system-ui, sans-serif",
+            "fontWeight": "600",
+            "bbox": {
+              "x": 46.000003814697266,
+              "y": 93.80467987060547,
+              "width": 108,
+              "height": 50.39063262939453
+            }
+          }
+        ]
+      },
+      "png_sha256": "d8d0a28363df0daf7a8ecba8cc0b101e96dce91cec955344a04f65127420b274",
+      "deterministic_repeat": true
+    },
+    {
+      "kind": "favicon",
+      "size": 16,
+      "theme": "dark",
+      "appearance": {
+        "seal": "rgb(255, 255, 255)",
+        "glyphs": [
+          {
+            "text": "草莓",
+            "fill": "rgb(255, 255, 255)",
+            "fontFamily": "\"PingFang SC\", system-ui, sans-serif",
+            "fontWeight": "600",
+            "bbox": {
+              "x": 46,
+              "y": 53.656246185302734,
+              "width": 108,
+              "height": 54.687496185302734
+            }
+          },
+          {
+            "text": "论坛",
+            "fill": "rgb(255, 255, 255)",
+            "fontFamily": "\"PingFang SC\", system-ui, sans-serif",
+            "fontWeight": "600",
+            "bbox": {
+              "x": 46,
+              "y": 91.65625,
+              "width": 108,
+              "height": 54.6875
+            }
+          }
+        ]
+      },
+      "png_sha256": "1c1547f5c0bad97c5362db9086691cca8defa41c89334ff2025052023a8dfa21",
+      "deterministic_repeat": true
+    },
+    {
+      "kind": "favicon",
+      "size": 32,
+      "theme": "dark",
+      "appearance": {
+        "seal": "rgb(255, 255, 255)",
+        "glyphs": [
+          {
+            "text": "草莓",
+            "fill": "rgb(255, 255, 255)",
+            "fontFamily": "\"PingFang SC\", system-ui, sans-serif",
+            "fontWeight": "600",
+            "bbox": {
+              "x": 46,
+              "y": 55.609371185302734,
+              "width": 108,
+              "height": 50.781246185302734
+            }
+          },
+          {
+            "text": "论坛",
+            "fill": "rgb(255, 255, 255)",
+            "fontFamily": "\"PingFang SC\", system-ui, sans-serif",
+            "fontWeight": "600",
+            "bbox": {
+              "x": 46,
+              "y": 93.609375,
+              "width": 108,
+              "height": 50.78125
+            }
+          }
+        ]
+      },
+      "png_sha256": "7acc6eabbf26542b611325a560ae09b35f02d7e219f0d0807abb8d63695f28ec",
+      "deterministic_repeat": true
+    },
+    {
+      "kind": "favicon",
+      "size": 48,
+      "theme": "dark",
+      "appearance": {
+        "seal": "rgb(255, 255, 255)",
+        "glyphs": [
+          {
+            "text": "草莓",
+            "fill": "rgb(255, 255, 255)",
+            "fontFamily": "\"PingFang SC\", system-ui, sans-serif",
+            "fontWeight": "600",
+            "bbox": {
+              "x": 46.000003814697266,
+              "y": 54.958335876464844,
+              "width": 108,
+              "height": 52.083335876464844
+            }
+          },
+          {
+            "text": "论坛",
+            "fill": "rgb(255, 255, 255)",
+            "fontFamily": "\"PingFang SC\", system-ui, sans-serif",
+            "fontWeight": "600",
+            "bbox": {
+              "x": 46.000003814697266,
+              "y": 92.95833587646484,
+              "width": 108,
+              "height": 52.083335876464844
+            }
+          }
+        ]
+      },
+      "png_sha256": "780a8c3511cc810d55260853d1dfc95a311818c7afac2dd0713608baf66d3cfa",
+      "deterministic_repeat": true
+    },
+    {
+      "kind": "app",
+      "size": 180,
+      "theme": "dark",
+      "appearance": {
+        "seal": "rgb(255, 255, 255)",
+        "glyphs": [
+          {
+            "text": "草莓",
+            "fill": "rgb(255, 255, 255)",
+            "fontFamily": "\"PingFang SC\", system-ui, sans-serif",
+            "fontWeight": "600",
+            "bbox": {
+              "x": 46.00000762939453,
+              "y": 55.583335876464844,
+              "width": 107.99999237060547,
+              "height": 50.833335876464844
+            }
+          },
+          {
+            "text": "论坛",
+            "fill": "rgb(255, 255, 255)",
+            "fontFamily": "\"PingFang SC\", system-ui, sans-serif",
+            "fontWeight": "600",
+            "bbox": {
+              "x": 46.00000762939453,
+              "y": 93.58333587646484,
+              "width": 107.99999237060547,
+              "height": 50.833335876464844
+            }
+          }
+        ]
+      },
+      "png_sha256": "7395823edc71fc612141d795ca5c5218b9588b1431687281ff532b66ec5b3a0e",
+      "deterministic_repeat": true
+    }
+  ],
+  "limits": [
+    "DEC-045 permits this local development/versioning step but is not a third-party license.",
+    "The original glyph paths are absent; four Chinese glyphs necessarily have different outlines. Small favicon text readability and six-viewport visual/WCAG gates remain for E04.",
+    "These generated raster icons are fixed dark-background variants. The standalone SVG retains the observed adaptive light/dark paint rules."
+  ]
+}

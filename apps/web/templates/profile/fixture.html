@@ -1,0 +1,107 @@
+<div class="home-shell a00-profile">
+  <div class="forum-layout">
+    <div class="forum-main">
+      <div class="main-panel">
+        <section class="form-panel profile-head" aria-label="合成公开资料">
+          <div class="user-header-info">
+            <span class="user-avatar-big profile-synthetic-avatar" role="img" aria-label="合成头像甲">甲</span>
+            <div class="profile-identity">
+              <div class="user-name-row">
+                <h1 class="user-name">合成果农甲</h1>
+                <span class="verify-badge"><span class="verify-badge-value">合成标记</span></span>
+                <span class="post-user-group post-user-group--staff">合成身份</span>
+              </div>
+              <div class="post-meta">
+                <span class="user-offline">离线</span>
+                <span class="post-user-uid">合成 01</span>
+                <span><time datetime="2026-01-01">2026-01-01</time> 加入</span>
+                <span>最后在线 1 小时前</span>
+              </div>
+            </div>
+          </div>
+          <p class="sidebar-bio profile-bio">合成档案：记录学习与交流。</p>
+          <div class="user-stats profile-stats" aria-label="固定合成统计">
+            <span class="user-stat"><span class="user-stat-label">草莓</span><span class="user-stat-value">128</span></span>
+            <span class="user-stat"><span class="user-stat-label">果农指数</span><span class="user-stat-value">24</span></span>
+            <a class="user-stat" href="#profile-topics"><span class="user-stat-label">帖子</span><span class="user-stat-value">12</span></a>
+            <span class="user-stat"><span class="user-stat-label">精华</span><span class="user-stat-value">2</span></span>
+          </div>
+          <div class="points-level-block">
+            <div class="points-progress-head">
+              <span class="points-progress-end"><b>Lv.2 合成等级</b></span>
+              <span class="points-progress-pct">40%</span>
+              <span class="points-progress-end points-progress-end-next">Lv.3 合成等级 还差 60</span>
+            </div>
+            <div class="points-progress points-progress-sm" role="progressbar" aria-label="合成等级进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="40"><div class="points-progress-fill"></div></div>
+          </div>
+        </section>
+        <nav class="profile-toolbar" id="profile-topics" aria-label="合成用户内容">
+          <div class="tab-bar">
+            <a class="tab active" href="#profile-topics" aria-current="page">主题</a>
+            <button class="tab" type="button" aria-disabled="true">回帖</button>
+          </div>
+          <span class="tab-actions"><button type="button" aria-disabled="true">私信TA</button></span>
+        </nav>
+        <ul class="post-list">
+          {% for item in topics.items %}
+          <li class="post-item" data-synthetic-id="{{ item.id }}">
+            <div class="post-body">
+              <div class="post-title-row"><a class="post-title" href="/__fixtures/a00/topic?theme={{ theme }}">{{ item.title }}</a></div>
+              <div class="post-meta">
+                <span><i class="meta-icon icon-user" aria-hidden="true"></i>合成果农甲</span>
+                <time datetime="2026-01-01T00:00:00Z">{{ item.age }}</time>
+                <span class="post-forum-meta"><i class="meta-icon icon-forum" aria-hidden="true"></i>{{ item.category }}</span>
+                <span><i class="meta-icon icon-eye" aria-hidden="true"></i><span aria-label="合成浏览数">{{ item.views }}</span></span>
+                <span><i class="meta-icon icon-chat" aria-hidden="true"></i><span aria-label="合成回复数">{{ item.replies }}</span></span>
+                <span><i class="meta-icon icon-user" aria-hidden="true"></i>{{ item.author }}</span>
+              </div>
+            </div>
+            <a class="post-tag post-forum-badge" href="/__fixtures/a00/forum?theme={{ theme }}">{{ item.category }}</a>
+          </li>
+          {% else %}
+          <li class="list-empty">{{ topics.empty }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    <aside class="sidebar" aria-label="合成用户信息">
+      <section class="card sidebar-card user-card">
+        <div class="user-wrap">
+          <div class="user-header">
+            <div class="user-header-info">
+              <span class="user-avatar-big profile-synthetic-avatar" role="img" aria-label="合成头像甲">甲</span>
+              <div class="profile-identity">
+                <div class="user-name-row"><span class="user-name">合成果农甲</span><span class="verify-badge"><span class="verify-badge-value">合成标记</span></span></div>
+                <div class="user-rank"><span class="user-level">Lv.2 合成等级</span><span>· 合成身份</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="user-stats" aria-label="固定合成统计">
+            <span class="user-stat"><span class="user-stat-label">草莓</span><span class="user-stat-value">128</span></span>
+            <span class="user-stat"><span class="user-stat-label">果农指数</span><span class="user-stat-value">24</span></span>
+            <a class="user-stat" href="#profile-topics"><span class="user-stat-label">帖子</span><span class="user-stat-value">12</span></a>
+            <span class="user-stat"><span class="user-stat-label">精华</span><span class="user-stat-value">2</span></span>
+          </div>
+          <div class="user-links">
+            <a href="#profile-topics"><i class="meta-icon icon-forum" aria-hidden="true"></i>TA的主题</a>
+            <button type="button" aria-disabled="true"><i class="meta-icon icon-chat" aria-hidden="true"></i>TA的回帖</button>
+            <button type="button" aria-disabled="true"><span class="profile-action-symbol" aria-hidden="true">◇</span>TA的草莓</button>
+            <button type="button" aria-disabled="true"><span class="profile-action-symbol" aria-hidden="true">·</span>私信TA</button>
+          </div>
+        </div>
+      </section>
+      <section class="card sidebar-card quick-card">
+        <div class="quick-wrap">
+          <h2 class="quick-title">最新动态</h2>
+          <ol class="sidebar-topic-list with-count">
+            {% for item in topics.items %}
+            {% if loop.index <= 8 %}
+            <li><a href="/__fixtures/a00/topic?theme={{ theme }}"><span class="sidebar-topic-title">合成动态：{{ item.title }}</span><span class="sidebar-topic-count">{{ item.age }}</span></a></li>
+            {% endif %}
+            {% endfor %}
+          </ol>
+        </div>
+      </section>
+    </aside>
+  </div>
+</div>

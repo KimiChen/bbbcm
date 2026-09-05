@@ -1,0 +1,7 @@
+{
+  "encoding": "UTF-8",
+  "source_url": "https://raw.githubusercontent.com/feathericons/feather/3dc050d97405062eba78aa57115c0a15c63abdaa/icons/message-square.svg",
+  "sha256": "6b348b2fb5661dd43e4cedc32c167a4b389809660037f91cf6351667967202d9",
+  "source_text": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\"/></svg>",
+  "container_note": "JSON preserves the exact original UTF-8 SVG bytes, including its lack of final newline; the repository evidence container itself uses UTF-8/LF/final newline."
+}

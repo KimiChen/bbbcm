@@ -1,0 +1,266 @@
+[
+  {
+    "logical_name": "reference-brand-symbol",
+    "source_url": "https://sb.sb.sb/assets/index.svg",
+    "retrieved_utc": "2026-09-04T20:35:34.074511+00:00",
+    "local_evidence": ".local/a00-redo/reference-index.svg",
+    "sha256": "3ac1426ddaa8208ef0c5bc83ca2432d9eb79f5de87c458283cab016262137f42",
+    "mime": "image/svg+xml",
+    "width": 512,
+    "height": 512,
+    "view_box": "0 0 200 200",
+    "theme": null,
+    "accessible_name": "参考品牌图形（待本地化与许可确认）",
+    "source": "current public reference website",
+    "license": "unconfirmed",
+    "redistributable": "pending",
+    "committed": false,
+    "evidence": "The fetched public SVG contains no license declaration; this is not evidence of permission.",
+    "state": "local-only; pending rights approval",
+    "content_hash_filename": null,
+    "fingerprint_note": "No redistributable fingerprint output exists; local_evidence identifies the isolated observation bytes only.",
+    "license_evidence": null,
+    "license_evidence_note": "No applicable redistribution/adaptation license has been confirmed; absence of evidence is not a finding that use is expressly prohibited.",
+    "accessible_name_note": "Inventory label proposed by this project; not a captured aria-label or approved target asset.",
+    "theme_note": "No target theme applicability has been validated; source appearance is not compatibility or redistribution evidence.",
+    "source_evidence": [
+      {
+        "kind": "rights-investigation",
+        "path": "docs/visual/a00/licenses/asset-rights.md"
+      },
+      {
+        "kind": "isolated-observation-bytes",
+        "path": ".local/a00-redo/reference-index.svg",
+        "sha256": "3ac1426ddaa8208ef0c5bc83ca2432d9eb79f5de87c458283cab016262137f42"
+      }
+    ]
+  },
+  {
+    "logical_name": "reference-favicon-32",
+    "source_url": "https://sb.sb.sb/assets/favicon-32x32.png",
+    "license": "unconfirmed",
+    "redistributable": "pending",
+    "committed": false,
+    "state": "local-only; pending rights approval",
+    "evidence": "Public image fetched with Mozilla/5.0 user agent; no redistribution license in image metadata; branded letter path design",
+    "fetch_http_status": 200,
+    "local_evidence": ".local/a00-redo/reference-favicon-32.png",
+    "sha256": "ca3ed9fd9697edd9512b026e57f5d775332f6f0b53cc2d45c7d31df0ff174037",
+    "mime": "image/png",
+    "width": 32,
+    "height": 32,
+    "theme": null,
+    "accessible_name": "参考 32×32 favicon（待本地化与许可确认）",
+    "source": "Current public reference website; anonymous head-linked brand asset observation",
+    "content_hash_filename": null,
+    "fingerprint_note": "No redistributable fingerprint output exists; local_evidence identifies the isolated observation bytes only.",
+    "license_evidence": null,
+    "license_evidence_note": "No applicable redistribution/adaptation license has been confirmed; absence of evidence is not a finding that use is expressly prohibited.",
+    "accessible_name_note": "Inventory label proposed by this project; not a captured aria-label or approved target asset.",
+    "observed_appearance": "observed dark mark",
+    "theme_note": "No target theme applicability has been validated; source appearance is not compatibility or redistribution evidence.",
+    "source_evidence": [
+      {
+        "kind": "rights-investigation",
+        "path": "docs/visual/a00/licenses/asset-rights.md"
+      },
+      {
+        "kind": "isolated-observation-bytes",
+        "path": ".local/a00-redo/reference-favicon-32.png",
+        "sha256": "ca3ed9fd9697edd9512b026e57f5d775332f6f0b53cc2d45c7d31df0ff174037"
+      }
+    ]
+  },
+  {
+    "logical_name": "reference-favicon-16",
+    "source_url": "https://sb.sb.sb/assets/favicon-16x16.png",
+    "license": "unconfirmed",
+    "redistributable": "pending",
+    "committed": false,
+    "state": "local-only; pending rights approval",
+    "evidence": "Public image fetched with Mozilla/5.0 user agent; no redistribution license in image metadata; branded letter path design",
+    "fetch_http_status": 200,
+    "local_evidence": ".local/a00-redo/reference-favicon-16.png",
+    "sha256": "6f6945b19cbc12d3cef76f34b96faea35e697cf1a692f266bfc50b13e8e47bf3",
+    "mime": "image/png",
+    "width": 16,
+    "height": 16,
+    "theme": null,
+    "accessible_name": "参考 16×16 favicon（待本地化与许可确认）",
+    "source": "Current public reference website; anonymous head-linked brand asset observation",
+    "content_hash_filename": null,
+    "fingerprint_note": "No redistributable fingerprint output exists; local_evidence identifies the isolated observation bytes only.",
+    "license_evidence": null,
+    "license_evidence_note": "No applicable redistribution/adaptation license has been confirmed; absence of evidence is not a finding that use is expressly prohibited.",
+    "accessible_name_note": "Inventory label proposed by this project; not a captured aria-label or approved target asset.",
+    "observed_appearance": "observed dark mark",
+    "theme_note": "No target theme applicability has been validated; source appearance is not compatibility or redistribution evidence.",
+    "source_evidence": [
+      {
+        "kind": "rights-investigation",
+        "path": "docs/visual/a00/licenses/asset-rights.md"
+      },
+      {
+        "kind": "isolated-observation-bytes",
+        "path": ".local/a00-redo/reference-favicon-16.png",
+        "sha256": "6f6945b19cbc12d3cef76f34b96faea35e697cf1a692f266bfc50b13e8e47bf3"
+      }
+    ]
+  },
+  {
+    "logical_name": "reference-apple-touch-icon",
+    "source_url": "https://sb.sb.sb/assets/apple-touch-icon.png",
+    "license": "unconfirmed",
+    "redistributable": "pending",
+    "committed": false,
+    "state": "local-only; pending rights approval",
+    "evidence": "Public image fetched with Mozilla/5.0 user agent; no redistribution license in image metadata; branded letter path design",
+    "fetch_http_status": 200,
+    "local_evidence": ".local/a00-redo/reference-apple-touch-icon.png",
+    "sha256": "543420c0bb95d53cd0748317341a72e226b368d7c83f4a67aa6a12d28c6a2f30",
+    "mime": "image/png",
+    "width": 180,
+    "height": 180,
+    "theme": null,
+    "accessible_name": "参考应用图标（待本地化与许可确认）",
+    "source": "Current public reference website; anonymous head-linked brand asset observation",
+    "content_hash_filename": null,
+    "fingerprint_note": "No redistributable fingerprint output exists; local_evidence identifies the isolated observation bytes only.",
+    "license_evidence": null,
+    "license_evidence_note": "No applicable redistribution/adaptation license has been confirmed; absence of evidence is not a finding that use is expressly prohibited.",
+    "accessible_name_note": "Inventory label proposed by this project; not a captured aria-label or approved target asset.",
+    "observed_appearance": "observed dark mark",
+    "theme_note": "No target theme applicability has been validated; source appearance is not compatibility or redistribution evidence.",
+    "source_evidence": [
+      {
+        "kind": "rights-investigation",
+        "path": "docs/visual/a00/licenses/asset-rights.md"
+      },
+      {
+        "kind": "isolated-observation-bytes",
+        "path": ".local/a00-redo/reference-apple-touch-icon.png",
+        "sha256": "543420c0bb95d53cd0748317341a72e226b368d7c83f4a67aa6a12d28c6a2f30"
+      }
+    ]
+  },
+  {
+    "logical_name": "reference-favicon-ico",
+    "source_url": "https://sb.sb/favicon.ico",
+    "license": "unconfirmed",
+    "redistributable": "pending",
+    "committed": false,
+    "state": "local-only; pending rights approval",
+    "evidence": "Public image fetched with Mozilla/5.0 user agent; no redistribution license in image metadata; branded letter path design",
+    "fetch_http_status": 200,
+    "local_evidence": ".local/a00-redo/reference-favicon-ico.ico",
+    "sha256": "aaf15ba528a6236f926da1618bc66f3c0679f7072ba1e016b22b0f6c2d195228",
+    "mime": "image/x-icon",
+    "width": 48,
+    "height": 48,
+    "theme": null,
+    "embedded_dimensions": [
+      [
+        16,
+        16
+      ],
+      [
+        32,
+        32
+      ],
+      [
+        48,
+        48
+      ]
+    ],
+    "accessible_name": "参考多尺寸 favicon（待本地化与许可确认）",
+    "source": "Current public reference website; anonymous head-linked brand asset observation",
+    "content_hash_filename": null,
+    "fingerprint_note": "No redistributable fingerprint output exists; local_evidence identifies the isolated observation bytes only.",
+    "license_evidence": null,
+    "license_evidence_note": "No applicable redistribution/adaptation license has been confirmed; absence of evidence is not a finding that use is expressly prohibited.",
+    "accessible_name_note": "Inventory label proposed by this project; not a captured aria-label or approved target asset.",
+    "observed_appearance": "observed dark mark",
+    "theme_note": "No target theme applicability has been validated; source appearance is not compatibility or redistribution evidence.",
+    "source_evidence": [
+      {
+        "kind": "rights-investigation",
+        "path": "docs/visual/a00/licenses/asset-rights.md"
+      },
+      {
+        "kind": "isolated-observation-bytes",
+        "path": ".local/a00-redo/reference-favicon-ico.ico",
+        "sha256": "aaf15ba528a6236f926da1618bc66f3c0679f7072ba1e016b22b0f6c2d195228"
+      }
+    ]
+  },
+  {
+    "logical_name": "open-graph-brand",
+    "source_url": "https://cache.imgproxy.org/?url=https%3A%2F%2Fsb.sb.sb%2Fattachments%2F2tka5bkfcbik%2Fog-image-1.png&w=1200&h=630&fit=cover&a=attention&output=webp",
+    "license": "unconfirmed",
+    "redistributable": "pending",
+    "committed": false,
+    "state": "local-only; pending rights approval",
+    "evidence": "Current public home head exposes this same OG/Twitter image URL; retrieved anonymously. Inspected artwork contains reference brand mark and reference brand text with black grid background; no user content. No redistribution license confirmed.",
+    "discovered_from": [
+      "public head meta[property=\"og:image\"]",
+      "public head meta[name=\"twitter:image\"]"
+    ],
+    "local_evidence": ".local/a00-redo/reference-og-image.webp",
+    "sha256": "39b020c979e0f88ec0da7ccd3fe33a7147b6c28ee9ea3a70824905e91e04c706",
+    "mime": "image/webp",
+    "width": 1200,
+    "height": 630,
+    "theme": null,
+    "fetch_http_status": 200,
+    "accessible_name": "参考 Open Graph 品牌图（待本地化与许可确认）",
+    "source": "Current public reference website; anonymous head-linked brand asset observation",
+    "content_hash_filename": null,
+    "fingerprint_note": "No redistributable fingerprint output exists; local_evidence identifies the isolated observation bytes only.",
+    "license_evidence": null,
+    "license_evidence_note": "No applicable redistribution/adaptation license has been confirmed; absence of evidence is not a finding that use is expressly prohibited.",
+    "accessible_name_note": "Inventory label proposed by this project; not a captured aria-label or approved target asset.",
+    "observed_appearance": "observed dark artwork",
+    "theme_note": "No target theme applicability has been validated; source appearance is not compatibility or redistribution evidence.",
+    "source_evidence": [
+      {
+        "kind": "rights-investigation",
+        "path": "docs/visual/a00/licenses/asset-rights.md"
+      },
+      {
+        "kind": "isolated-observation-bytes",
+        "path": ".local/a00-redo/reference-og-image.webp",
+        "sha256": "39b020c979e0f88ec0da7ccd3fe33a7147b6c28ee9ea3a70824905e91e04c706"
+      }
+    ]
+  },
+  {
+    "logical_name": "email-brand",
+    "source_url": null,
+    "license": "unconfirmed",
+    "redistributable": "pending",
+    "committed": false,
+    "state": "not delivered; not publicly observed this round",
+    "evidence": "No publicly observed asset and no redistribution license confirmed",
+    "accessible_name": "邮件品牌图（本轮未公开观察）",
+    "source": "Not publicly observed or acquired this round",
+    "content_hash_filename": null,
+    "fingerprint_note": "No redistributable fingerprint output exists; local_evidence identifies the isolated observation bytes only.",
+    "license_evidence": null,
+    "license_evidence_note": "No applicable redistribution/adaptation license has been confirmed; absence of evidence is not a finding that use is expressly prohibited.",
+    "local_evidence": null,
+    "sha256": null,
+    "mime": null,
+    "width": null,
+    "height": null,
+    "theme": null,
+    "unobserved_note": "No public source was observed, so URL, bytes, MIME, dimensions and theme are unknown; no email asset or measurements are invented.",
+    "accessible_name_note": "Inventory label proposed by this project; not a captured aria-label or approved target asset.",
+    "theme_note": "No target theme applicability has been validated; source appearance is not compatibility or redistribution evidence.",
+    "source_evidence": [
+      {
+        "kind": "rights-investigation",
+        "path": "docs/visual/a00/licenses/asset-rights.md"
+      }
+    ]
+  }
+]

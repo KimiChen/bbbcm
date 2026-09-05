@@ -1,0 +1,8 @@
+<aside class="sidebar" aria-label="社区信息">
+  <section class="card sidebar-card user-card"><div class="user-wrap"><div class="user-header"><span class="user-avatar-big visitor-avatar" aria-hidden="true">P</span><div class="user-header-info"><div class="user-name">访客</div><div class="user-rank">请登录后发帖</div></div></div><div class="side-auth"><a href="/__fixtures/a00/login?theme={{ theme }}">登录</a><a href="/__fixtures/a00/register?theme={{ theme }}">注册</a></div></div></section>
+  {% if page != "topic" && page != "search" %}
+  <section class="card sidebar-card quick-card"><div class="quick-wrap"><h2 class="quick-title">今日热门</h2><ol class="sidebar-topic-list with-count">{% for item in topics.items %}{% if loop.index <= 10 %}<li><a href="/__fixtures/a00/topic?theme={{ theme }}"><span class="sidebar-topic-title">{{ item.title }}</span><span class="sidebar-topic-count">{{ item.replies }}</span></a></li>{% endif %}{% endfor %}</ol></div></section>
+  <section class="card sidebar-card quick-card"><div class="quick-wrap"><h2 class="quick-title">最新帖子</h2><ol class="sidebar-topic-list">{% for item in topics.items %}{% if loop.index <= 10 %}<li><a href="/__fixtures/a00/topic?theme={{ theme }}"><span class="sidebar-topic-title">{{ item.title }}</span></a></li>{% endif %}{% endfor %}</ol></div></section>
+  <section class="card sidebar-card stats-card"><div class="stats-wrap"><h2 class="stats-title">站点统计</h2><dl class="stats-grid"><div><dt>主题</dt><dd>12</dd></div><div><dt>回复</dt><dd>24</dd></div><div><dt>用户</dt><dd>4</dd></div></dl><p class="synthetic-note">固定合成数据</p></div></section>
+  {% endif %}
+</aside>

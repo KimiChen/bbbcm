@@ -1,0 +1,28 @@
+{
+  "upstream_project": "Feather",
+  "upstream_repository": "https://github.com/feathericons/feather",
+  "upstream_commit": "3dc050d97405062eba78aa57115c0a15c63abdaa",
+  "license": "MIT",
+  "license_url": "https://raw.githubusercontent.com/feathericons/feather/3dc050d97405062eba78aa57115c0a15c63abdaa/LICENSE",
+  "license_sha256": "308028e93fcf84972523cdf6e616f73168546b4953895f516d01287f16fe7bee",
+  "copyright": "Copyright (c) 2013-2023 Cole Bemis",
+  "modification_notice": "Exact original UTF-8 SVG byte sequences are retained as source_text in feather-upstream/*.svg.json, because the upstream SVGs have no final newline. JSON containers satisfy repository LF/final-newline rules without changing the embedded source bytes. Distributed ui-menu and ui-chevron-up are modified only as documented in feather-geometry.json; unknown reference-site originals are not relicensed.",
+  "icons": [
+    {
+      "logical_name": "ui-menu",
+      "upstream_icon": "menu",
+      "source_url": "https://raw.githubusercontent.com/feathericons/feather/3dc050d97405062eba78aa57115c0a15c63abdaa/icons/menu.svg",
+      "source_evidence": "docs/visual/a00/licenses/feather-upstream/menu.svg.json",
+      "upstream_sha256": "896faf98953d6732f4286114a14401a0c881674d0d6f41d8253db24193ac51a5",
+      "distributed_sha256": "0d5c3c4c2abedfe4c715cdfcfe7d971250bfc1dd68f70783c5a24ba5ca2d0d8d"
+    },
+    {
+      "logical_name": "ui-chevron-up",
+      "upstream_icon": "chevron-up",
+      "source_url": "https://raw.githubusercontent.com/feathericons/feather/3dc050d97405062eba78aa57115c0a15c63abdaa/icons/chevron-up.svg",
+      "source_evidence": "docs/visual/a00/licenses/feather-upstream/chevron-up.svg.json",
+      "upstream_sha256": "185e8665dd1cb409377f28f23323b35f098fcfcd6b657d8f85991f0a9bc1dcfe",
+      "distributed_sha256": "7dfd9ab469bb167d5b33fb58e4b56549a3aea38c1a45d7fb23fd31b286c47755"
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "work_package": "WP-MVP-A00",
+  "status": "Public profile layout observed anonymously; synthetic partial and scoped CSS integrated in the development/test-only SSR route; Askama and development route/determinism checks pass.",
+  "captured_at": "2026-09-04T21:16:54.329Z",
+  "browser": "Chrome/152.0.7977.76",
+  "discovery": "A current public homepage author link selected structurally via .post-meta a; real target URL never logged or serialized.",
+  "source": "https://sb.sb/",
+  "source_path": "[public-profile-path-redacted]",
+  "http_status": 200,
+  "public_profile_confirmed": true,
+  "has_login_or_privacy_gate": false,
+  "evidence": "docs/visual/a00/reference/profile-1440-light.json",
+  "screenshots": [
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "theme": "light",
+      "local_path": "docs/evidence/local/a00-redo/profile/profile-1440-light.png",
+      "sha256": "d057d5566972ae35d5a7accbd2de988976fcc0dfb28d2c7b1db42ca20e792561"
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 1000
+      },
+      "theme": "light",
+      "local_path": "docs/evidence/local/a00-redo/profile/profile-390-light.png",
+      "sha256": "9b3f15cb439d13c15f0b3c76268b45a24388e8dfe5945785a79f09f45e9ac5e4"
+    }
+  ],
+  "privacy": "Both browser contexts were newly created and anonymous, with page scripts and tracking blocked; no cookies, sessions, storage or private settings were read. Raw PNGs remain under the ignored local evidence directory, per DEC-044. Published metadata stores no user text, ID or actual author path; numeric CSS classes and account-dependent progress fill width/rectangle are omitted.",
+  "observed_layout": [
+    "Desktop main column plus 260px user/activity sidebar",
+    "Public profile card with 64px avatar box, name/state/biography, four-column statistics and 7px progress track",
+    "Topic/reply toolbar followed by author topic rows without list avatars",
+    "A 40px-avatar sidebar card with four-column stats, action grid and eight visible synthetic activity entries",
+    "At 390px the profile card padding is 14px and the sidebar remains below the main list; topic rows use the shared mobile layout"
+  ],
+  "fixture_contract": {
+    "template": "apps/web/templates/profile/fixture.html",
+    "stylesheet": "apps/web/static/css/profile.css",
+    "outer_layout": "Partial includes complete home-shell/forum-layout, main and sidebar; include directly in the A00 content branch.",
+    "view_fields": [
+      "theme",
+      "topics.items",
+      "topics.empty"
+    ],
+    "profile_name": "合成果农甲",
+    "stats": {
+      "草莓": 128,
+      "果农指数": 24,
+      "帖子": 12,
+      "精华": 2
+    },
+    "level_progress_percent": 40,
+    "clock": "2026-01-01T00:00:00Z; fixed display age",
+    "avatars": "Project-authored letter placeholders, no reference avatar or image URL",
+    "actions": "Topic anchors navigate local fixtures; reply/private-message/points controls are inert previews. No business endpoint, session, permission or Feature Flag."
+  },
+  "limits": [
+    "No logged-in settings/manage page observed or implemented",
+    "Public profile replies tab was not traversed; no private message or points action was invoked",
+    "Shared UI icon placeholders retain the main A00 asset-rights limitation; no new third-party glyph was copied",
+    "Not an E04 pixel/WCAG result or approved baseline; integrated development results are recorded in validation.md."
+  ]
+}

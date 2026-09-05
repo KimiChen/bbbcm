@@ -1,0 +1,20 @@
+{
+  "scope": "Runtime template/view-model text, source asset filenames and decoded text metadata, plus source raster assets and implementation screenshot filenames/metadata/OCR. Each tool covers only the boundary below; the wordlist does not itself assert that a scan passed. Reference evidence and license/source records retain attributed source names.",
+  "terms": ["sb.sb", "sb．sb", "sb。sb", "sb dot sb", "烧饼", "燒餅", "LZ.SB", "lz.sb", "plan2", "forum-worker", "forum-cli", "sb:", "bbbcm_"],
+  "sources": [
+    "Current public reference header/domain/sister-link",
+    "plan/README.md: former plan2 directory name",
+    "plan/06-decisions-and-risks.md DEC-025: forum-worker -> bbbcm-worker; forum-cli -> bbbcm-cli; sb: -> bcm:; bbbcm_ -> bcm_"
+  ],
+  "scan_boundaries": {
+    "scripts/a00-check.py": "Template HTML, static CSS/SVG and fixtures.rs pathnames plus UTF-8 contents; all fixture pages from fixtures.json in each of the light/dark/system themes. Does not decode WOFF2 or PNG metadata and does not perform OCR. Result: docs/visual/a00/checks.json.",
+    "scripts/a00-asset-text-scan.py": "All static source filenames; WOFF2 name tables, optional WOFF metadata and OpenType meta; static SVG/XML text, attributes and comments; source and implementation PNG filenames and decoded text/ICC metadata; ICO directory and all DIB frame boundaries (this container has no text metadata fields). Does not scan raster pixels. Result: docs/visual/a00/asset-text-scan.json.",
+    "scripts/a00-ocr.swift": "Pixel OCR for explicitly supplied source PNGs and implementation PNGs, including generated ICO-frame PNG evidence, followed by manual image review. Does not decode embedded file metadata. Summary: docs/visual/a00/ocr-summary.json.",
+    "reference_exclusion": "Reference structural evidence and attributed license/source records may contain source names; raw reference PNGs remain local for user post-processing under DEC-044. They are not counted as clean runtime or implementation assets."
+  },
+  "matching": {
+    "source_ssr_and_asset_text": "NFKC + Unicode casefold, literal substring matching",
+    "raster_ocr": "Vision zh-Hans/en-US; case/width-insensitive literal matching after whitespace removal; OCR is auxiliary to manual review"
+  },
+  "notes": "Only current plan files and this round's public observations were used; no DEC-041 output or external archive was inspected. Current plan text identifies no additional necessary historical project names. bbbcm and bbbcm-worker/bbbcm-cli are approved current code names; bcm: and bcm_ are approved current prefixes; 草莓社区/草莓论坛/草莓 are approved project terms. The historical prefix bbbcm_ is scanned without banning the approved bbbcm code name. Add any newly identified historic names before a later freeze."
+}

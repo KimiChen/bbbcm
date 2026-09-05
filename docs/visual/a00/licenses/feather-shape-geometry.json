@@ -1,0 +1,167 @@
+{
+  "method": "Reconstruct each complete official source path from its original parameters and compare normalized exact coordinates. Retain its command topology, substitute only recorded target parameters and compare to the current observed reference geometry. Not an affine transformation.",
+  "reference_source": "https://sb.sb/",
+  "reference_observation": ".local/a00-redo/public-ui-svg-shapes.json (current anonymous A00 observation; no user text)",
+  "icons": [
+    {
+      "logical_name": "ui-eye",
+      "source_commit": "3dc050d97405062eba78aa57115c0a15c63abdaa",
+      "source_parameters": {
+        "half_width": 11,
+        "half_height": 8,
+        "outer_control_offset": 4
+      },
+      "target_parameters": {
+        "half_width": "19/2",
+        "half_height": 6,
+        "outer_control_offset": "7/2"
+      },
+      "fixed_parameters": {
+        "center": [
+          12,
+          12
+        ],
+        "pupil_radius": 3
+      },
+      "source_topology": "four smooth cubic segments and unchanged circle",
+      "source_parameterization_reconstructs_official_path": true,
+      "all_visible_geometry_exact": true,
+      "stroke_width": "2",
+      "ownership_boundary": "This delivered SVG modifies an independently obtained official MIT Feather source. The reference-site original remains of unconfirmed licensing origin.",
+      "comparison_scope": "Exact path coordinates, arc flags, reflected cubic controls and primitive style; no E04 pixel or WCAG conclusion.",
+      "observed_reference_commands": [
+        [
+          "M",
+          2.5,
+          12.0
+        ],
+        [
+          "C",
+          2.5,
+          12.0,
+          6.0,
+          6.0,
+          12.0,
+          6.0
+        ],
+        [
+          "C",
+          18.0,
+          6.0,
+          21.5,
+          12.0,
+          21.5,
+          12.0
+        ],
+        [
+          "C",
+          21.5,
+          12.0,
+          18.0,
+          18.0,
+          12.0,
+          18.0
+        ],
+        [
+          "C",
+          6.0,
+          18.0,
+          2.5,
+          12.0,
+          2.5,
+          12.0
+        ],
+        [
+          "Z"
+        ]
+      ]
+    },
+    {
+      "logical_name": "ui-chat",
+      "source_commit": "3dc050d97405062eba78aa57115c0a15c63abdaa",
+      "source_parameters": {
+        "corner_radius": 2,
+        "bottom_edge": 17,
+        "tail_base_x": 7,
+        "tail_tip_y": 21
+      },
+      "target_parameters": {
+        "corner_radius": 4,
+        "bottom_edge": 19,
+        "tail_base_x": 8,
+        "tail_tip_y": 22
+      },
+      "fixed_parameters": {
+        "left_edge": 3,
+        "right_edge": 21,
+        "top_edge": 3
+      },
+      "source_topology": "three circular arcs, H/line/V/h segments and close; unchanged command topology",
+      "source_parameterization_reconstructs_official_path": true,
+      "all_visible_geometry_exact": true,
+      "stroke_width": "2",
+      "ownership_boundary": "This delivered SVG modifies an independently obtained official MIT Feather source. The reference-site original remains of unconfirmed licensing origin.",
+      "comparison_scope": "Exact path coordinates, arc flags, reflected cubic controls and primitive style; no E04 pixel or WCAG conclusion.",
+      "observed_reference_commands": [
+        [
+          "M",
+          21.0,
+          15.0
+        ],
+        [
+          "A",
+          4.0,
+          4.0,
+          0.0,
+          0.0,
+          1.0,
+          17.0,
+          19.0
+        ],
+        [
+          "L",
+          8.0,
+          19.0
+        ],
+        [
+          "L",
+          3.0,
+          22.0
+        ],
+        [
+          "L",
+          3.0,
+          7.0
+        ],
+        [
+          "A",
+          4.0,
+          4.0,
+          0.0,
+          0.0,
+          1.0,
+          7.0,
+          3.0
+        ],
+        [
+          "L",
+          17.0,
+          3.0
+        ],
+        [
+          "A",
+          4.0,
+          4.0,
+          0.0,
+          0.0,
+          1.0,
+          21.0,
+          7.0
+        ],
+        [
+          "Z"
+        ]
+      ]
+    }
+  ]
+}

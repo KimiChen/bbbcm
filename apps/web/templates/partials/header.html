@@ -1,0 +1,53 @@
+<a class="skip-link" href="#main">跳转到主要内容</a>
+<header class="top"><div class="bar">
+  <details class="mobile-menu" name="header-menu">
+    <summary class="mobile-menu-button" aria-controls="a00-mobile-drawer">
+      <span class="mobile-menu-trigger"><span class="icon icon-menu" aria-hidden="true"></span><span class="menu-control-label">打开菜单</span></span>
+      <span class="mobile-menu-backdrop" aria-hidden="true"></span>
+      <span class="mobile-menu-close"><span aria-hidden="true">×</span><span class="menu-control-label">关闭菜单</span></span>
+    </summary>
+    <aside class="mobile-menu-drawer" id="a00-mobile-drawer" aria-label="移动导航">
+      <div class="mobile-menu-head"><strong>菜单</strong></div>
+      <div class="mobile-menu-body">
+        <section class="mobile-menu-section"><h3>版块列表</h3><nav class="mobile-menu-links" aria-label="移动版块导航">
+          <a class="mobile-menu-link" href="/__fixtures/a00/home?theme={{ theme }}">全部主题</a>
+          <a class="mobile-menu-link" href="/__fixtures/a00/forum?theme={{ theme }}">问答/实战</a>
+          <a class="mobile-menu-link" href="/__fixtures/a00/forum?theme={{ theme }}">AI</a>
+          <a class="mobile-menu-link" href="/__fixtures/a00/forum?theme={{ theme }}">域名与主机</a>
+          <a class="mobile-menu-link" href="/__fixtures/a00/forum?theme={{ theme }}">站务</a>
+        </nav></section>
+        <section class="mobile-menu-section"><h3>我的菜单</h3><nav class="mobile-menu-links" aria-label="移动账号导航">
+          <a class="mobile-menu-link" href="/__fixtures/a00/login?theme={{ theme }}">登录</a>
+          <a class="mobile-menu-link" href="/__fixtures/a00/register?theme={{ theme }}">注册</a>
+          <a class="mobile-menu-link" href="/__fixtures/a00/login?theme={{ theme }}">发布主题</a>
+        </nav></section>
+      </div>
+    </aside>
+  </details>
+  <a class="brand" href="/__fixtures/a00/home?theme={{ theme }}">草莓论坛</a>
+  <nav class="forum-nav" aria-label="主导航">
+    <a class="forum-link" href="/__fixtures/a00/forum?theme={{ theme }}">问答/实战</a>
+    <a class="forum-link" href="/__fixtures/a00/forum?theme={{ theme }}">AI</a>
+    <a class="forum-link" href="/__fixtures/a00/forum?theme={{ theme }}">域名与主机</a>
+    <a class="forum-link" href="/__fixtures/a00/forum?theme={{ theme }}">站务</a>
+  </nav>
+  <details class="forum-more"><summary class="forum-more-toggle" aria-controls="a00-forum-more-region">全部版块</summary></details>
+  <a class="forum-more-toggle nav-sister" href="/__fixtures/a00/home?theme={{ theme }}">草莓论坛</a>
+  <form class="search-form" action="/__fixtures/a00/search" method="get">
+    <input type="hidden" name="theme" value="{{ theme }}" />
+    <input class="search-input" type="search" name="q" placeholder="搜索关键词" aria-label="搜索关键词" maxlength="100" />
+    <button class="search-btn" type="submit" aria-label="搜索"><span class="icon icon-search" aria-hidden="true"></span></button>
+  </form>
+  <span class="script-toggle"><button type="button" title="语言外观夹具">繁體</button></span>
+  <details class="theme-select" name="header-menu"><summary class="theme-toggle" aria-label="主题模式" aria-controls="a00-theme-options"><span class="icon icon-sun" aria-hidden="true"></span><span class="icon icon-moon" aria-hidden="true"></span><span class="theme-dismiss" aria-hidden="true"></span></summary><nav class="theme-options" id="a00-theme-options" aria-label="主题模式"><a href="/__fixtures/a00/{{ page }}?theme=light"{% if theme == "light" %} aria-current="true"{% endif %}>浅色</a><a href="/__fixtures/a00/{{ page }}?theme=dark"{% if theme == "dark" %} aria-current="true"{% endif %}>深色</a><a href="/__fixtures/a00/{{ page }}?theme=system"{% if theme == "system" %} aria-current="true"{% endif %}>跟随系统</a></nav></details>
+  <a class="nav-mine" href="/__fixtures/a00/login?theme={{ theme }}">登录</a>
+</div></header>
+<div class="forum-more-region" id="a00-forum-more-region">
+  <nav class="forum-more-panel" aria-label="全部版块">
+    <a class="forum-more-link{% if page != "forum" %} active{% endif %}" href="/__fixtures/a00/home?theme={{ theme }}">全部主题</a>
+    <a class="forum-more-link{% if page == "forum" %} active{% endif %}" href="/__fixtures/a00/forum?theme={{ theme }}">问答/实战</a>
+    <a class="forum-more-link" href="/__fixtures/a00/forum?theme={{ theme }}">AI</a>
+    <a class="forum-more-link" href="/__fixtures/a00/forum?theme={{ theme }}">域名与主机</a>
+    <a class="forum-more-link" href="/__fixtures/a00/forum?theme={{ theme }}">站务</a>
+  </nav>
+</div>

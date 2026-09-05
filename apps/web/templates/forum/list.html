@@ -1,0 +1,14 @@
+<ul class="post-list">
+{% for item in topics.items %}
+  <li class="post-item {% if item.pinned %}topic-pinned{% endif %}" data-synthetic-id="{{ item.id }}">
+    <div class="post-avatar"><span class="avatar-img synthetic-avatar" aria-label="合成头像">{{ item.id }}</span></div>
+    <div class="post-body">
+      <div class="post-title-row">{% if item.pinned %}<span class="topic-badge pinned">置顶</span>{% endif %} <a class="post-title" href="/__fixtures/a00/topic?theme={{ theme }}">{{ item.title }}</a>{% if item.id == "04" %}<span class="topic-pages" aria-label="合成主题分页"><i class="meta-icon icon-document" aria-hidden="true"></i><a href="/__fixtures/a00/topic?theme={{ theme }}">1</a><a href="/__fixtures/a00/topic?theme={{ theme }}">2</a></span>{% endif %}</div>
+      <div class="post-meta"><span><i class="meta-icon icon-user" aria-hidden="true"></i>{{ item.author }}</span><span class="post-forum-meta"><i class="meta-icon icon-forum" aria-hidden="true"></i>{{ item.category }}</span><span><i class="meta-icon icon-eye" aria-hidden="true"></i><span aria-label="合成浏览数">{{ item.views }}</span></span><span><i class="meta-icon icon-chat" aria-hidden="true"></i><span aria-label="合成回复数">{{ item.replies }}</span></span><time datetime="2026-01-01T00:00:00Z">{{ item.age }}</time></div>
+    </div>
+    <a class="post-tag post-forum-badge" href="/__fixtures/a00/forum?theme={{ theme }}">{{ item.category }}</a>
+  </li>
+{% else %}
+  <li class="list-empty">{{ topics.empty }}</li>
+{% endfor %}
+</ul>

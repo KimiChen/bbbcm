@@ -1,0 +1,7 @@
+{
+  "encoding": "UTF-8",
+  "source_url": "https://raw.githubusercontent.com/feathericons/feather/3dc050d97405062eba78aa57115c0a15c63abdaa/icons/chevron-up.svg",
+  "sha256": "185e8665dd1cb409377f28f23323b35f098fcfcd6b657d8f85991f0a9bc1dcfe",
+  "source_text": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"18 15 12 9 6 15\"/></svg>",
+  "container_note": "JSON preserves the exact original UTF-8 SVG bytes, including its lack of final newline; the repository evidence container itself uses UTF-8/LF/final newline."
+}

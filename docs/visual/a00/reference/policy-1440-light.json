@@ -1,0 +1,7798 @@
+{
+  "tokens": {
+    "--code-name": "#e45649",
+    "--r": "12px",
+    "--line-strong": "#c7cad5",
+    "--info-soft-text": "#33408f",
+    "--code-keyword": "#a626a4",
+    "--brand-soft": "#eef0f8",
+    "--on-danger": "#ffffff",
+    "--danger-soft-text": "#600000",
+    "--danger-border": "#e3c5c5",
+    "--shadow-medium": "0 16px 48px -8px rgb(5 0 56 / 0.12)",
+    "--brand": "#33408f",
+    "--success": "#007a4e",
+    "--text-muted": "#555a6a",
+    "--ease-drawer": "cubic-bezier(0.32, 0.72, 0, 1)",
+    "--line": "#e0e2e8",
+    "--warning-border": "#f0d98a",
+    "--brand-hover": "#232a63",
+    "--bg": "#f7f8fa",
+    "--success-soft": "#e4f6ee",
+    "--panel": "#ffffff",
+    "--line-soft": "#eef0f3",
+    "--font-mono": "\"Space Mono\", ui-monospace, SFMono-Regular, \"SF Mono\", Menlo,\n    Consolas, monospace",
+    "--link-hover": "#2440a8",
+    "--action-text": "#ffffff",
+    "--ease-out": "cubic-bezier(0.23, 1, 0.32, 1)",
+    "--text-disabled": "#8e91a0",
+    "--warning": "#8a6500",
+    "--info": "#33408f",
+    "--mark": "#ffd02f",
+    "--inverse-border": "#2c2c34",
+    "--warning-soft": "#fff4c4",
+    "--link": "#2f4fd0",
+    "--r-xs": "4px",
+    "--backdrop": "rgb(5 0 56 / 0.42)",
+    "--accent-teal-text": "#187574",
+    "--info-soft": "#eef0f8",
+    "--inverse-text": "#ffffff",
+    "--brand-border": "#c7cbe4",
+    "--danger-fill": "#cf2b2b",
+    "--r-input": "8px",
+    "--font-sans": "system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\",\n    \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+    "--action-hover": "#2c2c34",
+    "--link-soft": "#e8ecfb",
+    "--gap": "20px",
+    "--sidebar-w": "260px",
+    "--shadow-base": "0 1px 2px rgb(5 0 56 / 0.04)",
+    "--mark-soft": "#fff4c4",
+    "--danger-soft": "#fbd4d4",
+    "--danger": "#cf2b2b",
+    "--action": "#1c1c1e",
+    "--inverse": "#1c1c1e",
+    "--text-subtle": "#6b6f7e",
+    "--on-danger-fill": "#ffffff",
+    "--panel-alt": "#fafbfc",
+    "--code-title": "#4078f2",
+    "--selection": "#c7cfef",
+    "--text": "#1c1c1e",
+    "--focus-ring": "#33408f",
+    "--text-strong": "#050038",
+    "--mark-text": "#1c1c1e",
+    "--code-number": "#986801",
+    "--r-pill": "9999px",
+    "--action-border": "#1c1c1e",
+    "--r-sm": "6px",
+    "--success-soft-text": "#007a4e",
+    "--code-string": "#50a14f",
+    "--mark-soft-text": "#746019",
+    "--panel-hover": "#f2f4f7",
+    "--accent-teal-soft": "#c3faf5",
+    "--mark-deep": "#fcb900",
+    "--container": "1200px",
+    "--warning-soft-text": "#746019"
+  },
+  "computed": [
+    {
+      "selector": "body",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1425,
+        "height": 7761.671875,
+        "top": 0,
+        "right": 1425,
+        "bottom": 7761.671875,
+        "left": 0
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgb(247, 248, 250)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "1425px",
+        "height": "7761.67px",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "div.top",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1425,
+        "height": 57,
+        "top": 0,
+        "right": 1425,
+        "bottom": 57,
+        "left": 0
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgb(255, 255, 255)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "sticky",
+        "width": "1425px",
+        "height": "57px",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "1px solid rgb(224, 226, 232)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "div.bar",
+      "rect": {
+        "x": 112.5,
+        "y": 0,
+        "width": 1200,
+        "height": 56,
+        "top": 0,
+        "right": 1312.5,
+        "bottom": 56,
+        "left": 112.5
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "flex",
+        "position": "static",
+        "width": "1200px",
+        "height": "56px",
+        "maxWidth": "1200px",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "14px",
+        "padding": "0px 16px",
+        "margin": "0px 112.5px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "button.mobile-menu-button",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "style": {
+        "color": "rgb(85, 90, 106)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "14px",
+        "lineHeight": "24.5px",
+        "fontWeight": "500",
+        "letterSpacing": "normal",
+        "display": "none",
+        "position": "static",
+        "width": "32px",
+        "height": "32px",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px",
+        "margin": "0px 0px 0px -6px",
+        "borderTop": "0px none rgb(85, 90, 106)",
+        "borderBottom": "0px none rgb(85, 90, 106)",
+        "borderLeft": "0px none rgb(85, 90, 106)",
+        "borderRight": "0px none rgb(85, 90, 106)",
+        "borderRadius": "9999px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "a.brand",
+      "rect": {
+        "x": 128.5,
+        "y": 11,
+        "width": 83.3671875,
+        "height": 34,
+        "top": 11,
+        "right": 211.8671875,
+        "bottom": 45,
+        "left": 128.5
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgb(255, 208, 47)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "16px",
+        "lineHeight": "28px",
+        "fontWeight": "600",
+        "letterSpacing": "-0.16px",
+        "display": "block",
+        "position": "static",
+        "width": "83.3672px",
+        "height": "34px",
+        "maxWidth": "none",
+        "minHeight": "auto",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "3px 10px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "6px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "nav.forum-nav",
+      "rect": {
+        "x": 235.8671875,
+        "y": 10.75,
+        "width": 563.9375,
+        "height": 34.5,
+        "top": 10.75,
+        "right": 799.8046875,
+        "bottom": 45.25,
+        "left": 235.8671875
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "flex",
+        "position": "static",
+        "width": "563.938px",
+        "height": "34.5px",
+        "maxWidth": "none",
+        "minHeight": "auto",
+        "gridTemplateColumns": "none",
+        "gap": "2px",
+        "padding": "0px",
+        "margin": "0px 0px 0px 10px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "hidden"
+      }
+    },
+    {
+      "selector": "a.forum-link",
+      "rect": {
+        "x": 235.8671875,
+        "y": 10.75,
+        "width": 54.59375,
+        "height": 34.5,
+        "top": 10.75,
+        "right": 290.4609375,
+        "bottom": 45.25,
+        "left": 235.8671875
+      },
+      "style": {
+        "color": "rgb(85, 90, 106)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "14px",
+        "lineHeight": "24.5px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "54.5938px",
+        "height": "34.5px",
+        "maxWidth": "none",
+        "minHeight": "auto",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "5px 9px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(85, 90, 106)",
+        "borderBottom": "0px none rgb(85, 90, 106)",
+        "borderLeft": "0px none rgb(85, 90, 106)",
+        "borderRight": "0px none rgb(85, 90, 106)",
+        "borderRadius": "9999px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "button.forum-more-toggle",
+      "rect": {
+        "x": 813.8046875,
+        "y": 10.75,
+        "width": 74,
+        "height": 34.5,
+        "top": 10.75,
+        "right": 887.8046875,
+        "bottom": 45.25,
+        "left": 813.8046875
+      },
+      "style": {
+        "color": "rgb(85, 90, 106)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "14px",
+        "lineHeight": "24.5px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "74px",
+        "height": "34.5px",
+        "maxWidth": "none",
+        "minHeight": "auto",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "5px 9px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(85, 90, 106)",
+        "borderBottom": "0px none rgb(85, 90, 106)",
+        "borderLeft": "0px none rgb(85, 90, 106)",
+        "borderRight": "0px none rgb(85, 90, 106)",
+        "borderRadius": "9999px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "a.forum-more-toggle.nav-sister",
+      "rect": {
+        "x": 901.8046875,
+        "y": 10.75,
+        "width": 56.7421875,
+        "height": 34.5,
+        "top": 10.75,
+        "right": 958.546875,
+        "bottom": 45.25,
+        "left": 901.8046875
+      },
+      "style": {
+        "color": "rgb(85, 90, 106)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "14px",
+        "lineHeight": "24.5px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "56.7422px",
+        "height": "34.5px",
+        "maxWidth": "none",
+        "minHeight": "auto",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "5px 9px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(85, 90, 106)",
+        "borderBottom": "0px none rgb(85, 90, 106)",
+        "borderLeft": "0px none rgb(85, 90, 106)",
+        "borderRight": "0px none rgb(85, 90, 106)",
+        "borderRadius": "9999px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "form.search-form",
+      "rect": {
+        "x": 972.546875,
+        "y": 8.75,
+        "width": 158.953125,
+        "height": 38.5,
+        "top": 8.75,
+        "right": 1131.5,
+        "bottom": 47.25,
+        "left": 972.546875
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgb(250, 251, 252)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "flex",
+        "position": "static",
+        "width": "158.953px",
+        "height": "38.5px",
+        "maxWidth": "250px",
+        "minHeight": "auto",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px",
+        "margin": "0px",
+        "borderTop": "1px solid rgb(224, 226, 232)",
+        "borderBottom": "1px solid rgb(224, 226, 232)",
+        "borderLeft": "1px solid rgb(224, 226, 232)",
+        "borderRight": "1px solid rgb(224, 226, 232)",
+        "borderRadius": "8px",
+        "boxShadow": "none",
+        "overflowX": "hidden"
+      }
+    },
+    {
+      "selector": "input.search-input",
+      "rect": {
+        "x": 973.546875,
+        "y": 9.75,
+        "width": 124.953125,
+        "height": 36.5,
+        "top": 9.75,
+        "right": 1098.5,
+        "bottom": 46.25,
+        "left": 973.546875
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "14px",
+        "lineHeight": "24.5px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "124.953px",
+        "height": "36.5px",
+        "maxWidth": "none",
+        "minHeight": "auto",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "6px 4px 6px 10px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "clip"
+      }
+    },
+    {
+      "selector": "button.search-btn",
+      "rect": {
+        "x": 1098.5,
+        "y": 15,
+        "width": 32,
+        "height": 26,
+        "top": 15,
+        "right": 1130.5,
+        "bottom": 41,
+        "left": 1098.5
+      },
+      "style": {
+        "color": "rgb(85, 90, 106)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "14px",
+        "lineHeight": "24.5px",
+        "fontWeight": "500",
+        "letterSpacing": "normal",
+        "display": "flex",
+        "position": "static",
+        "width": "32px",
+        "height": "26px",
+        "maxWidth": "none",
+        "minHeight": "auto",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "6px 9px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(85, 90, 106)",
+        "borderBottom": "0px none rgb(85, 90, 106)",
+        "borderLeft": "0px none rgb(85, 90, 106)",
+        "borderRight": "0px none rgb(85, 90, 106)",
+        "borderRadius": "9999px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "form.script-toggle",
+      "rect": {
+        "x": 1145.5,
+        "y": 13,
+        "width": 43,
+        "height": 30,
+        "top": 13,
+        "right": 1188.5,
+        "bottom": 43,
+        "left": 1145.5
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "flex",
+        "position": "static",
+        "width": "43px",
+        "height": "30px",
+        "maxWidth": "none",
+        "minHeight": "auto",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "button.theme-toggle",
+      "rect": {
+        "x": 1202.5,
+        "y": 13,
+        "width": 30,
+        "height": 30,
+        "top": 13,
+        "right": 1232.5,
+        "bottom": 43,
+        "left": 1202.5
+      },
+      "style": {
+        "color": "rgb(85, 90, 106)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "14px",
+        "lineHeight": "24.5px",
+        "fontWeight": "500",
+        "letterSpacing": "normal",
+        "display": "flex",
+        "position": "static",
+        "width": "30px",
+        "height": "30px",
+        "maxWidth": "none",
+        "minHeight": "auto",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px",
+        "margin": "0px",
+        "borderTop": "1px solid rgb(224, 226, 232)",
+        "borderBottom": "1px solid rgb(224, 226, 232)",
+        "borderLeft": "1px solid rgb(224, 226, 232)",
+        "borderRight": "1px solid rgb(224, 226, 232)",
+        "borderRadius": "9999px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "a.nav-mine",
+      "rect": {
+        "x": 1246.5,
+        "y": 9.75,
+        "width": 50,
+        "height": 36.5,
+        "top": 9.75,
+        "right": 1296.5,
+        "bottom": 46.25,
+        "left": 1246.5
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "14px",
+        "lineHeight": "24.5px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "flex",
+        "position": "static",
+        "width": "50px",
+        "height": "36.5px",
+        "maxWidth": "none",
+        "minHeight": "auto",
+        "gridTemplateColumns": "none",
+        "gap": "5px",
+        "padding": "5px 10px",
+        "margin": "0px",
+        "borderTop": "1px solid rgb(224, 226, 232)",
+        "borderBottom": "1px solid rgb(224, 226, 232)",
+        "borderLeft": "1px solid rgb(224, 226, 232)",
+        "borderRight": "1px solid rgb(224, 226, 232)",
+        "borderRadius": "9999px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "div.forum-more-region",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgb(255, 255, 255)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "none",
+        "position": "static",
+        "width": "auto",
+        "height": "auto",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "1px solid rgb(224, 226, 232)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "div.forum-more-panel",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "flex",
+        "position": "static",
+        "width": "auto",
+        "height": "auto",
+        "maxWidth": "1200px",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "6px",
+        "padding": "12px 16px",
+        "margin": "0px auto",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "a.forum-more-link.active",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "style": {
+        "color": "rgb(51, 64, 143)",
+        "backgroundColor": "rgb(238, 240, 248)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "13px",
+        "lineHeight": "22.75px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "auto",
+        "height": "auto",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "4px 10px",
+        "margin": "0px",
+        "borderTop": "1px solid rgb(199, 203, 228)",
+        "borderBottom": "1px solid rgb(199, 203, 228)",
+        "borderLeft": "1px solid rgb(199, 203, 228)",
+        "borderRight": "1px solid rgb(199, 203, 228)",
+        "borderRadius": "9999px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "a.forum-more-link",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "style": {
+        "color": "rgb(85, 90, 106)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "13px",
+        "lineHeight": "22.75px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "auto",
+        "height": "auto",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "4px 10px",
+        "margin": "0px",
+        "borderTop": "1px solid rgb(224, 226, 232)",
+        "borderBottom": "1px solid rgb(224, 226, 232)",
+        "borderLeft": "1px solid rgb(224, 226, 232)",
+        "borderRight": "1px solid rgb(224, 226, 232)",
+        "borderRadius": "9999px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "div.mobile-menu-backdrop",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(5, 0, 56, 0.42)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "none",
+        "position": "fixed",
+        "width": "auto",
+        "height": "auto",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "aside.mobile-menu-drawer",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgb(255, 255, 255)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "flex",
+        "position": "static",
+        "width": "300px",
+        "height": "100%",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "1px solid rgb(224, 226, 232)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "div.mobile-menu-head",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "flex",
+        "position": "static",
+        "width": "auto",
+        "height": "auto",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "14px 16px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "1px solid rgb(238, 240, 243)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "button.mobile-menu-close",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "style": {
+        "color": "rgb(107, 111, 126)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "19px",
+        "lineHeight": "19px",
+        "fontWeight": "500",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "28px",
+        "height": "28px",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(107, 111, 126)",
+        "borderBottom": "0px none rgb(107, 111, 126)",
+        "borderLeft": "0px none rgb(107, 111, 126)",
+        "borderRight": "0px none rgb(107, 111, 126)",
+        "borderRadius": "9999px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "div.mobile-menu-body",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "auto",
+        "height": "auto",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "8px 0px 24px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "auto"
+      }
+    },
+    {
+      "selector": "section.mobile-menu-section",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "auto",
+        "height": "auto",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "10px 16px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "nav.mobile-menu-links",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "flex",
+        "position": "static",
+        "width": "auto",
+        "height": "auto",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "a.mobile-menu-link",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "14.5px",
+        "lineHeight": "25.375px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "auto",
+        "height": "auto",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "7px 0px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "main.wrap",
+      "rect": {
+        "x": 112.5,
+        "y": 57,
+        "width": 1200,
+        "height": 7596.171875,
+        "top": 57,
+        "right": 1312.5,
+        "bottom": 7653.171875,
+        "left": 112.5
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "1200px",
+        "height": "7596.17px",
+        "maxWidth": "1200px",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "20px 16px 64px",
+        "margin": "0px 112.5px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "div.home-shell",
+      "rect": {
+        "x": 128.5,
+        "y": 77,
+        "width": 1168,
+        "height": 7512.171875,
+        "top": 77,
+        "right": 1296.5,
+        "bottom": 7589.171875,
+        "left": 128.5
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "1168px",
+        "height": "7512.17px",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "div.forum-layout.doc-layout",
+      "rect": {
+        "x": 128.5,
+        "y": 77,
+        "width": 1168,
+        "height": 7512.171875,
+        "top": 77,
+        "right": 1296.5,
+        "bottom": 7589.171875,
+        "left": 128.5
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "grid",
+        "position": "static",
+        "width": "1168px",
+        "height": "7512.17px",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "1168px",
+        "gap": "20px",
+        "padding": "0px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "div.forum-main",
+      "rect": {
+        "x": 128.5,
+        "y": 77,
+        "width": 1168,
+        "height": 7512.171875,
+        "top": 77,
+        "right": 1296.5,
+        "bottom": 7589.171875,
+        "left": 128.5
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "1168px",
+        "height": "7512.17px",
+        "maxWidth": "none",
+        "minHeight": "auto",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "div.main-panel",
+      "rect": {
+        "x": 128.5,
+        "y": 77,
+        "width": 1168,
+        "height": 7512.171875,
+        "top": 77,
+        "right": 1296.5,
+        "bottom": 7589.171875,
+        "left": 128.5
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "1168px",
+        "height": "7512.17px",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "article.doc-panel",
+      "rect": {
+        "x": 128.5,
+        "y": 77,
+        "width": 1168,
+        "height": 7512.171875,
+        "top": 77,
+        "right": 1296.5,
+        "bottom": 7589.171875,
+        "left": 128.5
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgb(255, 255, 255)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "1168px",
+        "height": "7512.17px",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "32px 40px 44px",
+        "margin": "0px",
+        "borderTop": "1px solid rgb(224, 226, 232)",
+        "borderBottom": "1px solid rgb(224, 226, 232)",
+        "borderLeft": "1px solid rgb(224, 226, 232)",
+        "borderRight": "1px solid rgb(224, 226, 232)",
+        "borderRadius": "12px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "header.doc-head",
+      "rect": {
+        "x": 169.5,
+        "y": 110,
+        "width": 718.0625,
+        "height": 95.046875,
+        "top": 110,
+        "right": 887.5625,
+        "bottom": 205.046875,
+        "left": 169.5
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "718.062px",
+        "height": "95.0469px",
+        "maxWidth": "718.066px",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px 0px 24px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "1px solid rgb(238, 240, 243)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "p.doc-lede",
+      "rect": {
+        "x": 169.5,
+        "y": 153.796875,
+        "width": 718.0625,
+        "height": 26.25,
+        "top": 153.796875,
+        "right": 887.5625,
+        "bottom": 180.046875,
+        "left": 169.5
+      },
+      "style": {
+        "color": "rgb(85, 90, 106)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "718.062px",
+        "height": "26.25px",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(85, 90, 106)",
+        "borderBottom": "0px none rgb(85, 90, 106)",
+        "borderLeft": "0px none rgb(85, 90, 106)",
+        "borderRight": "0px none rgb(85, 90, 106)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "div.doc-body",
+      "rect": {
+        "x": 169.5,
+        "y": 235.046875,
+        "width": 1086,
+        "height": 7309.125,
+        "top": 235.046875,
+        "right": 1255.5,
+        "bottom": 7544.171875,
+        "left": 169.5
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "grid",
+        "position": "static",
+        "width": "1086px",
+        "height": "7309.12px",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "848px 190px",
+        "gap": "48px",
+        "padding": "0px",
+        "margin": "30px 0px 0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "aside.doc-rail",
+      "rect": {
+        "x": 1065.5,
+        "y": 235.046875,
+        "width": 190,
+        "height": 546.4375,
+        "top": 235.046875,
+        "right": 1255.5,
+        "bottom": 781.484375,
+        "left": 1065.5
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "sticky",
+        "width": "190px",
+        "height": "546.438px",
+        "maxWidth": "none",
+        "minHeight": "auto",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px 0px 0px 20px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "1px solid rgb(238, 240, 243)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "div.doc-nav-group",
+      "rect": {
+        "x": 1086.5,
+        "y": 235.046875,
+        "width": 169,
+        "height": 229.5,
+        "top": 235.046875,
+        "right": 1255.5,
+        "bottom": 464.546875,
+        "left": 1086.5
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "169px",
+        "height": "229.5px",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "p.doc-rail-title",
+      "rect": {
+        "x": 1086.5,
+        "y": 235.046875,
+        "width": 169,
+        "height": 21,
+        "top": 235.046875,
+        "right": 1255.5,
+        "bottom": 256.046875,
+        "left": 1086.5
+      },
+      "style": {
+        "color": "rgb(107, 111, 126)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "12px",
+        "lineHeight": "21px",
+        "fontWeight": "500",
+        "letterSpacing": "0.96px",
+        "display": "block",
+        "position": "static",
+        "width": "169px",
+        "height": "21px",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px",
+        "margin": "0px 0px 8px",
+        "borderTop": "0px none rgb(107, 111, 126)",
+        "borderBottom": "0px none rgb(107, 111, 126)",
+        "borderLeft": "0px none rgb(107, 111, 126)",
+        "borderRight": "0px none rgb(107, 111, 126)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "nav.doc-nav",
+      "rect": {
+        "x": 1086.5,
+        "y": 264.046875,
+        "width": 169,
+        "height": 200.5,
+        "top": 264.046875,
+        "right": 1255.5,
+        "bottom": 464.546875,
+        "left": 1086.5
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "13.5px",
+        "lineHeight": "23.625px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "grid",
+        "position": "static",
+        "width": "169px",
+        "height": "200.5px",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "169px",
+        "gap": "2px",
+        "padding": "0px 0px 20px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "1px solid rgb(238, 240, 243)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "a.doc-nav-link.is-current",
+      "rect": {
+        "x": 1086.5,
+        "y": 264.046875,
+        "width": 169,
+        "height": 28.25,
+        "top": 264.046875,
+        "right": 1255.5,
+        "bottom": 292.296875,
+        "left": 1086.5
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "13.5px",
+        "lineHeight": "20.25px",
+        "fontWeight": "600",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "169px",
+        "height": "28.25px",
+        "maxWidth": "none",
+        "minHeight": "auto",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "4px 0px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "a.doc-nav-link",
+      "rect": {
+        "x": 1086.5,
+        "y": 294.296875,
+        "width": 169,
+        "height": 28.25,
+        "top": 294.296875,
+        "right": 1255.5,
+        "bottom": 322.546875,
+        "left": 1086.5
+      },
+      "style": {
+        "color": "rgb(85, 90, 106)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "13.5px",
+        "lineHeight": "20.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "169px",
+        "height": "28.25px",
+        "maxWidth": "none",
+        "minHeight": "auto",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "4px 0px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(85, 90, 106)",
+        "borderBottom": "0px none rgb(85, 90, 106)",
+        "borderLeft": "0px none rgb(85, 90, 106)",
+        "borderRight": "0px none rgb(85, 90, 106)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "nav.doc-toc",
+      "rect": {
+        "x": 1086.5,
+        "y": 464.546875,
+        "width": 169,
+        "height": 316.9375,
+        "top": 464.546875,
+        "right": 1255.5,
+        "bottom": 781.484375,
+        "left": 1086.5
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "169px",
+        "height": "316.938px",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "20px 0px 0px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "ol.doc-toc-list",
+      "rect": {
+        "x": 1086.5,
+        "y": 513.546875,
+        "width": 169,
+        "height": 267.9375,
+        "top": 513.546875,
+        "right": 1255.5,
+        "bottom": 781.484375,
+        "left": 1086.5
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "grid",
+        "position": "static",
+        "width": "169px",
+        "height": "267.938px",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "169px",
+        "gap": "8px",
+        "padding": "0px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "ol.doc-toc-sub",
+      "rect": {
+        "x": 1086.5,
+        "y": 595.9921875,
+        "width": 169,
+        "height": 44.75,
+        "top": 595.9921875,
+        "right": 1255.5,
+        "bottom": 640.7421875,
+        "left": 1086.5
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "grid",
+        "position": "static",
+        "width": "169px",
+        "height": "44.75px",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "156px",
+        "gap": "6px",
+        "padding": "0px 0px 0px 12px",
+        "margin": "6px 0px 0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "1px solid rgb(224, 226, 232)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "div.doc-prose",
+      "rect": {
+        "x": 169.5,
+        "y": 235.046875,
+        "width": 848,
+        "height": 7309.125,
+        "top": 235.046875,
+        "right": 1017.5,
+        "bottom": 7544.171875,
+        "left": 169.5
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "848px",
+        "height": "7309.12px",
+        "maxWidth": "none",
+        "minHeight": "auto",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "section.doc-section",
+      "rect": {
+        "x": 169.5,
+        "y": 235.046875,
+        "width": 848,
+        "height": 255.375,
+        "top": 235.046875,
+        "right": 1017.5,
+        "bottom": 490.421875,
+        "left": 169.5
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "848px",
+        "height": "255.375px",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "dl.doc-rules",
+      "rect": {
+        "x": 169.5,
+        "y": 350.546875,
+        "width": 848,
+        "height": 84.25,
+        "top": 350.546875,
+        "right": 1017.5,
+        "bottom": 434.796875,
+        "left": 169.5
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "848px",
+        "height": "84.25px",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px",
+        "margin": "0px 0px 14px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "div.doc-rule",
+      "rect": {
+        "x": 169.5,
+        "y": 350.546875,
+        "width": 848,
+        "height": 42.625,
+        "top": 350.546875,
+        "right": 1017.5,
+        "bottom": 393.171875,
+        "left": 169.5
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "flex",
+        "position": "static",
+        "width": "848px",
+        "height": "42.625px",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "4px 14px",
+        "padding": "9px 0px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "1px solid rgb(238, 240, 243)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "dt.doc-rule-label",
+      "rect": {
+        "x": 169.5,
+        "y": 359.546875,
+        "width": 148.5,
+        "height": 23.625,
+        "top": 359.546875,
+        "right": 318,
+        "bottom": 383.171875,
+        "left": 169.5
+      },
+      "style": {
+        "color": "rgb(85, 90, 106)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "13.5px",
+        "lineHeight": "23.625px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "148.5px",
+        "height": "23.625px",
+        "maxWidth": "none",
+        "minHeight": "auto",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(85, 90, 106)",
+        "borderBottom": "0px none rgb(85, 90, 106)",
+        "borderLeft": "0px none rgb(85, 90, 106)",
+        "borderRight": "0px none rgb(85, 90, 106)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "dd.doc-rule-value",
+      "rect": {
+        "x": 332,
+        "y": 359.546875,
+        "width": 685.5,
+        "height": 23.625,
+        "top": 359.546875,
+        "right": 1017.5,
+        "bottom": 383.171875,
+        "left": 332
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "flex",
+        "position": "static",
+        "width": "685.5px",
+        "height": "23.625px",
+        "maxWidth": "none",
+        "minHeight": "auto",
+        "gridTemplateColumns": "none",
+        "gap": "4px 10px",
+        "padding": "0px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "span.doc-num",
+      "rect": {
+        "x": 332,
+        "y": 359.546875,
+        "width": 60.0546875,
+        "height": 23.625,
+        "top": 359.546875,
+        "right": 392.0546875,
+        "bottom": 383.171875,
+        "left": 332
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "\"Space Mono\", ui-monospace, SFMono-Regular, \"SF Mono\", Menlo, Consolas, monospace",
+        "fontSize": "13.5px",
+        "lineHeight": "23.625px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "60.0547px",
+        "height": "23.625px",
+        "maxWidth": "none",
+        "minHeight": "auto",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "span.doc-rule-note",
+      "rect": {
+        "x": 402.0546875,
+        "y": 361.046875,
+        "width": 125,
+        "height": 21.25,
+        "top": 361.046875,
+        "right": 527.0546875,
+        "bottom": 382.296875,
+        "left": 402.0546875
+      },
+      "style": {
+        "color": "rgb(107, 111, 126)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "12.5px",
+        "lineHeight": "21.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "125px",
+        "height": "21.25px",
+        "maxWidth": "none",
+        "minHeight": "auto",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(107, 111, 126)",
+        "borderBottom": "0px none rgb(107, 111, 126)",
+        "borderLeft": "0px none rgb(107, 111, 126)",
+        "borderRight": "0px none rgb(107, 111, 126)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "ol.level-ladder",
+      "rect": {
+        "x": 169.5,
+        "y": 3176.546875,
+        "width": 848,
+        "height": 1243.25,
+        "top": 3176.546875,
+        "right": 1017.5,
+        "bottom": 4419.796875,
+        "left": 169.5
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "grid",
+        "position": "static",
+        "width": "848px",
+        "height": "1243.25px",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "270.664px 270.664px 270.664px",
+        "gap": "2px 18px",
+        "padding": "0px",
+        "margin": "0px 0px 14px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "span.level-n",
+      "rect": {
+        "x": 169.5,
+        "y": 3182.546875,
+        "width": 42.5,
+        "height": 21.875,
+        "top": 3182.546875,
+        "right": 212,
+        "bottom": 3204.421875,
+        "left": 169.5
+      },
+      "style": {
+        "color": "rgb(107, 111, 126)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "\"Space Mono\", ui-monospace, SFMono-Regular, \"SF Mono\", Menlo, Consolas, monospace",
+        "fontSize": "12.5px",
+        "lineHeight": "21.875px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "42.5px",
+        "height": "21.875px",
+        "maxWidth": "none",
+        "minHeight": "auto",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(107, 111, 126)",
+        "borderBottom": "0px none rgb(107, 111, 126)",
+        "borderLeft": "0px none rgb(107, 111, 126)",
+        "borderRight": "0px none rgb(107, 111, 126)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "span.level-name",
+      "rect": {
+        "x": 220,
+        "y": 3181.546875,
+        "width": 204.5078125,
+        "height": 23.625,
+        "top": 3181.546875,
+        "right": 424.5078125,
+        "bottom": 3205.171875,
+        "left": 220
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "13.5px",
+        "lineHeight": "23.625px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "204.508px",
+        "height": "23.625px",
+        "maxWidth": "none",
+        "minHeight": "auto",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "span.level-growth",
+      "rect": {
+        "x": 432.5078125,
+        "y": 3182.546875,
+        "width": 7.65625,
+        "height": 21.875,
+        "top": 3182.546875,
+        "right": 440.1640625,
+        "bottom": 3204.421875,
+        "left": 432.5078125
+      },
+      "style": {
+        "color": "rgb(85, 90, 106)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "\"Space Mono\", ui-monospace, SFMono-Regular, \"SF Mono\", Menlo, Consolas, monospace",
+        "fontSize": "12.5px",
+        "lineHeight": "21.875px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "7.65625px",
+        "height": "21.875px",
+        "maxWidth": "none",
+        "minHeight": "auto",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(85, 90, 106)",
+        "borderBottom": "0px none rgb(85, 90, 106)",
+        "borderLeft": "0px none rgb(85, 90, 106)",
+        "borderRight": "0px none rgb(85, 90, 106)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "ul.doc-list",
+      "rect": {
+        "x": 169.5,
+        "y": 7124.671875,
+        "width": 848,
+        "height": 167,
+        "top": 7124.671875,
+        "right": 1017.5,
+        "bottom": 7291.671875,
+        "left": 169.5
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "27px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "848px",
+        "height": "167px",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px 0px 0px 21px",
+        "margin": "0px 0px 12px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "footer.footer",
+      "rect": {
+        "x": 112.5,
+        "y": 7653.171875,
+        "width": 1200,
+        "height": 108.5,
+        "top": 7653.171875,
+        "right": 1312.5,
+        "bottom": 7761.671875,
+        "left": 112.5
+      },
+      "style": {
+        "color": "rgb(107, 111, 126)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "13px",
+        "lineHeight": "22.75px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "1200px",
+        "height": "108.5px",
+        "maxWidth": "1200px",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px 16px 32px",
+        "margin": "0px 112.5px",
+        "borderTop": "0px none rgb(107, 111, 126)",
+        "borderBottom": "0px none rgb(107, 111, 126)",
+        "borderLeft": "0px none rgb(107, 111, 126)",
+        "borderRight": "0px none rgb(107, 111, 126)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "div.footer-inner",
+      "rect": {
+        "x": 128.5,
+        "y": 7653.171875,
+        "width": 1168,
+        "height": 76.5,
+        "top": 7653.171875,
+        "right": 1296.5,
+        "bottom": 7729.671875,
+        "left": 128.5
+      },
+      "style": {
+        "color": "rgb(107, 111, 126)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "13px",
+        "lineHeight": "22.75px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "flex",
+        "position": "static",
+        "width": "1168px",
+        "height": "76.5px",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "10px",
+        "padding": "20px 0px 0px",
+        "margin": "0px",
+        "borderTop": "1px solid rgb(224, 226, 232)",
+        "borderBottom": "0px none rgb(107, 111, 126)",
+        "borderLeft": "0px none rgb(107, 111, 126)",
+        "borderRight": "0px none rgb(107, 111, 126)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "nav.footer-links",
+      "rect": {
+        "x": 475.7890625,
+        "y": 7674.171875,
+        "width": 473.4140625,
+        "height": 22.75,
+        "top": 7674.171875,
+        "right": 949.203125,
+        "bottom": 7696.921875,
+        "left": 475.7890625
+      },
+      "style": {
+        "color": "rgb(107, 111, 126)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "13px",
+        "lineHeight": "22.75px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "flex",
+        "position": "static",
+        "width": "473.414px",
+        "height": "22.75px",
+        "maxWidth": "none",
+        "minHeight": "auto",
+        "gridTemplateColumns": "none",
+        "gap": "6px 20px",
+        "padding": "0px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(107, 111, 126)",
+        "borderBottom": "0px none rgb(107, 111, 126)",
+        "borderLeft": "0px none rgb(107, 111, 126)",
+        "borderRight": "0px none rgb(107, 111, 126)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "p.footer-legal",
+      "rect": {
+        "x": 631.484375,
+        "y": 7706.921875,
+        "width": 162.0234375,
+        "height": 22.75,
+        "top": 7706.921875,
+        "right": 793.5078125,
+        "bottom": 7729.671875,
+        "left": 631.484375
+      },
+      "style": {
+        "color": "rgb(107, 111, 126)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "13px",
+        "lineHeight": "22.75px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "162.023px",
+        "height": "22.75px",
+        "maxWidth": "none",
+        "minHeight": "auto",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(107, 111, 126)",
+        "borderBottom": "0px none rgb(107, 111, 126)",
+        "borderLeft": "0px none rgb(107, 111, 126)",
+        "borderRight": "0px none rgb(107, 111, 126)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "span.footer-version",
+      "rect": {
+        "x": 744.234375,
+        "y": 7709.921875,
+        "width": 49.2734375,
+        "height": 17,
+        "top": 7709.921875,
+        "right": 793.5078125,
+        "bottom": 7726.921875,
+        "left": 744.234375
+      },
+      "style": {
+        "color": "rgb(142, 145, 160)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "\"Space Mono\", ui-monospace, SFMono-Regular, \"SF Mono\", Menlo, Consolas, monospace",
+        "fontSize": "11.5px",
+        "lineHeight": "20.125px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "inline",
+        "position": "static",
+        "width": "auto",
+        "height": "auto",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px",
+        "margin": "0px 0px 0px 6px",
+        "borderTop": "0px none rgb(142, 145, 160)",
+        "borderBottom": "0px none rgb(142, 145, 160)",
+        "borderLeft": "0px none rgb(142, 145, 160)",
+        "borderRight": "0px none rgb(142, 145, 160)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "button.to-top",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "style": {
+        "color": "rgb(85, 90, 106)",
+        "backgroundColor": "rgb(255, 255, 255)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "14px",
+        "lineHeight": "24.5px",
+        "fontWeight": "500",
+        "letterSpacing": "normal",
+        "display": "none",
+        "position": "fixed",
+        "width": "38px",
+        "height": "38px",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px",
+        "margin": "0px",
+        "borderTop": "1px solid rgb(224, 226, 232)",
+        "borderBottom": "1px solid rgb(224, 226, 232)",
+        "borderLeft": "1px solid rgb(224, 226, 232)",
+        "borderRight": "1px solid rgb(224, 226, 232)",
+        "borderRadius": "9999px",
+        "boxShadow": "rgba(0, 0, 0, 0.12) 0px 6px 20px 0px",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "div.modal-backdrop",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(5, 0, 56, 0.42)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "none",
+        "position": "fixed",
+        "width": "auto",
+        "height": "auto",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "16px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "div.modal-panel",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgb(255, 255, 255)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "100%",
+        "height": "auto",
+        "maxWidth": "440px",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px",
+        "margin": "0px",
+        "borderTop": "1px solid rgb(224, 226, 232)",
+        "borderBottom": "1px solid rgb(224, 226, 232)",
+        "borderLeft": "1px solid rgb(224, 226, 232)",
+        "borderRight": "1px solid rgb(224, 226, 232)",
+        "borderRadius": "12px",
+        "boxShadow": "rgba(5, 0, 56, 0.12) 0px 16px 48px -8px",
+        "overflowX": "hidden"
+      }
+    },
+    {
+      "selector": "div.modal-head",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "14px",
+        "lineHeight": "24.5px",
+        "fontWeight": "600",
+        "letterSpacing": "normal",
+        "display": "flex",
+        "position": "static",
+        "width": "auto",
+        "height": "auto",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "12px 16px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "1px solid rgb(238, 240, 243)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "button.modal-close",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "style": {
+        "color": "rgb(107, 111, 126)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "17px",
+        "lineHeight": "17px",
+        "fontWeight": "500",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "26px",
+        "height": "26px",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "0px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(107, 111, 126)",
+        "borderBottom": "0px none rgb(107, 111, 126)",
+        "borderLeft": "0px none rgb(107, 111, 126)",
+        "borderRight": "0px none rgb(107, 111, 126)",
+        "borderRadius": "9999px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "div.modal-body",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "style": {
+        "color": "rgb(28, 28, 30)",
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "15px",
+        "lineHeight": "26.25px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "block",
+        "position": "static",
+        "width": "auto",
+        "height": "auto",
+        "maxWidth": "none",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "16px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(28, 28, 30)",
+        "borderBottom": "0px none rgb(28, 28, 30)",
+        "borderLeft": "0px none rgb(28, 28, 30)",
+        "borderRight": "0px none rgb(28, 28, 30)",
+        "borderRadius": "0px",
+        "boxShadow": "none",
+        "overflowX": "visible"
+      }
+    },
+    {
+      "selector": "div.toast",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "style": {
+        "color": "rgb(255, 255, 255)",
+        "backgroundColor": "rgb(28, 28, 30)",
+        "fontFamily": "system-ui, -apple-system, \"system-ui\", \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif",
+        "fontSize": "13.5px",
+        "lineHeight": "23.625px",
+        "fontWeight": "400",
+        "letterSpacing": "normal",
+        "display": "none",
+        "position": "fixed",
+        "width": "auto",
+        "height": "auto",
+        "maxWidth": "1408px",
+        "minHeight": "0px",
+        "gridTemplateColumns": "none",
+        "gap": "normal",
+        "padding": "9px 16px",
+        "margin": "0px",
+        "borderTop": "0px none rgb(255, 255, 255)",
+        "borderBottom": "0px none rgb(255, 255, 255)",
+        "borderLeft": "0px none rgb(255, 255, 255)",
+        "borderRight": "0px none rgb(255, 255, 255)",
+        "borderRadius": "12px",
+        "boxShadow": "rgba(5, 0, 56, 0.12) 0px 16px 48px -8px",
+        "overflowX": "visible"
+      }
+    }
+  ],
+  "structure": [
+    {
+      "tag": "div",
+      "classes": "",
+      "depth": 2
+    },
+    {
+      "tag": "div",
+      "classes": "top",
+      "depth": 2
+    },
+    {
+      "tag": "div",
+      "classes": "bar",
+      "depth": 3
+    },
+    {
+      "tag": "button",
+      "classes": "mobile-menu-button",
+      "depth": 4
+    },
+    {
+      "tag": "svg",
+      "classes": "",
+      "depth": 5
+    },
+    {
+      "tag": "path",
+      "classes": "",
+      "depth": 6
+    },
+    {
+      "tag": "a",
+      "classes": "brand",
+      "depth": 4
+    },
+    {
+      "tag": "nav",
+      "classes": "forum-nav",
+      "depth": 4
+    },
+    {
+      "tag": "a",
+      "classes": "forum-link",
+      "depth": 5
+    },
+    {
+      "tag": "a",
+      "classes": "forum-link",
+      "depth": 5
+    },
+    {
+      "tag": "a",
+      "classes": "forum-link",
+      "depth": 5
+    },
+    {
+      "tag": "a",
+      "classes": "forum-link",
+      "depth": 5
+    },
+    {
+      "tag": "a",
+      "classes": "forum-link",
+      "depth": 5
+    },
+    {
+      "tag": "a",
+      "classes": "forum-link",
+      "depth": 5
+    },
+    {
+      "tag": "a",
+      "classes": "forum-link",
+      "depth": 5
+    },
+    {
+      "tag": "a",
+      "classes": "forum-link",
+      "depth": 5
+    },
+    {
+      "tag": "a",
+      "classes": "forum-link",
+      "depth": 5
+    },
+    {
+      "tag": "a",
+      "classes": "forum-link",
+      "depth": 5
+    },
+    {
+      "tag": "button",
+      "classes": "forum-more-toggle",
+      "depth": 4
+    },
+    {
+      "tag": "a",
+      "classes": "forum-more-toggle nav-sister",
+      "depth": 4
+    },
+    {
+      "tag": "form",
+      "classes": "search-form",
+      "depth": 4
+    },
+    {
+      "tag": "input",
+      "classes": "",
+      "depth": 5
+    },
+    {
+      "tag": "input",
+      "classes": "search-input",
+      "depth": 5
+    },
+    {
+      "tag": "button",
+      "classes": "search-btn",
+      "depth": 5
+    },
+    {
+      "tag": "svg",
+      "classes": "",
+      "depth": 6
+    },
+    {
+      "tag": "circle",
+      "classes": "",
+      "depth": 7
+    },
+    {
+      "tag": "path",
+      "classes": "",
+      "depth": 7
+    },
+    {
+      "tag": "form",
+      "classes": "script-toggle",
+      "depth": 4
+    },
+    {
+      "tag": "input",
+      "classes": "",
+      "depth": 5
+    },
+    {
+      "tag": "input",
+      "classes": "",
+      "depth": 5
+    },
+    {
+      "tag": "input",
+      "classes": "",
+      "depth": 5
+    },
+    {
+      "tag": "button",
+      "classes": "",
+      "depth": 5
+    },
+    {
+      "tag": "button",
+      "classes": "theme-toggle",
+      "depth": 4
+    },
+    {
+      "tag": "svg",
+      "classes": "icon-sun",
+      "depth": 5
+    },
+    {
+      "tag": "path",
+      "classes": "",
+      "depth": 6
+    },
+    {
+      "tag": "defs",
+      "classes": "",
+      "depth": 6
+    },
+    {
+      "tag": "mask",
+      "classes": "",
+      "depth": 7
+    },
+    {
+      "tag": "path",
+      "classes": "",
+      "depth": 8
+    },
+    {
+      "tag": "animate",
+      "classes": "",
+      "depth": 9
+    },
+    {
+      "tag": "path",
+      "classes": "",
+      "depth": 8
+    },
+    {
+      "tag": "animate",
+      "classes": "",
+      "depth": 9
+    },
+    {
+      "tag": "set",
+      "classes": "",
+      "depth": 9
+    },
+    {
+      "tag": "path",
+      "classes": "",
+      "depth": 6
+    },
+    {
+      "tag": "g",
+      "classes": "",
+      "depth": 6
+    },
+    {
+      "tag": "path",
+      "classes": "",
+      "depth": 7
+    },
+    {
+      "tag": "animatetransform",
+      "classes": "",
+      "depth": 8
+    },
+    {
+      "tag": "set",
+      "classes": "",
+      "depth": 8
+    },
+    {
+      "tag": "animate",
+      "classes": "",
+      "depth": 8
+    },
+    {
+      "tag": "path",
+      "classes": "",
+      "depth": 7
+    },
+    {
+      "tag": "animatetransform",
+      "classes": "",
+      "depth": 8
+    },
+    {
+      "tag": "set",
+      "classes": "",
+      "depth": 8
+    },
+    {
+      "tag": "animate",
+      "classes": "",
+      "depth": 8
+    },
+    {
+      "tag": "svg",
+      "classes": "icon-moon",
+      "depth": 5
+    },
+    {
+      "tag": "path",
+      "classes": "",
+      "depth": 6
+    },
+    {
+      "tag": "g",
+      "classes": "",
+      "depth": 6
+    },
+    {
+      "tag": "path",
+      "classes": "",
+      "depth": 7
+    },
+    {
+      "tag": "animate",
+      "classes": "",
+      "depth": 8
+    },
+    {
+      "tag": "animate",
+      "classes": "",
+      "depth": 8
+    },
+    {
+      "tag": "path",
+      "classes": "",
+      "depth": 7
+    },
+    {
+      "tag": "animate",
+      "classes": "",
+      "depth": 8
+    },
+    {
+      "tag": "path",
+      "classes": "",
+      "depth": 7
+    },
+    {
+      "tag": "animate",
+      "classes": "",
+      "depth": 8
+    },
+    {
+      "tag": "path",
+      "classes": "",
+      "depth": 7
+    },
+    {
+      "tag": "animate",
+      "classes": "",
+      "depth": 8
+    },
+    {
+      "tag": "path",
+      "classes": "",
+      "depth": 7
+    },
+    {
+      "tag": "animate",
+      "classes": "",
+      "depth": 8
+    },
+    {
+      "tag": "a",
+      "classes": "nav-mine",
+      "depth": 4
+    },
+    {
+      "tag": "div",
+      "classes": "forum-more-region",
+      "depth": 2
+    },
+    {
+      "tag": "div",
+      "classes": "forum-more-panel",
+      "depth": 3
+    },
+    {
+      "tag": "a",
+      "classes": "forum-more-link active",
+      "depth": 4
+    },
+    {
+      "tag": "a",
+      "classes": "forum-more-link",
+      "depth": 4
+    },
+    {
+      "tag": "a",
+      "classes": "forum-more-link",
+      "depth": 4
+    },
+    {
+      "tag": "a",
+      "classes": "forum-more-link",
+      "depth": 4
+    },
+    {
+      "tag": "a",
+      "classes": "forum-more-link",
+      "depth": 4
+    },
+    {
+      "tag": "a",
+      "classes": "forum-more-link",
+      "depth": 4
+    },
+    {
+      "tag": "a",
+      "classes": "forum-more-link",
+      "depth": 4
+    },
+    {
+      "tag": "a",
+      "classes": "forum-more-link",
+      "depth": 4
+    },
+    {
+      "tag": "a",
+      "classes": "forum-more-link",
+      "depth": 4
+    },
+    {
+      "tag": "a",
+      "classes": "forum-more-link",
+      "depth": 4
+    },
+    {
+      "tag": "a",
+      "classes": "forum-more-link",
+      "depth": 4
+    },
+    {
+      "tag": "a",
+      "classes": "forum-more-link",
+      "depth": 4
+    },
+    {
+      "tag": "a",
+      "classes": "forum-more-link",
+      "depth": 4
+    },
+    {
+      "tag": "a",
+      "classes": "forum-more-link",
+      "depth": 4
+    },
+    {
+      "tag": "div",
+      "classes": "mobile-menu-backdrop",
+      "depth": 2
+    },
+    {
+      "tag": "aside",
+      "classes": "mobile-menu-drawer",
+      "depth": 3
+    },
+    {
+      "tag": "div",
+      "classes": "mobile-menu-head",
+      "depth": 4
+    },
+    {
+      "tag": "strong",
+      "classes": "",
+      "depth": 5
+    },
+    {
+      "tag": "button",
+      "classes": "mobile-menu-close",
+      "depth": 5
+    },
+    {
+      "tag": "div",
+      "classes": "mobile-menu-body",
+      "depth": 4
+    },
+    {
+      "tag": "section",
+      "classes": "mobile-menu-section",
+      "depth": 5
+    },
+    {
+      "tag": "h3",
+      "classes": "",
+      "depth": 6
+    },
+    {
+      "tag": "nav",
+      "classes": "mobile-menu-links",
+      "depth": 6
+    },
+    {
+      "tag": "a",
+      "classes": "mobile-menu-link",
+      "depth": 7
+    },
+    {
+      "tag": "a",
+      "classes": "mobile-menu-link",
+      "depth": 7
+    },
+    {
+      "tag": "a",
+      "classes": "mobile-menu-link",
+      "depth": 7
+    },
+    {
+      "tag": "a",
+      "classes": "mobile-menu-link",
+      "depth": 7
+    },
+    {
+      "tag": "a",
+      "classes": "mobile-menu-link",
+      "depth": 7
+    },
+    {
+      "tag": "a",
+      "classes": "mobile-menu-link",
+      "depth": 7
+    },
+    {
+      "tag": "a",
+      "classes": "mobile-menu-link",
+      "depth": 7
+    },
+    {
+      "tag": "a",
+      "classes": "mobile-menu-link",
+      "depth": 7
+    },
+    {
+      "tag": "a",
+      "classes": "mobile-menu-link",
+      "depth": 7
+    },
+    {
+      "tag": "a",
+      "classes": "mobile-menu-link",
+      "depth": 7
+    },
+    {
+      "tag": "a",
+      "classes": "mobile-menu-link",
+      "depth": 7
+    },
+    {
+      "tag": "a",
+      "classes": "mobile-menu-link",
+      "depth": 7
+    },
+    {
+      "tag": "a",
+      "classes": "mobile-menu-link",
+      "depth": 7
+    },
+    {
+      "tag": "a",
+      "classes": "mobile-menu-link",
+      "depth": 7
+    },
+    {
+      "tag": "section",
+      "classes": "mobile-menu-section",
+      "depth": 5
+    },
+    {
+      "tag": "h3",
+      "classes": "",
+      "depth": 6
+    },
+    {
+      "tag": "nav",
+      "classes": "mobile-menu-links",
+      "depth": 6
+    },
+    {
+      "tag": "a",
+      "classes": "mobile-menu-link",
+      "depth": 7
+    },
+    {
+      "tag": "a",
+      "classes": "mobile-menu-link",
+      "depth": 7
+    },
+    {
+      "tag": "main",
+      "classes": "wrap",
+      "depth": 2
+    },
+    {
+      "tag": "div",
+      "classes": "home-shell",
+      "depth": 3
+    },
+    {
+      "tag": "div",
+      "classes": "forum-layout doc-layout",
+      "depth": 4
+    },
+    {
+      "tag": "div",
+      "classes": "forum-main",
+      "depth": 5
+    },
+    {
+      "tag": "div",
+      "classes": "main-panel",
+      "depth": 6
+    },
+    {
+      "tag": "article",
+      "classes": "doc-panel",
+      "depth": 7
+    },
+    {
+      "tag": "header",
+      "classes": "doc-head",
+      "depth": 8
+    },
+    {
+      "tag": "h1",
+      "classes": "",
+      "depth": 9
+    },
+    {
+      "tag": "p",
+      "classes": "doc-lede",
+      "depth": 9
+    },
+    {
+      "tag": "div",
+      "classes": "doc-body",
+      "depth": 8
+    },
+    {
+      "tag": "aside",
+      "classes": "doc-rail",
+      "depth": 9
+    },
+    {
+      "tag": "div",
+      "classes": "doc-nav-group",
+      "depth": 10
+    },
+    {
+      "tag": "p",
+      "classes": "doc-rail-title",
+      "depth": 11
+    },
+    {
+      "tag": "nav",
+      "classes": "doc-nav",
+      "depth": 11
+    },
+    {
+      "tag": "a",
+      "classes": "doc-nav-link is-current",
+      "depth": 12
+    },
+    {
+      "tag": "a",
+      "classes": "doc-nav-link",
+      "depth": 12
+    },
+    {
+      "tag": "a",
+      "classes": "doc-nav-link",
+      "depth": 12
+    },
+    {
+      "tag": "a",
+      "classes": "doc-nav-link",
+      "depth": 12
+    },
+    {
+      "tag": "a",
+      "classes": "doc-nav-link",
+      "depth": 12
+    },
+    {
+      "tag": "a",
+      "classes": "doc-nav-link",
+      "depth": 12
+    },
+    {
+      "tag": "nav",
+      "classes": "doc-toc",
+      "depth": 10
+    },
+    {
+      "tag": "p",
+      "classes": "doc-rail-title",
+      "depth": 11
+    },
+    {
+      "tag": "ol",
+      "classes": "doc-toc-list",
+      "depth": 11
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "a",
+      "classes": "",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "a",
+      "classes": "",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "a",
+      "classes": "",
+      "depth": 13
+    },
+    {
+      "tag": "ol",
+      "classes": "doc-toc-sub",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 14
+    },
+    {
+      "tag": "a",
+      "classes": "",
+      "depth": 15
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 14
+    },
+    {
+      "tag": "a",
+      "classes": "",
+      "depth": 15
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "a",
+      "classes": "",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "a",
+      "classes": "",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "a",
+      "classes": "",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "a",
+      "classes": "",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "a",
+      "classes": "",
+      "depth": 13
+    },
+    {
+      "tag": "div",
+      "classes": "doc-prose",
+      "depth": 9
+    },
+    {
+      "tag": "section",
+      "classes": "doc-section",
+      "depth": 10
+    },
+    {
+      "tag": "h2",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "a",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "dl",
+      "classes": "doc-rules",
+      "depth": 11
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "span",
+      "classes": "doc-rule-note",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "span",
+      "classes": "doc-rule-note",
+      "depth": 14
+    },
+    {
+      "tag": "dl",
+      "classes": "doc-rules",
+      "depth": 11
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "span",
+      "classes": "doc-rule-note",
+      "depth": 14
+    },
+    {
+      "tag": "section",
+      "classes": "doc-section",
+      "depth": 10
+    },
+    {
+      "tag": "h2",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "dl",
+      "classes": "doc-rules",
+      "depth": 11
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "section",
+      "classes": "doc-section",
+      "depth": 10
+    },
+    {
+      "tag": "h2",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "dl",
+      "classes": "doc-rules",
+      "depth": 11
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "a",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "h3",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "dl",
+      "classes": "doc-rules",
+      "depth": 11
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "span",
+      "classes": "doc-rule-note",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "span",
+      "classes": "doc-rule-note",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "span",
+      "classes": "doc-rule-note",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "span",
+      "classes": "doc-rule-note",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "span",
+      "classes": "doc-rule-note",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "span",
+      "classes": "doc-rule-note",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "span",
+      "classes": "doc-rule-note",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "span",
+      "classes": "doc-rule-note",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "span",
+      "classes": "doc-rule-note",
+      "depth": 14
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "h3",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "dl",
+      "classes": "doc-rules",
+      "depth": 11
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "span",
+      "classes": "doc-rule-note",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "span",
+      "classes": "doc-rule-note",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "span",
+      "classes": "doc-rule-note",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "span",
+      "classes": "doc-rule-note",
+      "depth": 14
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 12
+    },
+    {
+      "tag": "h3",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "dl",
+      "classes": "doc-rules",
+      "depth": 11
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "span",
+      "classes": "doc-rule-note",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "span",
+      "classes": "doc-rule-note",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "span",
+      "classes": "doc-rule-note",
+      "depth": 14
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "h3",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 12
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "h3",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "a",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "ol",
+      "classes": "level-ladder",
+      "depth": 11
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "span",
+      "classes": "level-n",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-name",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "level-growth",
+      "depth": 13
+    },
+    {
+      "tag": "h3",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "dl",
+      "classes": "doc-rules",
+      "depth": 11
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "span",
+      "classes": "doc-rule-note",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "span",
+      "classes": "doc-rule-note",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "span",
+      "classes": "doc-rule-note",
+      "depth": 14
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "a",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "section",
+      "classes": "doc-section",
+      "depth": 10
+    },
+    {
+      "tag": "h2",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "a",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "dl",
+      "classes": "doc-rules",
+      "depth": 11
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "span",
+      "classes": "doc-rule-note",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "span",
+      "classes": "doc-rule-note",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "span",
+      "classes": "doc-rule-note",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "span",
+      "classes": "doc-rule-note",
+      "depth": 14
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "section",
+      "classes": "doc-section",
+      "depth": 10
+    },
+    {
+      "tag": "h2",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "dl",
+      "classes": "doc-rules",
+      "depth": 11
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "span",
+      "classes": "doc-rule-note",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "span",
+      "classes": "doc-rule-note",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "span",
+      "classes": "doc-num",
+      "depth": 14
+    },
+    {
+      "tag": "span",
+      "classes": "doc-rule-note",
+      "depth": 14
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "a",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "section",
+      "classes": "doc-section",
+      "depth": 10
+    },
+    {
+      "tag": "h2",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "h3",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "dl",
+      "classes": "doc-rules",
+      "depth": 11
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 14
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 14
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 14
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 14
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 14
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 14
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 14
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 14
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 14
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 14
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 14
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "h3",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "dl",
+      "classes": "doc-rules",
+      "depth": 11
+    },
+    {
+      "tag": "div",
+      "classes": "doc-rule",
+      "depth": 12
+    },
+    {
+      "tag": "dt",
+      "classes": "doc-rule-label",
+      "depth": 13
+    },
+    {
+      "tag": "code",
+      "classes": "",
+      "depth": 14
+    },
+    {
+      "tag": "dd",
+      "classes": "doc-rule-value",
+      "depth": 13
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "section",
+      "classes": "doc-section",
+      "depth": 10
+    },
+    {
+      "tag": "h2",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "ul",
+      "classes": "doc-list",
+      "depth": 11
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "li",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "a",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "a",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "a",
+      "classes": "",
+      "depth": 12
+    },
+    {
+      "tag": "section",
+      "classes": "doc-section",
+      "depth": 10
+    },
+    {
+      "tag": "h2",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "p",
+      "classes": "",
+      "depth": 11
+    },
+    {
+      "tag": "footer",
+      "classes": "footer",
+      "depth": 2
+    },
+    {
+      "tag": "div",
+      "classes": "footer-inner",
+      "depth": 3
+    },
+    {
+      "tag": "nav",
+      "classes": "footer-links",
+      "depth": 4
+    },
+    {
+      "tag": "a",
+      "classes": "",
+      "depth": 5
+    },
+    {
+      "tag": "a",
+      "classes": "",
+      "depth": 5
+    },
+    {
+      "tag": "a",
+      "classes": "",
+      "depth": 5
+    },
+    {
+      "tag": "a",
+      "classes": "",
+      "depth": 5
+    },
+    {
+      "tag": "a",
+      "classes": "",
+      "depth": 5
+    },
+    {
+      "tag": "a",
+      "classes": "",
+      "depth": 5
+    },
+    {
+      "tag": "a",
+      "classes": "",
+      "depth": 5
+    },
+    {
+      "tag": "p",
+      "classes": "footer-legal",
+      "depth": 4
+    },
+    {
+      "tag": "span",
+      "classes": "",
+      "depth": 5
+    },
+    {
+      "tag": "span",
+      "classes": "footer-version",
+      "depth": 5
+    },
+    {
+      "tag": "button",
+      "classes": "to-top",
+      "depth": 2
+    },
+    {
+      "tag": "svg",
+      "classes": "",
+      "depth": 3
+    },
+    {
+      "tag": "path",
+      "classes": "",
+      "depth": 4
+    },
+    {
+      "tag": "div",
+      "classes": "modal-backdrop",
+      "depth": 2
+    },
+    {
+      "tag": "div",
+      "classes": "modal-panel",
+      "depth": 3
+    },
+    {
+      "tag": "div",
+      "classes": "modal-head",
+      "depth": 4
+    },
+    {
+      "tag": "strong",
+      "classes": "",
+      "depth": 5
+    },
+    {
+      "tag": "button",
+      "classes": "modal-close",
+      "depth": 5
+    },
+    {
+      "tag": "div",
+      "classes": "modal-body",
+      "depth": 4
+    },
+    {
+      "tag": "div",
+      "classes": "toast",
+      "depth": 2
+    }
+  ],
+  "bodyWidth": 1425,
+  "scroll": {
+    "x": 0,
+    "y": 0
+  },
+  "fontStatus": "loaded",
+  "renderedErrorCode": null,
+  "finalPath": "/pages/rules/"
+}

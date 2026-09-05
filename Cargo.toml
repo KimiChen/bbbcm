@@ -1,0 +1,60 @@
+[workspace]
+resolver = "2"
+members = [
+    "apps/web",
+    "apps/bbbcm-worker",
+    "apps/bbbcm-cli",
+    "crates/platform",
+    "crates/platform-db",
+    "crates/platform-outbox",
+    "crates/platform-audit",
+    "crates/identity",
+    "crates/content",
+    "crates/media",
+    "crates/interaction",
+    "crates/moderation",
+    "crates/support",
+    "crates/trust",
+    "crates/privacy",
+    "crates/manage",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+# 锁定依赖中 icu_* 等 crate 要求 1.88；声明值必须覆盖实际 MSRV，否则该声明不成立。
+rust-version = "1.88"
+license = "AGPL-3.0-only"
+publish = false
+
+[workspace.dependencies]
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "signal", "time", "net"] }
+axum = "0.8"
+askama = "0.16"
+tower-http = { version = "0.6", features = ["fs"] }
+chrono = { version = "0.4", default-features = false, features = ["std", "clock", "serde"] }
+serde = { version = "1", features = ["derive"] }
+thiserror = "2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "tls-rustls-ring-webpki", "postgres", "sqlite"] }
+clap = { version = "4", features = ["derive"] }
+toml = "0.8"
+tokio-util = { version = "0.7", default-features = false }
+
+platform = { path = "crates/platform" }
+platform-db = { path = "crates/platform-db" }
+platform-outbox = { path = "crates/platform-outbox" }
+platform-audit = { path = "crates/platform-audit" }
+identity = { path = "crates/identity" }
+content = { path = "crates/content" }
+media = { path = "crates/media" }
+interaction = { path = "crates/interaction" }
+moderation = { path = "crates/moderation" }
+support = { path = "crates/support" }
+trust = { path = "crates/trust" }
+privacy = { path = "crates/privacy" }
+manage = { path = "crates/manage" }
+
+[profile.release]
+lto = "thin"

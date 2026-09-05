@@ -1,0 +1,60 @@
+/* A00 公开资料页：本轮匿名公开测量；姓名、头像与统计均使用固定合成夹具。 */
+.a00-profile .profile-head {
+  margin: 0 0 14px;
+  padding: 18px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+.a00-profile .user-header-info { display: flex; align-items: center; gap: 10px; }
+.a00-profile .profile-identity { min-width: 0; }
+.a00-profile .user-name-row { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; min-width: 0; }
+.a00-profile .user-name { margin: 0; color: var(--text); font-size: 15px; line-height: 21px; font-weight: 600; }
+.a00-profile .user-avatar-big { flex: none; width: 40px; height: 40px; }
+.a00-profile .profile-head .user-avatar-big { width: 64px; height: 64px; }
+.a00-profile .profile-head .user-name { font-size: 20px; line-height: 28px; }
+.a00-profile .profile-synthetic-avatar { display: grid; place-items: center; border-radius: 6px; background: var(--panel-hover); color: var(--text-subtle); }
+.a00-profile .profile-head .profile-synthetic-avatar { font-size: 24px; }
+.a00-profile .verify-badge { display: inline-flex; flex: none; padding: 1px 8px; color: #fff; background: #0000a0; border-radius: var(--r-pill); font-size: 11px; line-height: 17.6px; }
+.a00-profile .verify-badge-value { max-width: 11ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.a00-profile .post-user-group--staff { flex: none; padding: 1px 8px; color: #fff; background: #e5484d; border: 0; border-radius: var(--r-pill); font-size: 11px; line-height: 17.6px; }
+.a00-profile .profile-head .post-meta { margin-top: 6px; }
+.a00-profile .profile-head .post-meta > span { display: inline; }
+.a00-profile .post-user-uid { display: inline; flex: none; padding: 1px 8px; color: var(--text-muted); background: var(--panel-alt); border: 1px solid var(--line); border-radius: var(--r-pill); font-family: var(--font-mono); font-size: 11px; line-height: 16.5px; white-space: nowrap; }
+.a00-profile .user-offline::before { display: inline-block; width: 6px; height: 6px; margin-right: 5px; border-radius: 50%; background: var(--text-subtle); vertical-align: 1px; content: ""; }
+.a00-profile .profile-bio { margin: 12px 0 0; color: var(--text-muted); font-size: 13.5px; line-height: 22.95px; white-space: pre-line; }
+.a00-profile .user-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 6px; margin-top: 12px; padding: 12px 0 2px; border-top: 1px solid var(--line-soft); }
+.a00-profile .profile-stats { margin-top: 16px; }
+.a00-profile .user-stat { display: flex; flex-direction: column; gap: 3px; min-width: 0; text-decoration: none; }
+.a00-profile .user-stat-label { color: var(--text-muted); font-size: 12px; line-height: 21px; }
+.a00-profile .user-stat-value { color: var(--text-strong); font-family: var(--font-mono); font-size: 15px; font-weight: 600; line-height: 18px; }
+.a00-profile a.user-stat:hover .user-stat-value { color: var(--brand); }
+.a00-profile .points-level-block { margin-top: 14px; }
+.a00-profile .points-progress-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px; color: var(--text-muted); font-size: 12.5px; line-height: 21.875px; }
+.a00-profile .points-progress-end b { color: var(--text-strong); font-weight: 600; }
+.a00-profile .points-progress-end-next { text-align: right; }
+.a00-profile .points-progress-pct { color: var(--brand); font-family: var(--font-mono); font-size: 13px; font-weight: 600; line-height: 22.75px; }
+.a00-profile .points-progress { position: relative; height: 7px; overflow: hidden; border-radius: var(--r-pill); background: var(--panel-alt); }
+/* 固定的 40% 与模板中的合成进度对应，不来自参考账号。 */
+.a00-profile .points-progress-fill { width: 40%; height: 100%; border-radius: var(--r-pill); background: var(--brand); }
+.a00-profile .profile-toolbar { display: flex; align-items: center; gap: 12px; padding: 0 14px; border: 1px solid var(--line); border-bottom: 0; border-radius: var(--r) var(--r) 0 0; background: var(--panel); }
+.a00-profile .profile-toolbar .tab-bar { align-items: center; }
+.a00-profile .profile-toolbar button { color: inherit; background: transparent; border: 0; font: inherit; }
+.a00-profile .profile-toolbar button.tab { padding: 12px 4px; color: var(--text-muted); font-size: 14px; line-height: 24.5px; }
+.a00-profile .tab-actions { display: flex; gap: 12px; margin-left: auto; font-size: 13px; line-height: 22.75px; }
+.a00-profile .tab-actions button { padding: 0; }
+.a00-profile .profile-toolbar + .post-list { border-top-left-radius: 0; border-top-right-radius: 0; }
+.a00-profile .post-item { align-items: flex-start; }
+.a00-profile .post-title-row { display: block; }
+.a00-profile .sidebar { display: flex; }
+.a00-profile .user-card { overflow: hidden; }
+.a00-profile .user-header { display: block; }
+.a00-profile .user-rank { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+.a00-profile .user-level { color: var(--brand); font-weight: 500; }
+.a00-profile .user-links { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+.a00-profile .user-links a, .a00-profile .user-links button { display: flex; align-items: center; gap: 2px; padding: 4px 0; color: var(--text-muted); background: transparent; border: 0; font: inherit; font-size: 13px; line-height: 22.75px; text-align: left; }
+.a00-profile .user-links a:hover { color: var(--brand); }
+.a00-profile .profile-action-symbol { display: inline-block; width: 12px; text-align: center; }
+@media (max-width: 760px) {
+  .a00-profile .profile-head { padding: 14px; }
+}

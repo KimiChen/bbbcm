@@ -1,0 +1,24 @@
+{
+  "upstream_project": "Material Line Icons",
+  "upstream_repository": "https://github.com/cyberalien/line-md",
+  "upstream_commit": "2ed22555cee9c1e50d4269865681d01ee8cffd7c",
+  "license": "MIT",
+  "license_url": "https://raw.githubusercontent.com/cyberalien/line-md/2ed22555cee9c1e50d4269865681d01ee8cffd7c/license.txt",
+  "license_sha256": "2b88bafca347c6a12c33612fa51c5efbdd00c2753ed67fc474d7a6af9c61e430",
+  "copyright": "Copyright 2020 Vjacheslav Trushkin",
+  "retrieved_date": "2026-09-05",
+  "icons": [
+    {
+      "logical_name": "theme-sun",
+      "upstream_icon": "moon-filled-to-sunny-filled-loop-transition",
+      "source_url": "https://raw.githubusercontent.com/cyberalien/line-md/2ed22555cee9c1e50d4269865681d01ee8cffd7c/svg/moon-filled-to-sunny-filled-loop-transition.svg",
+      "sha256": "77789699cb08c1e6aff32f408d7c6932b142093fb069f9b5c1000d1ba586ad35"
+    },
+    {
+      "logical_name": "theme-moon",
+      "upstream_icon": "moon-filled-loop",
+      "source_url": "https://raw.githubusercontent.com/cyberalien/line-md/2ed22555cee9c1e50d4269865681d01ee8cffd7c/svg/moon-filled-loop.svg",
+      "sha256": "5f05695f5e705b23939cc5e43425444c4f1807d6d0292348204608b87c615b90"
+    }
+  ]
+}

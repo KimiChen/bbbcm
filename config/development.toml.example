@@ -1,0 +1,18 @@
+# 本地开发环境模板：复制为 config/local.toml（已被 .gitignore 忽略）后按需修改，
+# 以 BBBCM_CONFIG=config/local.toml ./bbbcm-web 启动（分层加载随 WP-MVP-A02 接入）。
+
+[server]
+environment = "development"
+bind = "127.0.0.1:8081"
+
+[database]
+backend = "sqlite"
+schema_prefix = "bcm_"
+sqlite_path = "data/bbbcm-dev.db"
+max_connections = 1
+
+[features]
+redis = false
+
+[worker]
+embedded = true

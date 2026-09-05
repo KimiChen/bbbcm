@@ -1,0 +1,8 @@
+# 配置随 Syft 1.51.1 锁定；不在线补查 npm 许可，不忽略开发依赖。
+check-for-app-update: false
+enrich: []
+javascript:
+  search-remote-licenses: false
+  include-dev-dependencies: true
+package:
+  search-unindexed-archives: false

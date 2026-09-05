@@ -1,0 +1,9 @@
+{% if let Some(message) = frame.flash %}
+<div class="notice" role="status">{{ message }}</div>
+{% endif %}
+{% if let Some(message) = frame.error %}
+<div class="notice error" role="alert"><h1>内容暂不可用</h1><p>{{ message }}</p></div>
+{% endif %}
+{% if let Some(message) = frame.empty %}
+<div class="notice empty"><h1>暂无内容</h1><p>{{ message }}</p></div>
+{% endif %}

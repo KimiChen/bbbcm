@@ -1,0 +1,88 @@
+<div class="auth-shell">
+  <nav class="tab-bar auth-tabs" aria-label="账号页面">
+    <a class="tab{% if page == "login" %} active{% endif %}" href="/__fixtures/a00/login?theme={{ theme }}">登录</a>
+    <a class="tab{% if page == "register" %} active{% endif %}" href="/__fixtures/a00/register?theme={{ theme }}">注册</a>
+  </nav>
+  <div class="form-panel auth-panel{% if page == "reset" %} auth-reset-panel{% endif %}" role="group" aria-label="{{ title }}静态预览" aria-describedby="auth-fixture-note">
+    {% if page == "reset" %}
+    <h2 class="auth-heading">找回密码</h2>
+    <p class="auth-lead" id="auth-fixture-note">本地静态预览：只展示控件，不收集或提交账号和密码。</p>
+    <label class="grid">
+      <span>用户名</span>
+      <input type="text" readonly autocomplete="off" aria-label="用户名静态预览" />
+    </label>
+    <label class="grid">
+      <span>邮箱</span>
+      <input type="email" readonly autocomplete="off" aria-label="邮箱静态预览" />
+    </label>
+    {% else if page == "register" %}
+    <label class="grid">
+      <span>邀请码</span>
+      <small>合成邀请码字段，仅展示版式。</small>
+      <input type="text" readonly autocomplete="off" aria-label="邀请码静态预览" />
+    </label>
+    <label class="grid">
+      <span>用户名</span>
+      <small>合成账号字段，不会创建真实用户。</small>
+      <input type="text" readonly autocomplete="off" aria-label="用户名静态预览" />
+    </label>
+    <label class="grid">
+      <span>邮箱</span>
+      <small>合成邮箱字段，不会发送邮件。</small>
+      <input type="email" readonly autocomplete="off" aria-label="邮箱静态预览" />
+    </label>
+    {% else %}
+    <label class="grid">
+      <span>用户名或邮箱</span>
+      <input type="text" readonly autocomplete="off" aria-label="账号静态预览" />
+    </label>
+    {% endif %}
+    {% if page != "reset" %}
+    <label class="grid">
+      <span>密码</span>
+      {% if page == "register" %}<small>合成密码字段，不接收真实密码。</small>{% endif %}
+      <input type="password" readonly autocomplete="new-password" aria-label="密码静态预览" />
+    </label>
+    {% endif %}
+    {% if page == "register" %}
+    <label class="grid">
+      <span>确认密码</span>
+      <input type="password" readonly autocomplete="new-password" aria-label="确认密码静态预览" />
+    </label>
+    <label class="auth-agree">
+      <input type="checkbox" />
+      <span>我已阅读并同意<a href="/__fixtures/a00/policy?theme={{ theme }}">服务条款</a>与<a href="/__fixtures/a00/policy?theme={{ theme }}">隐私政策</a></span>
+    </label>
+    {% endif %}
+    <div class="captcha-field">合成验证占位：本地视觉夹具不请求任何验证服务。</div>
+    <button class="auth-submit" type="button" aria-disabled="true">{% if page == "reset" %}找回密码{% else %}{{ title }}{% endif %}</button>
+    {% if page == "login" %}
+    <p class="auth-forgot"><a href="/__fixtures/a00/reset?theme={{ theme }}">忘记密码？</a></p>
+    <div class="auth-alt">
+      <span class="auth-alt-rule">或</span>
+      <button class="btn alt auth-passkey" type="button" aria-disabled="true">使用通行密钥</button>
+      <p class="auth-alt-hint">合成通行密钥入口，不调用设备认证。</p>
+    </div>
+    {% endif %}
+    {% if page != "reset" %}
+    <div class="auth-oauth">
+      <span class="auth-alt-rule">其他登录方式</span>
+      <div class="oauth-btns">
+        <button class="oauth-btn" type="button" aria-disabled="true"><img class="oauth-fixture-icon" src="/__fixtures/a00/assets/oauth-google.svg" width="20" height="20" alt="" />Google</button>
+        <button class="oauth-btn" type="button" aria-disabled="true"><span class="oauth-fixture-icon oauth-github" aria-hidden="true"></span>GitHub</button>
+        <button class="oauth-btn" type="button" aria-disabled="true"><span class="oauth-fixture-icon oauth-x" aria-hidden="true"></span>X</button>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  {% if page != "reset" %}
+  <div class="auth-notice" id="auth-fixture-note">
+    <div class="auth-notice-title">本地静态预览</div>
+    <ul>
+      <li>只展示控件，不收集或提交账号和密码。</li>
+      <li>所有账号与验证内容均为合成夹具。</li>
+      <li>实际账号功能由后续工作包实现。</li>
+    </ul>
+  </div>
+  {% endif %}
+</div>

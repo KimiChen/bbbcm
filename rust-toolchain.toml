@@ -1,0 +1,5 @@
+# 工具链钉版本：WP-M0-03 要求可离线、可受控重复构建，浮动 stable 做不到这一点。
+[toolchain]
+channel = "1.97.0"
+components = ["rustfmt", "clippy"]
+profile = "minimal"

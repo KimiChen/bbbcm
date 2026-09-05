@@ -1,0 +1,34 @@
+[
+  {
+    "logical_name": "brand-mark",
+    "path": "apps/web/static/img/brand-mark.svg",
+    "sha256": "ee682ffff9e595e268d90ab8e2f447d2ff38eb2e430fad9101a990d28f4c0517",
+    "content_hash_filename": "ee682ffff9e595e268d90ab8e2f447d2ff38eb2e430fad9101a990d28f4c0517.svg",
+    "mime": "image/svg+xml",
+    "width": 84,
+    "height": 34,
+    "theme": "light/dark",
+    "accessible_name": "草莓论坛",
+    "source": "本项目自制：公开可观察的文字标签设计 token；未使用参考站字形路径",
+    "license": "AGPL-3.0-only",
+    "redistributable": "yes",
+    "evidence": [
+      "LICENSE",
+      "docs/visual/a00/licenses/asset-rights.md"
+    ],
+    "token_reference": {
+      "background": "#ffd02f",
+      "text": "#1c1c1e",
+      "font_size_px": 16,
+      "font_weight": 600,
+      "line_height_px": 28,
+      "padding_vertical_px": 3,
+      "padding_horizontal_px": 10,
+      "radius_px": 6,
+      "letter_spacing_px": -0.16,
+      "letter_spacing_em": -0.01,
+      "decision": "DEC-043"
+    },
+    "validation": "XML parse passed; text nodes contain only approved brand text"
+  }
+]

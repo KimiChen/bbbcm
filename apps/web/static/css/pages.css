@@ -1,0 +1,171 @@
+/* A00 认证与主题页：按本轮公开计算值重写，无参考站运行时资源。 */
+.auth-shell {
+  max-width: 400px;
+  margin: 0 auto;
+  padding-top: 28px;
+}
+.auth-tabs {
+  display: flex;
+  gap: 18px;
+  padding: 0 20px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-bottom-color: var(--line-soft);
+  border-radius: 12px 12px 0 0;
+}
+.auth-tabs .tab {
+  position: relative;
+  padding: 12px 0 13px;
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 26.25px;
+  text-decoration: none;
+}
+.auth-tabs .tab + .tab { margin-left: 10px; }
+.auth-tabs .tab.active { color: var(--text); font-weight: 500; }
+.auth-tabs .tab.active::after {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: var(--text);
+  border-radius: 2px;
+  content: "";
+}
+.auth-panel {
+  padding: 20px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-top: 0;
+  border-radius: 0 0 12px 12px;
+}
+.auth-reset-panel { padding: 18px; }
+.auth-heading { margin: 0 0 16px; font-size: 17px; font-weight: 600; line-height: 23.8px; }
+.auth-lead { margin: 0 0 16px; color: var(--text-muted); font-size: 13.5px; line-height: 23.625px; }
+.auth-panel label.grid { display: grid; gap: 6px; margin: 0 0 14px; }
+.auth-panel label.grid > span { font-size: 13px; line-height: 22.75px; }
+.auth-panel label.grid small { color: var(--text-subtle); font-size: 12px; line-height: 18px; }
+.auth-panel label.grid input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 40.5px;
+  padding: 7px 12px;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 14px;
+  line-height: 24.5px;
+}
+.auth-agree { display: flex; gap: 8px; margin: 2px 0 12px; color: var(--text-muted); font-size: 13px; line-height: 22.75px; }
+.auth-agree input { flex: none; margin: 4px 0 0; width: 15px; height: 15px; }
+.auth-agree a, .reply-login-box a { color: var(--link); }
+.captcha-field { min-height: 52.5px; margin-bottom: 14px; }
+.auth-submit {
+  width: 100%;
+  padding: 9px 0;
+  color: var(--action-text);
+  background: var(--action);
+  border: 1px solid var(--action-border);
+  border-radius: 9999px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 24.5px;
+}
+.auth-forgot { margin: 10px 0 0; text-align: center; font-size: 13px; line-height: 22.75px; }
+.auth-forgot a { color: var(--text); }
+.auth-alt { margin-top: 18px; padding-top: 18px; text-align: center; }
+.auth-alt-rule { display: block; margin-bottom: 12px; padding: 0 10px; color: var(--text-subtle); font-size: 12px; line-height: 21px; text-align: center; }
+.auth-alt > .auth-alt-rule { margin: -27px 0 10px; }
+.auth-passkey {
+  width: 100%;
+  padding: 7px 16px;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 9999px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 24.5px;
+}
+.auth-alt-hint { margin: 8px 0 0; color: var(--text-subtle); font-size: 12.5px; line-height: 21.875px; }
+.auth-oauth { margin-top: 18px; }
+.oauth-btns { display: grid; gap: 8px; }
+.oauth-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font: inherit;
+  font-size: 14px;
+  line-height: 20px;
+}
+.oauth-fixture-icon { display: block; flex: none; width: 20px; height: 20px; }
+.oauth-github, .oauth-x { background: currentColor; }
+.oauth-github { mask: url("/__fixtures/a00/assets/oauth-github.svg") center / contain no-repeat; }
+.oauth-x { mask: url("/__fixtures/a00/assets/oauth-x.svg") center / contain no-repeat; }
+.auth-notice { margin-top: 18px; padding: 0 2px; color: var(--text-subtle); }
+.auth-notice-title { margin-bottom: 6px; font-size: 12.5px; font-weight: 500; line-height: 21.875px; }
+.auth-notice ul { margin: 0; padding-left: 13px; font-size: 12px; line-height: 25px; }
+.topic-detail-panel, .topic-replies, .reply-panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+.topic-detail-panel .breadcrumb { display: flex; gap: 7px; padding: 9px 18px; border-bottom: 1px solid var(--line-soft); color: var(--text-subtle); font-size: 13px; line-height: 22.75px; }
+.topic-detail-panel .breadcrumb a { color: inherit; }
+.post-topic-title { display: flex; align-items: start; justify-content: space-between; gap: 16px; padding: 14px 18px; }
+.post-content-title { min-width: 0; margin: 0; color: var(--text); font-size: 21px; font-weight: 600; line-height: 30.45px; overflow-wrap: anywhere; }
+.post-content-stats { display: flex; flex: none; gap: 12px; margin-top: 4px; color: var(--text-subtle); font-size: 12px; line-height: 21px; }
+.topic-post-list { margin: 0; padding: 0; list-style: none; border-left: 0; border-right: 0; border-bottom: 0; }
+.topic-post-list .post-entry { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 4px 11px; padding: 15px 18px; }
+.topic-post-list .post-entry + .post-entry { border-top: 1px solid var(--line-soft); }
+.topic-post-list .post-avatar { grid-column: 1; grid-row: 1 / span 2; width: 32px; height: 32px; }
+.topic-post-list .fixture-avatar { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; background: var(--panel-hover); border-radius: 6px; color: var(--text-subtle); font-size: 12px; }
+.post-body { min-width: 0; }
+.post-head { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; }
+.post-head .post-author { color: var(--text); font-size: 14px; font-weight: 500; line-height: 21px; }
+.post-user-uid, .post-user-level, .post-user-group { padding: 1px 8px; border: 1px solid var(--line); border-radius: 9999px; color: var(--text-subtle); font-size: 11px; line-height: 16.5px; }
+.post-user-level { color: var(--brand); background: var(--brand-soft); border-color: var(--brand-border); }
+.post-user-group { color: var(--danger); border-color: var(--danger-border); background: var(--danger-soft); }
+.post-time { color: var(--text-subtle); font-size: 12.5px; line-height: 21.875px; }
+.post-content { grid-column: 2; min-width: 0; font-size: 15px; line-height: 27px; overflow-wrap: anywhere; }
+.post-content p { margin: 0 0 13px; }
+.post-content .link-card { display: flex; align-items: center; gap: 10px; width: 100%; max-width: 520px; margin: 10px 0; padding: 10px 14px; color: var(--text); border: 1px solid var(--line); border-radius: 10px; text-decoration: none; }
+.post-content .link-card-avatar { flex: none; width: 36px; height: 36px; }
+.link-card-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.link-card-title { overflow: hidden; color: var(--text); font-size: 14.5px; font-weight: 600; line-height: 21.75px; text-overflow: ellipsis; white-space: nowrap; }
+.link-card-meta { color: var(--text-subtle); font-size: 12.5px; line-height: 22.5px; }
+.link-card-dot { margin: 0 5px; }
+.topic-opening .post-actions-row { padding: 2px 18px 16px 61px; }
+.topic-actions { display: flex; gap: 10px; }
+.topic-action { display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 72px; padding: 8px 4px; color: var(--text-subtle); background: transparent; border: 0; border-radius: 8px; font: inherit; font-size: 20px; line-height: 19px; }
+.topic-action-label { font-size: 12.5px; line-height: 12.5px; }
+.topic-replies, .reply-panel { margin-top: 20px; }
+.reply-head { display: flex; align-items: center; gap: 10px; padding: 11px 16px; border-bottom: 1px solid var(--line-soft); }
+.reply-head h2 { flex: 1; margin: 0; font-size: 14px; font-weight: 500; }
+.reply-head h2 span, .reply-head > span { color: var(--text-subtle); font-size: 12px; }
+.post-reply-no { margin-left: auto; color: var(--text-subtle); font-size: 12px; line-height: 21px; }
+.reply-panel-head { padding: 11px 16px; border-bottom: 1px solid var(--line-soft); font-size: 14px; }
+.reply-login-box { padding: 22px 16px; color: var(--text-subtle); text-align: center; font-size: 14px; line-height: 24.5px; }
+@media (max-width: 760px) {
+  .auth-shell { padding-top: 12px; }
+  .auth-panel { padding: 18px; }
+  .post-topic-title { flex-direction: column; gap: 4px; padding: 14px; }
+  .post-content-title { font-size: 21px; }
+  .topic-post-list .post-entry { padding: 14px; gap: 6px 9px; }
+  .post-head { gap: 5px; }
+  .post-content .link-card { padding: 10px; }
+  .link-card-meta { font-size: 12px; }
+  .topic-opening .post-actions-row { padding-left: 14px; }
+  .topic-actions { gap: 4px; }
+  .topic-action { min-width: 58px; }
+}

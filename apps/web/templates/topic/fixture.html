@@ -1,0 +1,78 @@
+<section class="main-panel topic-detail-panel">
+  <nav class="breadcrumb" aria-label="当前位置">
+    <a href="/__fixtures/a00/home?theme={{ theme }}">首页</a><span aria-hidden="true">›</span><a href="/__fixtures/a00/forum?theme={{ theme }}">问答/实战</a>
+  </nav>
+  <div class="post-topic-title">
+    <h1 class="post-content-title">{{ title }}</h1>
+    <div class="post-content-stats" aria-label="合成统计"><span>浏览 48</span><span>回复 12</span></div>
+  </div>
+  <ul class="post-list topic-post-list topic-opening">
+    <li class="post-item post-entry">
+      <div class="post-avatar"><span class="fixture-avatar" aria-label="合成头像甲">甲</span></div>
+      <div class="post-body">
+        <div class="post-head">
+          <span class="post-title post-author">合成果农甲</span>
+          <span class="post-user-uid">合成 01</span>
+          <span class="post-user-level">合成等级</span>
+          <span class="post-user-group">合成身份</span>
+          <span class="post-time">1 小时前</span>
+        </div>
+      </div>
+      <div class="post-content">
+        <p>这是一段完全自拟的合成正文。</p>
+        <p>我们用固定内容记录一次简单的学习过程。</p>
+        <p>先准备一个清晰的小目标。</p>
+        <p>再把每天的新发现写下来。</p>
+        <p>遇到问题时，整理现象与已经尝试过的方法。</p>
+        <p>这里的文字不对应任何真实帖子。</p>
+        <p>下面是五个合成主题链接：</p>
+        {% for topic in topics.items %}
+        {% if loop.index <= 5 %}
+        <a class="link-card link-card-topic" href="/__fixtures/a00/topic?theme={{ theme }}">
+          <span class="link-card-avatar fixture-avatar" aria-hidden="true">{{ topic.id }}</span>
+          <span class="link-card-body">
+            <span class="link-card-title">{{ topic.title }}</span>
+            <span class="link-card-meta">{{ topic.category }}<span class="link-card-dot">·</span>{{ topic.author }}<span class="link-card-dot">·</span>{{ topic.age }}</span>
+          </span>
+        </a>
+        {% endif %}
+        {% endfor %}
+        <p>感谢阅读这份合成记录。</p>
+        <p>我们将在后续实践中继续完善它。</p>
+      </div>
+    </li>
+    <li class="post-item post-actions-row">
+      <div class="topic-actions" aria-label="合成操作预览">
+        <button class="topic-action" type="button" aria-disabled="true"><span aria-hidden="true">☆</span><span class="topic-action-label">收藏</span></button>
+        <button class="topic-action" type="button" aria-disabled="true"><span aria-hidden="true">↑</span><span class="topic-action-label">赞同</span></button>
+        <button class="topic-action" type="button" aria-disabled="true"><span aria-hidden="true">↓</span><span class="topic-action-label">反对</span></button>
+        <button class="topic-action" type="button" aria-disabled="true"><span aria-hidden="true">◇</span><span class="topic-action-label">赠送草莓</span></button>
+      </div>
+    </li>
+  </ul>
+</section>
+<section class="main-panel topic-replies" aria-labelledby="fixture-reply-heading">
+  <div class="reply-head reply-head-tree"><h2 id="fixture-reply-heading">回复 <span>12</span></h2><span>按时间排序</span></div>
+  <ul class="post-list topic-post-list">
+    {% for topic in topics.items %}
+    <li class="post-item post-entry" id="reply-{{ topic.id }}">
+      <div class="post-avatar"><span class="fixture-avatar" aria-label="合成头像">{{ topic.id }}</span></div>
+      <div class="post-body">
+        <div class="post-head has-reply-no">
+          <span class="post-title post-author">{{ topic.author }}</span>
+          <span class="post-user-level">合成等级</span>
+          <span class="post-time">{{ topic.age }}</span>
+          <a class="post-reply-no" href="#reply-{{ topic.id }}">#{{ topic.id }}</a>
+        </div>
+      </div>
+      <div class="post-content">合成回复 {{ topic.id }}：这段自拟文字用于检查固定回复行的展示。</div>
+    </li>
+    {% else %}
+    <li class="list-empty">{{ topics.empty }}</li>
+    {% endfor %}
+  </ul>
+</section>
+<section class="reply-panel">
+  <div class="reply-panel-head">发表回复</div>
+  <div class="reply-login-box">请先<a href="/__fixtures/a00/login?theme={{ theme }}">登录</a>。本页仅展示合成内容，不提交回复。</div>
+</section>

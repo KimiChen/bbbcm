@@ -1,0 +1,43 @@
+{
+  "name": "@fontsource/space-mono",
+  "version": "5.3.0",
+  "license": "OFL-1.1",
+  "dist": {
+    "shasum": "6e45e0284066e6f637c35bd7af0469ce13817c60",
+    "tarball": "https://registry.npmjs.org/@fontsource/space-mono/-/space-mono-5.3.0.tgz",
+    "fileCount": 56,
+    "integrity": "sha512-FrpBMOVWn3PRdRHlrZWC55X3kZG/2BTH7SM5ZyS/bky3iKya2BturI5lk+t0RoDQL2JyHzURsVq/EisCsxpI5A==",
+    "signatures": [
+      {
+        "sig": "MEYCIQCWonuHGecqmNvLdGwYZM1zqNKsH/bwZVbxPRQAJSmb2QIhALoXwg70ZmJkIt84HyqdEv9F0eTXHnlF8qD+wBc56oVQ",
+        "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+      }
+    ],
+    "attestations": {
+      "url": "https://registry.npmjs.org/-/npm/v1/attestations/@fontsource%2fspace-mono@5.3.0",
+      "provenance": {
+        "predicateType": "https://slsa.dev/provenance/v1"
+      }
+    },
+    "unpackedSize": 324957
+  },
+  "upstream_commit": "329858c2c4dbd3476f972a4ae00624b018cf4b81",
+  "upstream_license_url": "https://raw.githubusercontent.com/googlefonts/spacemono/329858c2c4dbd3476f972a4ae00624b018cf4b81/OFL.txt",
+  "upstream_license_sha256": "8e4ee42b2553e1e01504e61cb0d46d148cd8c9e5eacaa3622a7df2d4f2955b9f",
+  "tarball_sha256": "e0cd78cb7aa93e772905297d8d5ad2a3d9eea7a6a12f281a3940a28ec01c19eb",
+  "retrieved_utc": "2026-09-05",
+  "integrity_check": "pass: tarball sha512 SRI and sha1 match npm registry dist metadata",
+  "local_license_sha256": "6758f6915b482dd45950b2a974c75d95692464fd0e5441418e87b2f92f2eea27",
+  "license_normalization": {
+    "operation": "strip-trailing-ascii-space-only",
+    "description": "Removed the single trailing ASCII space on upstream line 21 to satisfy the repository whitespace check; all wording and line breaks are unchanged. Local distributed bytes are not the untouched upstream byte sequence.",
+    "changed_lines": [
+      {
+        "line": 21,
+        "removed_suffix_hex": "20"
+      }
+    ],
+    "preserve_license_text": true,
+    "preserve_line_endings": true
+  }
+}

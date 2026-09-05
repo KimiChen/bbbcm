@@ -1,0 +1,372 @@
+{
+  "command": "python3 scripts/a00-check.py",
+  "status": "pass",
+  "scope": "development source + 42 SSR variants + served asset hashes; no E04 pixel/WCAG claim",
+  "files_scanned": 36,
+  "runtime_old_names": "pass",
+  "responses": [
+    {
+      "path": "/__fixtures/a00/home?theme=light",
+      "sha256": "023919307a3f96df49af499cc76eefddd42ef31cb162b0d741196eb906415eaf",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/home?theme=dark",
+      "sha256": "73d2427e856eba4433f81e61aeb51dd545af2a23de068b1f5fab8a152c238ba6",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/home?theme=system",
+      "sha256": "0428e4307d99a4fc04ee737fae7e4cf5fdfb76062ebd1eaede2d31c3cf56444a",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/new?theme=light",
+      "sha256": "25798057d6ea9695546a90d64535f17bb8bf4a8840d49b728554479f84893c09",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/new?theme=dark",
+      "sha256": "cb575c51403f4ef01342f27477862c41dfd4fe70b5121946aee25d99e8bcb7cf",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/new?theme=system",
+      "sha256": "5bd644cd484201fc69c664f41d1499f590fb089d303b15b67e7212e260ad69df",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/pinned?theme=light",
+      "sha256": "99784468bf0a62e46f69739891826ea8fd2f26b8edccb3f4d9b0e2140154cf92",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/pinned?theme=dark",
+      "sha256": "57bf4210cbb955821136f0d2e7e7fcbf9a9c3d74f2622c7975985ad1edd5721d",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/pinned?theme=system",
+      "sha256": "2b61ec7440b44428c9066bf734522a6cc3f925f2fe48ec6099fdfead0861d465",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/featured?theme=light",
+      "sha256": "cb579deb1e7e63d1b84b2f09480e4ae5e5b896ad7c06bcc9afa7aaae8a9ede4a",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/featured?theme=dark",
+      "sha256": "c7b0c486110291bffa5801e2f5aacc7570dc70f8195f24ae01546a0759d2dc6a",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/featured?theme=system",
+      "sha256": "8b4740c205aa47a943b940a540c853bdfa0bb3859a02b47269094499246e163d",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/forum?theme=light",
+      "sha256": "a6d47d15c9a85cfbdcbab5c4d0bbb17f7d9e6805d9d20d9f70d045af0437fc85",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/forum?theme=dark",
+      "sha256": "dc98f517546da499aa173b7688b24fe17ddb5588d72757bbbdabea29723647b1",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/forum?theme=system",
+      "sha256": "07c6b0aefd848852a6bd6cb888f5452b440e94869fd51911322e59283054c2f9",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/topic?theme=light",
+      "sha256": "a6fbeba5a69221bf4d136432395f94894d20f8be1638e1267489860de7f70947",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/topic?theme=dark",
+      "sha256": "212503b6c14718f6702f8981c05cc64bd96bfa1f6a8feea9e296d8e2b25a010b",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/topic?theme=system",
+      "sha256": "4ae55ff95ff5ca0ae7aba2ef1310972be0abb1cf7dfc977b04277aafe1fccc5d",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/login?theme=light",
+      "sha256": "8a5504fd41bacbf4f7c87caea540cadcd627f4fc1b01bc0fd3925063334d5a3a",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/login?theme=dark",
+      "sha256": "589d8bb7b28c527c5659818bbb66ac8bd0026780cada50c388b814419a57a96d",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/login?theme=system",
+      "sha256": "8ab3abbf7c3e30cffb8474d1684b4b90b49d8aefb1e5027540936060a40d84db",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/register?theme=light",
+      "sha256": "76ea2a9e4855456f83dce1019c23fffac1270dd0d63ef81869f0b12d11cf9606",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/register?theme=dark",
+      "sha256": "924af993b50934117d753d5e746ac76756c2854bc3b60f19c39fadd51725ea45",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/register?theme=system",
+      "sha256": "14347a5af922bd5395f1220597b808b12ff5e147ac6f7a8a06bbece17ce4f3f7",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/reset?theme=light",
+      "sha256": "3801684a44857dcccf1d44bcb63aa532fe6ef60cbc8410f09593907a56c373c4",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/reset?theme=dark",
+      "sha256": "6a4453e9b6a6b70cebf5607bf08caf8dad89c2b24d0ab620f62cf4c0ae8d3b82",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/reset?theme=system",
+      "sha256": "f9a61f0000f1d0188b2aba1d4d5a280578f61bbf3adbc921324f8402b8639ee0",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/policy?theme=light",
+      "sha256": "41c207eaffe5d976f523ce26310791ec02fedf1bb6b386c189612f5d83be25e4",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/policy?theme=dark",
+      "sha256": "a93105fa1b700f43bddd577f3528c0962ff2c6dd05fa3f98772c6045fb592901",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/policy?theme=system",
+      "sha256": "da883dbcda1dd6622ca76eb90e1659754fdea0dab468fc94856830e2474295d2",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/search?theme=light",
+      "sha256": "e63d86954366954dab5b8fb24d82d2b2cb672c4f62a274bba7fb3e622747a0e8",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/search?theme=dark",
+      "sha256": "50f7aaa3c3301d0825d04e1c5bc5c3a533915f7664905fa9c6449b5060a49310",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/search?theme=system",
+      "sha256": "ae0ed2c1256ac24d3e610db256d8f8846a263fe99c18b583d3cdf409c6ee8c31",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/empty?theme=light",
+      "sha256": "0d48c8d5521529f9726e1b824959ffa10011666c8ab08a0a9714e322bf3573a7",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/empty?theme=dark",
+      "sha256": "910f3da370a4aab5845f991f526602740fe8f56a2c9b8a230f4462a393894a0a",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/empty?theme=system",
+      "sha256": "78ca2cf8e9ba0d385d8be916c25dd1c112c21af9ae57d25b4792d43924b14161",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/error?theme=light",
+      "sha256": "961b42e09432395168b5fd2155af6543fcadc6400b5e146575a15f47214d3c2c",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/error?theme=dark",
+      "sha256": "5f8164d0ed759441c94b93f30da1aa62db4f927f4ebe5e9a9182ff45f69bc522",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/error?theme=system",
+      "sha256": "772564629ba56196f98502e1aadfb908696cc4e7544be6778977e98a8fa8c6f8",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/profile?theme=light",
+      "sha256": "f55ac4c9565d35ef6fdfccb1f1d3365d6403afa70d59225f104ff5da3193df3b",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/profile?theme=dark",
+      "sha256": "e1f8d249bb0fde7ce8375a46ce0ea12a44cb7c18e48a2574f8129bfef0aaecca",
+      "deterministic": true
+    },
+    {
+      "path": "/__fixtures/a00/profile?theme=system",
+      "sha256": "8f0e041174481fa2ca34ee4f9d54699cc11596013bf1a812ed065011f3759626",
+      "deterministic": true
+    }
+  ],
+  "asset_responses": [
+    {
+      "path": "/__fixtures/a00/assets/fonts.css",
+      "sha256": "0228a292e263a501565ae30b24ab13bfef5b459672797fba913c985b1462b101",
+      "mime": "text/css"
+    },
+    {
+      "path": "/__fixtures/a00/assets/pages.css",
+      "sha256": "5e7342f8c372cccd3d06a31cd0aa01c6c857e121e16d3995524f6ba398311ded",
+      "mime": "text/css"
+    },
+    {
+      "path": "/__fixtures/a00/assets/profile.css",
+      "sha256": "763eda26dab23c692c79be1cf04254dff22d3004dfd4b7135f15457c51d80d9b",
+      "mime": "text/css"
+    },
+    {
+      "path": "/__fixtures/a00/assets/site.css",
+      "sha256": "bd1eabeb09902e6eda7bd58256ac3c77a25672afdb89dc6404bc1c80efadeef4",
+      "mime": "text/css"
+    },
+    {
+      "path": "/__fixtures/a00/assets/space-mono-latin-400-normal.woff2",
+      "sha256": "fb4a81a2d0a893e5c38c394a7e716a1cef0b24610a0af49c96f6d529bd66bf2b",
+      "mime": "font/woff2"
+    },
+    {
+      "path": "/__fixtures/a00/assets/space-mono-latin-700-normal.woff2",
+      "sha256": "2d46bd159b53f55c41167a4f1540a074649464194fd1e416f5b4694a6c0f282c",
+      "mime": "font/woff2"
+    },
+    {
+      "path": "/__fixtures/a00/assets/space-mono-latin-ext-400-normal.woff2",
+      "sha256": "44ad50c760fa8f5b62da3d489edb40adebabaf97988b9b0adbbc3f0be859050a",
+      "mime": "font/woff2"
+    },
+    {
+      "path": "/__fixtures/a00/assets/space-mono-latin-ext-700-normal.woff2",
+      "sha256": "52edd9a8959ec3e68d618e2a4757182c0e61bfeea61679850cad8744a68cadf3",
+      "mime": "font/woff2"
+    },
+    {
+      "path": "/__fixtures/a00/assets/apple-touch-icon.png",
+      "sha256": "7395823edc71fc612141d795ca5c5218b9588b1431687281ff532b66ec5b3a0e",
+      "mime": "image/png"
+    },
+    {
+      "path": "/__fixtures/a00/assets/brand-mark.svg",
+      "sha256": "ee682ffff9e595e268d90ab8e2f447d2ff38eb2e430fad9101a990d28f4c0517",
+      "mime": "image/svg+xml"
+    },
+    {
+      "path": "/__fixtures/a00/assets/brand-symbol.svg",
+      "sha256": "f5952515e24fcc527c6cbb26bffb0df8b967defdf1cb0d3adb3f1b5684512a65",
+      "mime": "image/svg+xml"
+    },
+    {
+      "path": "/__fixtures/a00/assets/email-header.svg",
+      "sha256": "af25ad823681ff51cc997c5d2c8cfc1167748e5c4f2860015db0831ac0cebd01",
+      "mime": "image/svg+xml"
+    },
+    {
+      "path": "/__fixtures/a00/assets/favicon-16.png",
+      "sha256": "1c1547f5c0bad97c5362db9086691cca8defa41c89334ff2025052023a8dfa21",
+      "mime": "image/png"
+    },
+    {
+      "path": "/__fixtures/a00/assets/favicon-32.png",
+      "sha256": "7acc6eabbf26542b611325a560ae09b35f02d7e219f0d0807abb8d63695f28ec",
+      "mime": "image/png"
+    },
+    {
+      "path": "/__fixtures/a00/assets/favicon.ico",
+      "sha256": "4dab9fb9411281b92d46891b9de2dcc3ceb568b97c18047bcdf0884ccd210cfd",
+      "mime": "image/x-icon"
+    },
+    {
+      "path": "/__fixtures/a00/assets/oauth-github.svg",
+      "sha256": "45adca1e3d9efade1b7e183d0defac90b2c01db154140d023b14358e0a27fae6",
+      "mime": "image/svg+xml"
+    },
+    {
+      "path": "/__fixtures/a00/assets/oauth-google.svg",
+      "sha256": "4f7c08e70540d22b723aa4ebc26748b61269da40fc55e6558b9b9f471916ceb6",
+      "mime": "image/svg+xml"
+    },
+    {
+      "path": "/__fixtures/a00/assets/oauth-x.svg",
+      "sha256": "20137d3a12f24d221c84584884b0820d41519fe4112fd9771ea5500bf34b3822",
+      "mime": "image/svg+xml"
+    },
+    {
+      "path": "/__fixtures/a00/assets/og-image.png",
+      "sha256": "ae9e33ff6c973253c8577779b84b5c4fad8e35eddef9eb48b1ed9edecb7be1fe",
+      "mime": "image/png"
+    },
+    {
+      "path": "/__fixtures/a00/assets/og-image.svg",
+      "sha256": "91785b9a25b4919a3325c11c1953d6f57bac07ea8bf2a91ad79afe7e21e832b7",
+      "mime": "image/svg+xml"
+    },
+    {
+      "path": "/__fixtures/a00/assets/theme-moon.svg",
+      "sha256": "5f05695f5e705b23939cc5e43425444c4f1807d6d0292348204608b87c615b90",
+      "mime": "image/svg+xml"
+    },
+    {
+      "path": "/__fixtures/a00/assets/theme-sun.svg",
+      "sha256": "77789699cb08c1e6aff32f408d7c6932b142093fb069f9b5c1000d1ba586ad35",
+      "mime": "image/svg+xml"
+    },
+    {
+      "path": "/__fixtures/a00/assets/ui-chat.svg",
+      "sha256": "067b26284184ccad775ad43c6c6a12560f7fed388b7f1f75774de24c6fddcf2b",
+      "mime": "image/svg+xml"
+    },
+    {
+      "path": "/__fixtures/a00/assets/ui-chevron-up.svg",
+      "sha256": "7dfd9ab469bb167d5b33fb58e4b56549a3aea38c1a45d7fb23fd31b286c47755",
+      "mime": "image/svg+xml"
+    },
+    {
+      "path": "/__fixtures/a00/assets/ui-document.svg",
+      "sha256": "6bb04d925da839ab046da5d0c073b5edd2d8cdbf3468566a0a0ce605423603bb",
+      "mime": "image/svg+xml"
+    },
+    {
+      "path": "/__fixtures/a00/assets/ui-eye.svg",
+      "sha256": "9c6d24b47f2ad2888c01789760f4efc5b1de4f6edaf0666a1f347fc289ba91e6",
+      "mime": "image/svg+xml"
+    },
+    {
+      "path": "/__fixtures/a00/assets/ui-forum.svg",
+      "sha256": "5aed982332bbe153959ced443d5c2b57ee41816858018fb6aa31ac48dea17357",
+      "mime": "image/svg+xml"
+    },
+    {
+      "path": "/__fixtures/a00/assets/ui-menu.svg",
+      "sha256": "0d5c3c4c2abedfe4c715cdfcfe7d971250bfc1dd68f70783c5a24ba5ca2d0d8d",
+      "mime": "image/svg+xml"
+    },
+    {
+      "path": "/__fixtures/a00/assets/ui-search.svg",
+      "sha256": "988ac25e4fed6993f0e0af907f29f30bbd5e6ed8b44a3acdfd164a891d6c917f",
+      "mime": "image/svg+xml"
+    },
+    {
+      "path": "/__fixtures/a00/assets/ui-user.svg",
+      "sha256": "fd7df217bde48c11e4b129c00e1a38d8a651809260bb17edff9fbaa650492960",
+      "mime": "image/svg+xml"
+    }
+  ],
+  "errors": []
+}

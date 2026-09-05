@@ -1,0 +1,311 @@
+{
+  "work_package": "WP-MVP-A00",
+  "local_versioning_decision": "DEC-045",
+  "purpose": "Code-native local brand compositions and deterministic development rendering; not E04 pixel/WCAG validation.",
+  "reference": {
+    "source_url": "https://cache.imgproxy.org/?url=https%3A%2F%2Fsb.sb.sb%2Fattachments%2F2tka5bkfcbik%2Fog-image-1.png&w=1200&h=630&fit=cover&a=attention&output=webp",
+    "sha256": "39b020c979e0f88ec0da7ccd3fe33a7147b6c28ee9ea3a70824905e91e04c706",
+    "width": 1200,
+    "height": 630,
+    "ignored_source_recorded": ".local/a00-redo/reference-og-image.webp",
+    "source_binary_committed": false,
+    "required_to_rerun_generator": false
+  },
+  "reference_observations": {
+    "method": "Manual image inspection plus read-only pixel measurements of the current reference WebP; inferred design values are not claimed as original source CSS.",
+    "background_sample_rgb": [
+      10,
+      10,
+      10
+    ],
+    "grid_period_px": 60,
+    "bright_symbol_pixel_bounds": [
+      548,
+      169,
+      652,
+      273
+    ],
+    "bright_title_pixel_bounds": [
+      441,
+      323,
+      754,
+      395
+    ],
+    "subtitle_pixel_bounds": [
+      552,
+      435,
+      644,
+      454
+    ]
+  },
+  "design": {
+    "canvas": [
+      1200,
+      630
+    ],
+    "background": "#0a0a0a",
+    "grid": {
+      "step": 60,
+      "stroke": "#ffffff",
+      "opacity": 0.055,
+      "width": 1
+    },
+    "glow": {
+      "center": [
+        600,
+        225
+      ],
+      "radius": 410,
+      "color": "#dcc057",
+      "stops": [
+        [
+          0,
+          0.16
+        ],
+        [
+          0.45,
+          0.09
+        ],
+        [
+          1,
+          0
+        ]
+      ]
+    },
+    "symbol": {
+      "box": [
+        548,
+        169,
+        104,
+        104
+      ],
+      "color": "#ffffff"
+    },
+    "title": {
+      "text": "草莓论坛",
+      "anchor": [
+        600,
+        388
+      ],
+      "font_size": 80,
+      "weight": 700,
+      "color": "#fafaf7"
+    },
+    "subtitle": {
+      "text": "草莓论坛",
+      "anchor": [
+        600,
+        455
+      ],
+      "font_size": 28,
+      "weight": 600,
+      "letter_spacing": 4,
+      "color": "#e6c34e"
+    },
+    "decorative_lines": [
+      [
+        474,
+        444,
+        530,
+        444
+      ],
+      [
+        670,
+        444,
+        726,
+        444
+      ]
+    ]
+  },
+  "localized_brand": {
+    "path": "apps/web/static/img/brand-symbol.svg",
+    "sha256": "f5952515e24fcc527c6cbb26bffb0df8b967defdf1cb0d3adb3f1b5684512a65",
+    "modification": "Inline the same polygon and two localized text rows; fix white stroke/fill for these dark compositions. No source glyph paths or external references are restored."
+  },
+  "email": {
+    "kind": "Project-authored shared brand composition",
+    "canvas": [
+      640,
+      160
+    ],
+    "observed_reference_email": false,
+    "explanation": "Uses only the already observed localized seal and approved brand text. No private reference email page or email layout is asserted."
+  },
+  "generator": {
+    "path": "scripts/a00-og-render.mjs",
+    "sha256": "cfe4b81ed7fee47bc44c54c15e983da6a5c170bb4fae2002ffb280382c003644",
+    "command": "node scripts/a00-og-render.mjs",
+    "source_inputs": [
+      "apps/web/static/img/brand-symbol.svg"
+    ],
+    "remote_asset_requests": false
+  },
+  "verification": {
+    "wordlist": "docs/visual/a00/old-names.json",
+    "wordlist_sha256": "8158d58a2ef7d227cdebac150b00959213e2cfc591d4757e9269b80095e64f8d",
+    "svg_text_scan": "NFKC plus case-insensitive literal wordlist match: zero hits",
+    "svg_external_references": 0,
+    "png_text_metadata_chunks": [],
+    "png_ocr": {
+      "command": "swift scripts/a00-ocr.swift --terms docs/visual/a00/old-names.json apps/web/static/img/og-image.png",
+      "engine": "macOS Vision VNRecognizeTextRequest accurate",
+      "sha256": "ae9e33ff6c973253c8577779b84b5c4fad8e35eddef9eb48b1ed9edecb7be1fe",
+      "review_hits": 0,
+      "recognized_text": [
+        "草",
+        "莓",
+        "坛",
+        "论",
+        "草莓论坛",
+        "草莓论坛"
+      ],
+      "limit": "OCR is auxiliary; manual review remains necessary and no E04 gate is asserted."
+    }
+  },
+  "renderer": {
+    "browser": "Chrome/152.0.7977.76",
+    "deviceScaleFactor": 1,
+    "zoom": 1,
+    "locale": "zh-CN",
+    "javascript": false,
+    "animation": "none in generated assets",
+    "network": "loopback only",
+    "externalRequests": [],
+    "requests": [
+      "/og-image.svg",
+      "/favicon.ico",
+      "/email-header.svg"
+    ],
+    "og": {
+      "computed": {
+        "width": 1200,
+        "height": 630,
+        "texts": [
+          {
+            "text": "草莓",
+            "fontFamily": "\"PingFang SC\", system-ui, sans-serif",
+            "fontSize": "36px",
+            "fontWeight": "600",
+            "letterSpacing": "normal",
+            "box": {
+              "x": 45.999996185302734,
+              "y": 55.519229888916016,
+              "width": 108,
+              "height": 50.961544036865234
+            }
+          },
+          {
+            "text": "论坛",
+            "fontFamily": "\"PingFang SC\", system-ui, sans-serif",
+            "fontSize": "36px",
+            "fontWeight": "600",
+            "letterSpacing": "normal",
+            "box": {
+              "x": 45.999996185302734,
+              "y": 93.51922607421875,
+              "width": 108,
+              "height": 50.9615478515625
+            }
+          },
+          {
+            "text": "草莓论坛",
+            "fontFamily": "\"PingFang SC\", system-ui, sans-serif",
+            "fontSize": "80px",
+            "fontWeight": "700",
+            "letterSpacing": "normal",
+            "box": {
+              "x": 440,
+              "y": 303,
+              "width": 320,
+              "height": 112
+            }
+          },
+          {
+            "text": "草莓论坛",
+            "fontFamily": "\"PingFang SC\", system-ui, sans-serif",
+            "fontSize": "28px",
+            "fontWeight": "600",
+            "letterSpacing": "4px",
+            "box": {
+              "x": 536,
+              "y": 425.5,
+              "width": 128,
+              "height": 39
+            }
+          }
+        ]
+      },
+      "repeatedCaptureIdentical": true
+    },
+    "email": {
+      "computed": {
+        "width": 640,
+        "height": 160,
+        "texts": [
+          {
+            "text": "草莓",
+            "fontFamily": "\"PingFang SC\", system-ui, sans-serif",
+            "fontSize": "36px",
+            "fontWeight": "600",
+            "letterSpacing": "normal",
+            "box": {
+              "x": 45.99999237060547,
+              "y": 56.000003814697266,
+              "width": 108.00000762939453,
+              "height": 50.000003814697266
+            }
+          },
+          {
+            "text": "论坛",
+            "fontFamily": "\"PingFang SC\", system-ui, sans-serif",
+            "fontSize": "36px",
+            "fontWeight": "600",
+            "letterSpacing": "normal",
+            "box": {
+              "x": 45.99999237060547,
+              "y": 94,
+              "width": 108.00000762939453,
+              "height": 50
+            }
+          },
+          {
+            "text": "草莓论坛",
+            "fontFamily": "\"PingFang SC\", system-ui, sans-serif",
+            "fontSize": "40px",
+            "fontWeight": "600",
+            "letterSpacing": "normal",
+            "box": {
+              "x": 288,
+              "y": 53.5,
+              "width": 160,
+              "height": 56
+            }
+          }
+        ]
+      },
+      "repeatedCaptureIdentical": true
+    }
+  },
+  "outputs": [
+    {
+      "logical_name": "og-image-svg",
+      "path": "apps/web/static/img/og-image.svg",
+      "sha256": "91785b9a25b4919a3325c11c1953d6f57bac07ea8bf2a91ad79afe7e21e832b7"
+    },
+    {
+      "logical_name": "og-image",
+      "path": "apps/web/static/img/og-image.png",
+      "sha256": "ae9e33ff6c973253c8577779b84b5c4fad8e35eddef9eb48b1ed9edecb7be1fe"
+    },
+    {
+      "logical_name": "email-header",
+      "path": "apps/web/static/img/email-header.svg",
+      "sha256": "af25ad823681ff51cc997c5d2c8cfc1167748e5c4f2860015db0831ac0cebd01"
+    }
+  ],
+  "license": "unconfirmed",
+  "redistributable": "pending",
+  "public_release": "not-approved",
+  "rights_boundary": "The compositions contain localized reference brand geometry whose third-party rights remain unconfirmed. DEC-045 permits local versioning; it is not a third-party license. No AGPL permission is asserted for the inherited geometry.",
+  "captured_utc": "2026-09-05T00:46:30.169Z"
+}

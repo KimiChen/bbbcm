@@ -1,0 +1,17 @@
+# 独立的 E01 入口，完整报告保留全部严重度及无修复项。
+format: json
+exit-code: 0
+severity:
+  - UNKNOWN
+  - LOW
+  - MEDIUM
+  - HIGH
+  - CRITICAL
+scan:
+  skip-version-check: true
+  disable-telemetry: true
+vulnerability:
+  ignore-unfixed: false
+license:
+  confidenceLevel: 0.9
+  ignored: []

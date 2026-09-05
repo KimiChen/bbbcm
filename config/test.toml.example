@@ -1,0 +1,18 @@
+# 测试环境模板：集成测试使用隔离的合成数据。
+# 以 BBBCM_CONFIG=config/test.toml ./bbbcm-web 启动。
+
+[server]
+environment = "test"
+bind = "127.0.0.1:18080"
+
+[database]
+backend = "sqlite"
+schema_prefix = "bcm_"
+sqlite_path = "data/bbbcm-test.db"
+max_connections = 1
+
+[features]
+redis = false
+
+[worker]
+embedded = true

@@ -1,0 +1,123 @@
+{
+  "version": "a00-synthetic-v1",
+  "renderer": "bbbcm-web / Askama 0.16.1, compile-time templates",
+  "source": "apps/web/src/fixtures.rs",
+  "frame_contract": "apps/web/src/contract.rs: PageFrame{flash,error,empty}; ListView<T>{items,empty}",
+  "environments": {
+    "development": 200,
+    "test": 200,
+    "staging": 404,
+    "production": 404
+  },
+  "route_prefix": "/__fixtures/a00/",
+  "pages": [
+    "home",
+    "new",
+    "pinned",
+    "featured",
+    "forum",
+    "topic",
+    "login",
+    "register",
+    "reset",
+    "policy",
+    "search",
+    "empty",
+    "error",
+    "profile"
+  ],
+  "themes": [
+    "light",
+    "dark",
+    "system"
+  ],
+  "default_theme": "system",
+  "invalid_theme": 400,
+  "unknown_page": 404,
+  "post": 405,
+  "data": {
+    "rows": 12,
+    "row_ids": "01..12",
+    "categories": [
+      "问答/实战",
+      "AI",
+      "域名与主机",
+      "站务"
+    ],
+    "authors": [
+      "合成果农甲",
+      "合成果农乙",
+      "合成果农丙",
+      "合成果农丁"
+    ],
+    "reply_count_cycle": [
+      0,
+      2,
+      8,
+      16
+    ],
+    "view_count_cycle": [
+      12,
+      24,
+      48,
+      96
+    ],
+    "display_age_cycle": [
+      "1 分钟前",
+      "5 分钟前",
+      "1 小时前",
+      "1 天前"
+    ],
+    "clock": "2026-01-01T00:00:00Z is a fixed label, not read from a clock",
+    "ordering": "source array order; no randomness; pinned/featured remove homepage pinned row decoration",
+    "empty_error": "zero rows; required PageFrame empty/error copy",
+    "query": "only theme selects a white-listed value; q or arbitrary query text is never reflected",
+    "profile": {
+      "template": "apps/web/templates/profile/fixture.html",
+      "stylesheet": "apps/web/static/css/profile.css",
+      "outer_layout": "Partial includes complete home-shell/forum-layout, main and sidebar; include directly in the A00 content branch.",
+      "view_fields": [
+        "theme",
+        "topics.items",
+        "topics.empty"
+      ],
+      "profile_name": "合成果农甲",
+      "stats": {
+        "草莓": 128,
+        "果农指数": 24,
+        "帖子": 12,
+        "精华": 2
+      },
+      "level_progress_percent": 40,
+      "clock": "2026-01-01T00:00:00Z; fixed display age",
+      "avatars": "Project-authored letter placeholders, no reference avatar or image URL",
+      "actions": "Topic anchors navigate local fixtures; reply/private-message/points controls are inert previews. No business endpoint, session, permission or Feature Flag."
+    },
+    "topic_pagination": "Row 04 displays fixed synthetic page labels 1 and 2 using the publicly observed document glyph and pill geometry. Both links open the same topic fixture; no business pagination query."
+  },
+  "database": "not applicable; no database connection or read/write",
+  "schema_migration": "not applicable",
+  "authorization_outbox": "not applicable; no business operation",
+  "feature_flags": "none added or enabled; existing registry unchanged",
+  "credentials": "readonly visual fields, no names or form, no POST handler",
+  "unobserved": "search reproduces the publicly observed HTTP-200 error page with displayed code 200; successful search results were not publicly observed; no private user/settings/manage page is invented",
+  "navigation": {
+    "scope": "Local visual fixture links only; no business capability is implemented by these links.",
+    "header_sister": "Current reference partner-brand control is retained; its brand text becomes 草莓论坛 and its target is local home.",
+    "footer_links": {
+      "社区规则": "policy",
+      "服务条款": "policy",
+      "隐私政策": "policy",
+      "联系我们": "policy",
+      "认证会员": "policy",
+      "排行榜": "home",
+      "RSS 订阅": "home"
+    },
+    "footer_note": "Seven observed footer controls and a two-row footer shell. Ranking and RSS links only navigate the isolated home fixture; no ranking query or feed endpoint exists."
+  },
+  "brand_assets": {
+    "head": "favicon SVG, PNG 16/32, ICO, apple-touch 180, local OG PNG 1200x630",
+    "email": "email-header.svg is a project shared-brand composition; no reference email layout was publicly observed and no mail is sent",
+    "oauth": "Google/GitHub/X glyphs on inert type=button controls; no provider redirect or authentication"
+  }
+}

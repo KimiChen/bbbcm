@@ -1,0 +1,1239 @@
+{
+  "schema_version": 1,
+  "verified_on": "2026-09-05",
+  "tools": {
+    "node": {
+      "version": "24.20.0",
+      "npm": "11.19.0",
+      "source": "https://nodejs.org/dist/v24.20.0/SHASUMS256.txt",
+      "artifacts": {
+        "darwin/arm64": {
+          "url": "https://nodejs.org/dist/v24.20.0/node-v24.20.0-darwin-arm64.tar.gz",
+          "sha256": "40e5607e5ecb3db9192723776da2d75d966260fc74a7a9e731c1bd67dda96bc8"
+        },
+        "darwin/amd64": {
+          "url": "https://nodejs.org/dist/v24.20.0/node-v24.20.0-darwin-x64.tar.gz",
+          "sha256": "9e5b2644cf107befb6aefca676b96d3296bc10138096f022ed378d6233ed81f4"
+        },
+        "linux/arm64": {
+          "url": "https://nodejs.org/dist/v24.20.0/node-v24.20.0-linux-arm64.tar.gz",
+          "sha256": "3515603e2487879a39bc75716f1a2affd027500c64ba50e845cf72cb33219013"
+        },
+        "linux/amd64": {
+          "url": "https://nodejs.org/dist/v24.20.0/node-v24.20.0-linux-x64.tar.gz",
+          "sha256": "855d581f8a4eb1a8117e3426de25fe02770592febcfb31369aee1ffbfee9e8ec"
+        }
+      },
+      "selection": "Node 24 Active LTS, bundled npm; global A00 Node 26.5.0 is not the build baseline"
+    },
+    "syft": {
+      "version": "1.51.1",
+      "source": "https://github.com/anchore/syft/releases/tag/v1.51.1",
+      "checksums_url": "https://github.com/anchore/syft/releases/download/v1.51.1/syft_1.51.1_checksums.txt",
+      "artifacts": {
+        "darwin/arm64": {
+          "url": "https://github.com/anchore/syft/releases/download/v1.51.1/syft_1.51.1_darwin_arm64.tar.gz",
+          "sha256": "ac063af3b9874769deb7ea1e6d76841e68f9e3bb50cd654226fc977de65532c1"
+        },
+        "darwin/amd64": {
+          "url": "https://github.com/anchore/syft/releases/download/v1.51.1/syft_1.51.1_darwin_amd64.tar.gz",
+          "sha256": "0e186ce1d4351ec276126851ca3ff258ed070e93e73574ed64858d4fc2339867"
+        },
+        "linux/arm64": {
+          "url": "https://github.com/anchore/syft/releases/download/v1.51.1/syft_1.51.1_linux_arm64.tar.gz",
+          "sha256": "a7fd2b784e6664acd44719270574f6cd8c6864fc2b1700bf9099bd1cccda7d7f"
+        },
+        "linux/amd64": {
+          "url": "https://github.com/anchore/syft/releases/download/v1.51.1/syft_1.51.1_linux_amd64.tar.gz",
+          "sha256": "8fcb33017a0dc1058298c923c436d19dfa68ae93968e0b423248542e3afb9fc3"
+        }
+      }
+    },
+    "trivy": {
+      "version": "0.74.0",
+      "source": "https://github.com/aquasecurity/trivy/releases/tag/v0.74.0",
+      "checksums_url": "https://github.com/aquasecurity/trivy/releases/download/v0.74.0/trivy_0.74.0_checksums.txt",
+      "artifacts": {
+        "darwin/arm64": {
+          "url": "https://github.com/aquasecurity/trivy/releases/download/v0.74.0/trivy_0.74.0_macOS-ARM64.tar.gz",
+          "sha256": "1caada5e0e2091909357c7525d3aa76f4b660b13821bc143b190c7483e31cc11"
+        },
+        "darwin/amd64": {
+          "url": "https://github.com/aquasecurity/trivy/releases/download/v0.74.0/trivy_0.74.0_macOS-64bit.tar.gz",
+          "sha256": "472816f6888dda689d075c30254d4210b4d1035acf365aa72332f584c2f60485"
+        },
+        "linux/arm64": {
+          "url": "https://github.com/aquasecurity/trivy/releases/download/v0.74.0/trivy_0.74.0_Linux-ARM64.tar.gz",
+          "sha256": "b94ce1976bbf3c15b514b605ee88be7c6d94a29be2302847ff01cb794d47aad5"
+        },
+        "linux/amd64": {
+          "url": "https://github.com/aquasecurity/trivy/releases/download/v0.74.0/trivy_0.74.0_Linux-64bit.tar.gz",
+          "sha256": "2ae6fe3ee734b7fdf11335663e18c75ea12dccc76062f09f164a3b0f8be4371a"
+        }
+      }
+    },
+    "gitleaks": {
+      "version": "8.30.1",
+      "source": "https://github.com/gitleaks/gitleaks/releases/tag/v8.30.1",
+      "checksums_url": "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_checksums.txt",
+      "artifacts": {
+        "darwin/arm64": {
+          "url": "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_darwin_arm64.tar.gz",
+          "sha256": "b40ab0ae55c505963e365f271a8d3846efbc170aa17f2607f13df610a9aeb6a5"
+        },
+        "darwin/amd64": {
+          "url": "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_darwin_x64.tar.gz",
+          "sha256": "dfe101a4db2255fc85120ac7f3d25e4342c3c20cf749f2c20a18081af1952709"
+        },
+        "linux/arm64": {
+          "url": "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_arm64.tar.gz",
+          "sha256": "e4a487ee7ccd7d3a7f7ec08657610aa3606637dab924210b3aee62570fb4b080"
+        },
+        "linux/amd64": {
+          "url": "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz",
+          "sha256": "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
+        }
+      }
+    }
+  },
+  "images": {
+    "postgres": {
+      "repository": "docker.io/library/postgres",
+      "tag": "16.15-alpine3.23",
+      "index_digest": "sha256:421b84e07a72bb8f3715f20501a1fdbe1219aad1fa4af7786a49d9a3f2480296",
+      "source": "https://registry-1.docker.io/v2/library/postgres/manifests/16.15-alpine3.23",
+      "platforms": {
+        "linux/amd64": {
+          "digest": "sha256:606bf82e84bdd2d9783702281cf5f2c89a10653612f5827522b2adfae7e3271c",
+          "config_digest": "sha256:4eb411f6d161defecc0044a84549537a0a41da16702b9435a1669b942a808220",
+          "version_env": [
+            "PG_VERSION=16.15"
+          ]
+        },
+        "linux/arm64": {
+          "digest": "sha256:056ecdbbd3e75b8dae60218535539ac8da79daf11e0a196ab3513680800f82c5",
+          "config_digest": "sha256:baea785b856d3539b4d0f3af1046d8660b173809d3530b77d6a089c6b5771cb1",
+          "version_env": [
+            "PG_VERSION=16.15"
+          ]
+        }
+      },
+      "dockerfile_source": "https://github.com/docker-library/postgres/blob/9d15534160ade17f2b6c455a39ee967c49b1937d/16/alpine3.23/Dockerfile"
+    },
+    "redis": {
+      "repository": "docker.io/library/redis",
+      "tag": "8.2.9-bookworm",
+      "index_digest": "sha256:7d1e4ce8b9395088377ab382d1f6cfdbd13b3690795198a0399ab8d683064d6d",
+      "source": "https://registry-1.docker.io/v2/library/redis/manifests/8.2.9-bookworm",
+      "platforms": {
+        "linux/amd64": {
+          "digest": "sha256:5abe7a95302345d227a38553bd066c3a3d11044ee616654de2f6471a7676fe1e",
+          "config_digest": "sha256:398c80d98196f34542de5c4046105120127978fe85d752251d8947989949f5bb",
+          "version_env": [
+            "REDIS_VERSION=8.2.9"
+          ]
+        },
+        "linux/arm64": {
+          "digest": "sha256:490b3e51d8c731777cef22539ee5ab2bf2858b1a723b1d9e387207dc29ecf27a",
+          "config_digest": "sha256:d4c4026b6a438fd56ffa5ac6eb30b3cfb5137f2edf355bbf929a47b54c11a8c3",
+          "version_env": [
+            "REDIS_VERSION=8.2.9"
+          ]
+        }
+      },
+      "selection": "Redis 8.2 maintained patch line; no newer minor features required by this package",
+      "dockerfile_source": "https://github.com/redis/docker-library-redis/blob/7dc061ece8b871fe66cc67fec22b9c5f23d5e9f1/debian/Dockerfile"
+    }
+  },
+  "sources": {
+    "pg_jieba": {
+      "repository": "https://github.com/jaiminpan/pg_jieba",
+      "commit": "d0ffac8028328b2566a889ff4db3d74ba63d1b42",
+      "url": "https://codeload.github.com/jaiminpan/pg_jieba/tar.gz/d0ffac8028328b2566a889ff4db3d74ba63d1b42",
+      "sha256": "a7ee376de977b9aa6e5a867a5fbbadbaeab1b40233e90dcf6bd1214897d00fa5",
+      "file": "pg_jieba.tar.gz",
+      "version": "1.1.1",
+      "license": "BSD-3-Clause",
+      "submodules": {
+        "libjieba": "cppjieba"
+      },
+      "license_sha256": "b8220c8c26271aaee952c392864055aa003a8f384a2253ee85a5951dcbb33a08",
+      "license_source": "https://github.com/jaiminpan/pg_jieba/blob/d0ffac8028328b2566a889ff4db3d74ba63d1b42/LICENSE"
+    },
+    "cppjieba": {
+      "repository": "https://github.com/yanyiwu/cppjieba",
+      "commit": "391121d5db0f31dd5ce9795d4d34812f20eeb25c",
+      "url": "https://codeload.github.com/yanyiwu/cppjieba/tar.gz/391121d5db0f31dd5ce9795d4d34812f20eeb25c",
+      "sha256": "c02907dbe41da72bba15cae39fe0b09bb6916ea03173f92090c4fc9e78c830f9",
+      "file": "cppjieba.tar.gz",
+      "license": "MIT",
+      "submodules": {
+        "deps/limonp": "limonp"
+      },
+      "license_sha256": "ba898a14f729ba5e9965da34e3eecd5edd3795f2cc5d7c923b815ba79bb851b0",
+      "license_source": "https://github.com/yanyiwu/cppjieba/blob/391121d5db0f31dd5ce9795d4d34812f20eeb25c/LICENSE"
+    },
+    "limonp": {
+      "repository": "https://github.com/yanyiwu/limonp",
+      "commit": "a269e34dc4948d5a9209e21a7887b52daa0d3e78",
+      "url": "https://codeload.github.com/yanyiwu/limonp/tar.gz/a269e34dc4948d5a9209e21a7887b52daa0d3e78",
+      "sha256": "54b77a01176815b70190ed5f546c32aeb47e6cce646d930d73cb02c5c465a912",
+      "file": "limonp.tar.gz",
+      "license": "MIT",
+      "submodules": {},
+      "license_sha256": "ba898a14f729ba5e9965da34e3eecd5edd3795f2cc5d7c923b815ba79bb851b0",
+      "license_source": "https://github.com/yanyiwu/limonp/blob/a269e34dc4948d5a9209e21a7887b52daa0d3e78/LICENSE"
+    },
+    "pg_trgm": {
+      "version": "1.6",
+      "postgres_version": "16.15",
+      "source": "https://github.com/postgres/postgres/blob/REL_16_15/contrib/pg_trgm/pg_trgm.control",
+      "control_sha256": "17c2745da2a706e1443ee363ab7424ced871a9a652e86bf55d25d139f43ee27b",
+      "distribution": "included in the pinned PostgreSQL image"
+    }
+  },
+  "apk": {
+    "aarch64": {
+      "indexes": [
+        {
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/APKINDEX.tar.gz",
+          "sha256": "b1384b9d9576a0c40635a7e684fc61ac2236b7fdea8ebb04d3f2573fa9178d47"
+        },
+        {
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/community/aarch64/APKINDEX.tar.gz",
+          "sha256": "68c89f4245dc63c7e75ce602c2c680485129c336cd3618c8be20296be3cc889b"
+        }
+      ],
+      "packages": [
+        {
+          "name": "acl-libs",
+          "version": "2.3.2-r1",
+          "license": "LGPL-2.1-or-later AND GPL-2.0-or-later",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/acl-libs-2.3.2-r1.apk",
+          "sha256": "6b056aaabe34eac2f86e4f4e86a47e6580b8e521e56e39c9ff0e69e44906c9ca",
+          "file": "acl-libs-2.3.2-r1.apk",
+          "depends": [
+            "so:libc.musl-aarch64.so.1"
+          ],
+          "provides": [
+            "so:libacl.so.1=1.1.2302"
+          ]
+        },
+        {
+          "name": "binutils",
+          "version": "2.45.1-r0",
+          "license": "GPL-2.0-or-later AND LGPL-2.1-or-later AND BSD-3-Clause",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/binutils-2.45.1-r0.apk",
+          "sha256": "8fe163aa9736136f9d78de191cb336e20bed741871511c5e83da1429d6a7e53a",
+          "file": "binutils-2.45.1-r0.apk",
+          "depends": [
+            "so:libc.musl-aarch64.so.1",
+            "so:libgcc_s.so.1",
+            "so:libjansson.so.4",
+            "so:libstdc++.so.6",
+            "so:libz.so.1",
+            "so:libzstd.so.1"
+          ],
+          "provides": [
+            "cmd:addr2line=2.45.1-r0",
+            "cmd:ar=2.45.1-r0",
+            "cmd:as=2.45.1-r0",
+            "cmd:c++filt=2.45.1-r0",
+            "cmd:dwp=2.45.1-r0",
+            "cmd:elfedit=2.45.1-r0",
+            "cmd:gprof=2.45.1-r0",
+            "cmd:ld.bfd=2.45.1-r0",
+            "cmd:ld=2.45.1-r0",
+            "cmd:nm=2.45.1-r0",
+            "cmd:objcopy=2.45.1-r0",
+            "cmd:objdump=2.45.1-r0",
+            "cmd:ranlib=2.45.1-r0",
+            "cmd:readelf=2.45.1-r0",
+            "cmd:size=2.45.1-r0",
+            "cmd:strings=2.45.1-r0",
+            "cmd:strip=2.45.1-r0",
+            "so:libbfd-2.45.1.so=0",
+            "so:libctf-nobfd.so.0=0.0.0",
+            "so:libctf.so.0=0.0.0",
+            "so:libopcodes-2.45.1.so=0",
+            "so:libsframe.so.2=2.0.0"
+          ]
+        },
+        {
+          "name": "cmake",
+          "version": "4.1.3-r0",
+          "license": "BSD-3-Clause",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/cmake-4.1.3-r0.apk",
+          "sha256": "462405fdd7ab3c61d3e72aa50a9cb4fdf68edbf5630bacdff1e4a0c84ce233c5",
+          "file": "cmake-4.1.3-r0.apk",
+          "depends": [
+            "so:libarchive.so.13",
+            "so:libc.musl-aarch64.so.1",
+            "so:libcrypto.so.3",
+            "so:libexpat.so.1",
+            "so:libgcc_s.so.1",
+            "so:librhash.so.1",
+            "so:libssl.so.3",
+            "so:libstdc++.so.6",
+            "so:libuv.so.1",
+            "so:libz.so.1"
+          ],
+          "provides": [
+            "cmd:cmake3.5=4.1.3-r0",
+            "cmd:cmake=4.1.3-r0",
+            "cmd:cpack=4.1.3-r0",
+            "cmd:ctest3.5=4.1.3-r0",
+            "cmd:ctest=4.1.3-r0"
+          ]
+        },
+        {
+          "name": "g++",
+          "version": "15.2.0-r2",
+          "license": "GPL-2.0-or-later AND LGPL-2.1-or-later",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/g++-15.2.0-r2.apk",
+          "sha256": "890230e56bdd0e2b0ee668250c8d20cc6a962c049146902b9d3966ce654ce080",
+          "file": "g++-15.2.0-r2.apk",
+          "depends": [
+            "libstdc++-dev=15.2.0-r2",
+            "gcc=15.2.0-r2",
+            "musl-dev",
+            "libstdc++=15.2.0-r2",
+            "so:libc.musl-aarch64.so.1",
+            "so:libgmp.so.10",
+            "so:libisl.so.23",
+            "so:libmpc.so.3",
+            "so:libmpfr.so.6",
+            "so:libz.so.1"
+          ],
+          "provides": [
+            "cmd:aarch64-alpine-linux-musl-c++=15.2.0-r2",
+            "cmd:aarch64-alpine-linux-musl-g++=15.2.0-r2",
+            "cmd:c++=15.2.0-r2",
+            "cmd:g++=15.2.0-r2"
+          ]
+        },
+        {
+          "name": "gcc",
+          "version": "15.2.0-r2",
+          "license": "GPL-2.0-or-later AND LGPL-2.1-or-later",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/gcc-15.2.0-r2.apk",
+          "sha256": "a06f4242b1e12a2449c1525a0e750c1503774de9e79db34f554b31241783ce48",
+          "file": "gcc-15.2.0-r2.apk",
+          "depends": [
+            "binutils",
+            "libgomp=15.2.0-r2",
+            "libatomic=15.2.0-r2",
+            "libgomp=15.2.0-r2",
+            "so:libc.musl-aarch64.so.1",
+            "so:libgcc_s.so.1",
+            "so:libgmp.so.10",
+            "so:libisl.so.23",
+            "so:libmpc.so.3",
+            "so:libmpfr.so.6",
+            "so:libstdc++.so.6",
+            "so:libz.so.1"
+          ],
+          "provides": [
+            "cmd:aarch64-alpine-linux-musl-cc=15.2.0-r2",
+            "cmd:aarch64-alpine-linux-musl-gcc-15.2.0=15.2.0-r2",
+            "cmd:aarch64-alpine-linux-musl-gcc-ar=15.2.0-r2",
+            "cmd:aarch64-alpine-linux-musl-gcc-nm=15.2.0-r2",
+            "cmd:aarch64-alpine-linux-musl-gcc-ranlib=15.2.0-r2",
+            "cmd:aarch64-alpine-linux-musl-gcc=15.2.0-r2",
+            "cmd:c89=15.2.0-r2",
+            "cmd:c99=15.2.0-r2",
+            "cmd:cc=15.2.0-r2",
+            "cmd:cpp=15.2.0-r2",
+            "cmd:gcc-ar=15.2.0-r2",
+            "cmd:gcc-nm=15.2.0-r2",
+            "cmd:gcc-ranlib=15.2.0-r2",
+            "cmd:gcc=15.2.0-r2",
+            "cmd:gcov-dump=15.2.0-r2",
+            "cmd:gcov-tool=15.2.0-r2",
+            "cmd:gcov=15.2.0-r2",
+            "cmd:lto-dump=15.2.0-r2",
+            "so:libcc1.so.0=0.0.0",
+            "so:libitm.so.1=1.0.0"
+          ]
+        },
+        {
+          "name": "gmp",
+          "version": "6.3.0-r4",
+          "license": "LGPL-3.0-or-later OR GPL-2.0-or-later",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/gmp-6.3.0-r4.apk",
+          "sha256": "dc1b69ae15ad58a9f933b750fd4463defc32f7467f1ce9b57d80f893a6635377",
+          "file": "gmp-6.3.0-r4.apk",
+          "depends": [
+            "so:libc.musl-aarch64.so.1"
+          ],
+          "provides": [
+            "so:libgmp.so.10=10.5.0"
+          ]
+        },
+        {
+          "name": "isl26",
+          "version": "0.26-r1",
+          "license": "MIT",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/isl26-0.26-r1.apk",
+          "sha256": "bc3cb35a9d09ebb6401163ff605a9159679a64d91128f3ab96392e73b27af919",
+          "file": "isl26-0.26-r1.apk",
+          "depends": [
+            "so:libc.musl-aarch64.so.1",
+            "so:libgmp.so.10"
+          ],
+          "provides": [
+            "so:libisl.so.23=23.3.0"
+          ]
+        },
+        {
+          "name": "jansson",
+          "version": "2.14.1-r0",
+          "license": "MIT",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/jansson-2.14.1-r0.apk",
+          "sha256": "3f2782a46b59b8ecfb8a15750026be0097b414c9e788074020a6c698e3b74b90",
+          "file": "jansson-2.14.1-r0.apk",
+          "depends": [
+            "so:libc.musl-aarch64.so.1"
+          ],
+          "provides": [
+            "so:libjansson.so.4=4.14.1"
+          ]
+        },
+        {
+          "name": "libarchive",
+          "version": "3.8.5-r0",
+          "license": "BSD-2-Clause AND BSD-3-Clause AND Public-Domain",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/libarchive-3.8.5-r0.apk",
+          "sha256": "beb6d533773de84981dd8535a91dd33fbb39f53cd819ecbcbdfe7b453d5e2b5a",
+          "file": "libarchive-3.8.5-r0.apk",
+          "depends": [
+            "so:libacl.so.1",
+            "so:libbz2.so.1",
+            "so:libc.musl-aarch64.so.1",
+            "so:libcrypto.so.3",
+            "so:libexpat.so.1",
+            "so:liblz4.so.1",
+            "so:liblzma.so.5",
+            "so:libz.so.1",
+            "so:libzstd.so.1"
+          ],
+          "provides": [
+            "so:libarchive.so.13=13.8.5"
+          ]
+        },
+        {
+          "name": "libatomic",
+          "version": "15.2.0-r2",
+          "license": "GPL-2.0-or-later AND LGPL-2.1-or-later",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/libatomic-15.2.0-r2.apk",
+          "sha256": "1a44d408b77d92f1b3f002e1045399fad81c1d58409b895eeaba0bb5c3fe4402",
+          "file": "libatomic-15.2.0-r2.apk",
+          "depends": [
+            "so:libc.musl-aarch64.so.1"
+          ],
+          "provides": [
+            "so:libatomic.so.1=1.2.0"
+          ]
+        },
+        {
+          "name": "libbz2",
+          "version": "1.0.8-r6",
+          "license": "bzip2-1.0.6",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/libbz2-1.0.8-r6.apk",
+          "sha256": "ccd478f4d5346a25911d4ee977690e2695e0ca3acf3e6b1a8c1300b2f4311e2f",
+          "file": "libbz2-1.0.8-r6.apk",
+          "depends": [
+            "so:libc.musl-aarch64.so.1"
+          ],
+          "provides": [
+            "so:libbz2.so.1=1.0.8"
+          ]
+        },
+        {
+          "name": "libcrypto3",
+          "version": "3.5.8-r0",
+          "license": "Apache-2.0",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/libcrypto3-3.5.8-r0.apk",
+          "sha256": "2be40da5877bce1780361cb58cc499bc17b9d747c0286dccad46c026f48c95f8",
+          "file": "libcrypto3-3.5.8-r0.apk",
+          "depends": [
+            "so:libc.musl-aarch64.so.1"
+          ],
+          "provides": [
+            "so:libcrypto.so.3=3"
+          ]
+        },
+        {
+          "name": "libexpat",
+          "version": "2.8.4-r0",
+          "license": "MIT",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/libexpat-2.8.4-r0.apk",
+          "sha256": "bb8c839e63bc75dda85e422280791438fccfb17930f10216b5cf9c998d6a0b09",
+          "file": "libexpat-2.8.4-r0.apk",
+          "depends": [
+            "so:libc.musl-aarch64.so.1"
+          ],
+          "provides": [
+            "so:libexpat.so.1=1.12.4"
+          ]
+        },
+        {
+          "name": "libgcc",
+          "version": "15.2.0-r2",
+          "license": "GPL-2.0-or-later AND LGPL-2.1-or-later",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/libgcc-15.2.0-r2.apk",
+          "sha256": "eaaafda78fde1c904e1741680ddea91649f051e29a343152c8a4327605704b0f",
+          "file": "libgcc-15.2.0-r2.apk",
+          "depends": [
+            "so:libc.musl-aarch64.so.1"
+          ],
+          "provides": [
+            "so:libgcc_s.so.1=1"
+          ]
+        },
+        {
+          "name": "libgomp",
+          "version": "15.2.0-r2",
+          "license": "GPL-2.0-or-later AND LGPL-2.1-or-later",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/libgomp-15.2.0-r2.apk",
+          "sha256": "d2989f9476a67085442d916c1e55ebe213e269f3221225b3285585f3e47a33af",
+          "file": "libgomp-15.2.0-r2.apk",
+          "depends": [
+            "so:libc.musl-aarch64.so.1"
+          ],
+          "provides": [
+            "so:libgomp.so.1=1.0.0"
+          ]
+        },
+        {
+          "name": "libssl3",
+          "version": "3.5.8-r0",
+          "license": "Apache-2.0",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/libssl3-3.5.8-r0.apk",
+          "sha256": "77a8ef8f87a3fe6b621fd2c06bb983dea55013a3e67c60741df83f5221983247",
+          "file": "libssl3-3.5.8-r0.apk",
+          "depends": [
+            "libcrypto3=3.5.8-r0",
+            "so:libc.musl-aarch64.so.1",
+            "so:libcrypto.so.3"
+          ],
+          "provides": [
+            "so:libssl.so.3=3"
+          ]
+        },
+        {
+          "name": "libstdc++",
+          "version": "15.2.0-r2",
+          "license": "GPL-2.0-or-later AND LGPL-2.1-or-later",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/libstdc++-15.2.0-r2.apk",
+          "sha256": "10d72e25f6fcc0f3d9fdd801c9bdaed81d6e836aa2b65b63f25d2d97f860a7d1",
+          "file": "libstdc++-15.2.0-r2.apk",
+          "depends": [
+            "so:libc.musl-aarch64.so.1",
+            "so:libgcc_s.so.1"
+          ],
+          "provides": [
+            "so:libstdc++.so.6=6.0.34"
+          ]
+        },
+        {
+          "name": "libstdc++-dev",
+          "version": "15.2.0-r2",
+          "license": "GPL-2.0-or-later AND LGPL-2.1-or-later",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/libstdc++-dev-15.2.0-r2.apk",
+          "sha256": "51f73e3d0f1d05ae22b634e8196750b82fd9956e0304ba58ab2d151cfedb419a",
+          "file": "libstdc++-dev-15.2.0-r2.apk",
+          "depends": [
+            "libstdc++=15.2.0-r2"
+          ],
+          "provides": []
+        },
+        {
+          "name": "libuv",
+          "version": "1.52.1-r0",
+          "license": "MIT",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/libuv-1.52.1-r0.apk",
+          "sha256": "2fb8be9f07405b5a2e449da5a1a80c86abc3c198b17613114dd8d7f054de8a69",
+          "file": "libuv-1.52.1-r0.apk",
+          "depends": [
+            "so:libc.musl-aarch64.so.1"
+          ],
+          "provides": [
+            "so:libuv.so.1=1.0.0"
+          ]
+        },
+        {
+          "name": "lz4-libs",
+          "version": "1.10.0-r0",
+          "license": "BSD-2-Clause AND GPL-2.0-or-later",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/lz4-libs-1.10.0-r0.apk",
+          "sha256": "5e03989d703634faa3222ec1e2a634393fd28a1114cf6d14eaf64a6d4b0354bd",
+          "file": "lz4-libs-1.10.0-r0.apk",
+          "depends": [
+            "so:libc.musl-aarch64.so.1"
+          ],
+          "provides": [
+            "so:liblz4.so.1=1.10.0"
+          ]
+        },
+        {
+          "name": "make",
+          "version": "4.4.1-r3",
+          "license": "GPL-3.0-or-later",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/make-4.4.1-r3.apk",
+          "sha256": "e15217cadc367b7fc52871e3cc82fe7193bc82f75087db0598aa2e5e941f734c",
+          "file": "make-4.4.1-r3.apk",
+          "depends": [
+            "so:libc.musl-aarch64.so.1"
+          ],
+          "provides": [
+            "cmd:gmake=4.4.1-r3",
+            "cmd:make=4.4.1-r3"
+          ]
+        },
+        {
+          "name": "mpc1",
+          "version": "1.3.1-r1",
+          "license": "LGPL-3.0-or-later",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/mpc1-1.3.1-r1.apk",
+          "sha256": "753858c93308a54fd2c578e67ce5f3947e4b7946052b1e66a892cd5ee7efd4a4",
+          "file": "mpc1-1.3.1-r1.apk",
+          "depends": [
+            "so:libc.musl-aarch64.so.1",
+            "so:libgmp.so.10",
+            "so:libmpfr.so.6"
+          ],
+          "provides": [
+            "so:libmpc.so.3=3.3.1"
+          ]
+        },
+        {
+          "name": "mpfr4",
+          "version": "4.2.2-r0",
+          "license": "LGPL-3.0-or-later",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/mpfr4-4.2.2-r0.apk",
+          "sha256": "da8b196bad532b4a82ea62f0b1609fc4bbdadb8ac9fed7c7792a84be8084a04f",
+          "file": "mpfr4-4.2.2-r0.apk",
+          "depends": [
+            "so:libc.musl-aarch64.so.1",
+            "so:libgmp.so.10"
+          ],
+          "provides": [
+            "mpfr=4.2.2-r0",
+            "so:libmpfr.so.6=6.2.2"
+          ]
+        },
+        {
+          "name": "musl",
+          "version": "1.2.5-r23",
+          "license": "MIT",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/musl-1.2.5-r23.apk",
+          "sha256": "6a3edd924ead1fad88a69e28c5775809af3026b322f58428001cd02fedc5299e",
+          "file": "musl-1.2.5-r23.apk",
+          "depends": [],
+          "provides": [
+            "so:libc.musl-aarch64.so.1=1"
+          ]
+        },
+        {
+          "name": "musl-dev",
+          "version": "1.2.5-r23",
+          "license": "MIT",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/musl-dev-1.2.5-r23.apk",
+          "sha256": "19032a762b8c6967d3789de1bf540754a0121e517402022eebd3ae6f1c9965a4",
+          "file": "musl-dev-1.2.5-r23.apk",
+          "depends": [
+            "musl=1.2.5-r23"
+          ],
+          "provides": [
+            "libc-dev=1.2.5-r23"
+          ]
+        },
+        {
+          "name": "rhash-libs",
+          "version": "1.4.6-r0",
+          "license": "0BSD",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/rhash-libs-1.4.6-r0.apk",
+          "sha256": "3b678639402a4eaab5172bee4e9e793f3f0c86861c7a9b31153cbe0476d1993e",
+          "file": "rhash-libs-1.4.6-r0.apk",
+          "depends": [
+            "so:libc.musl-aarch64.so.1",
+            "so:libcrypto.so.3"
+          ],
+          "provides": [
+            "so:librhash.so.1=1.4.6"
+          ]
+        },
+        {
+          "name": "xz-libs",
+          "version": "5.8.3-r0",
+          "license": "GPL-2.0-or-later AND 0BSD AND Public-Domain AND LGPL-2.1-or-later",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/xz-libs-5.8.3-r0.apk",
+          "sha256": "6123d4fc5be222318236887639047b844214f609e75abee6b4e6528f44d76be4",
+          "file": "xz-libs-5.8.3-r0.apk",
+          "depends": [
+            "so:libc.musl-aarch64.so.1"
+          ],
+          "provides": [
+            "so:liblzma.so.5=5.8.3"
+          ]
+        },
+        {
+          "name": "zlib",
+          "version": "1.3.2-r0",
+          "license": "Zlib",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/zlib-1.3.2-r0.apk",
+          "sha256": "ecda4cc94fd18f90182f1d3a615889df5e0db9cf78926d11627dd23e06d2e6e8",
+          "file": "zlib-1.3.2-r0.apk",
+          "depends": [
+            "so:libc.musl-aarch64.so.1"
+          ],
+          "provides": [
+            "so:libz.so.1=1.3.2"
+          ]
+        },
+        {
+          "name": "zstd-libs",
+          "version": "1.5.7-r2",
+          "license": "BSD-3-Clause OR GPL-2.0-or-later",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/zstd-libs-1.5.7-r2.apk",
+          "sha256": "50a998e56e4bf31504996e49c1b4a23eed5e0cd4e24b8a1356a54daf1a6eabbe",
+          "file": "zstd-libs-1.5.7-r2.apk",
+          "depends": [
+            "so:libc.musl-aarch64.so.1"
+          ],
+          "provides": [
+            "so:libzstd.so.1=1.5.7"
+          ]
+        }
+      ]
+    },
+    "x86_64": {
+      "indexes": [
+        {
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/APKINDEX.tar.gz",
+          "sha256": "76d66c83ae2001fb73dd4a70d31518b90a1d8c83510933a665075ef18b9dbab4"
+        },
+        {
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/community/x86_64/APKINDEX.tar.gz",
+          "sha256": "fd8f3b6de4fbdcb4961393b790a97d16609da8d4f587fdbf7fe86f46ae2c84c7"
+        }
+      ],
+      "packages": [
+        {
+          "name": "acl-libs",
+          "version": "2.3.2-r1",
+          "license": "LGPL-2.1-or-later AND GPL-2.0-or-later",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/acl-libs-2.3.2-r1.apk",
+          "sha256": "05e45f947328d5cfcf7f18ecd9abc30dfe562c6b69909732375d063875c10a35",
+          "file": "acl-libs-2.3.2-r1.apk",
+          "depends": [
+            "so:libc.musl-x86_64.so.1"
+          ],
+          "provides": [
+            "so:libacl.so.1=1.1.2302"
+          ]
+        },
+        {
+          "name": "binutils",
+          "version": "2.45.1-r0",
+          "license": "GPL-2.0-or-later AND LGPL-2.1-or-later AND BSD-3-Clause",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/binutils-2.45.1-r0.apk",
+          "sha256": "aa14316996719d126cd1c3edee159a7f477c788ed0c1e6228ddb4df9cdc391dc",
+          "file": "binutils-2.45.1-r0.apk",
+          "depends": [
+            "so:libc.musl-x86_64.so.1",
+            "so:libgcc_s.so.1",
+            "so:libjansson.so.4",
+            "so:libstdc++.so.6",
+            "so:libz.so.1",
+            "so:libzstd.so.1"
+          ],
+          "provides": [
+            "cmd:addr2line=2.45.1-r0",
+            "cmd:ar=2.45.1-r0",
+            "cmd:as=2.45.1-r0",
+            "cmd:c++filt=2.45.1-r0",
+            "cmd:dwp=2.45.1-r0",
+            "cmd:elfedit=2.45.1-r0",
+            "cmd:gprof=2.45.1-r0",
+            "cmd:ld.bfd=2.45.1-r0",
+            "cmd:ld=2.45.1-r0",
+            "cmd:nm=2.45.1-r0",
+            "cmd:objcopy=2.45.1-r0",
+            "cmd:objdump=2.45.1-r0",
+            "cmd:ranlib=2.45.1-r0",
+            "cmd:readelf=2.45.1-r0",
+            "cmd:size=2.45.1-r0",
+            "cmd:strings=2.45.1-r0",
+            "cmd:strip=2.45.1-r0",
+            "so:libbfd-2.45.1.so=0",
+            "so:libctf-nobfd.so.0=0.0.0",
+            "so:libctf.so.0=0.0.0",
+            "so:libopcodes-2.45.1.so=0",
+            "so:libsframe.so.2=2.0.0"
+          ]
+        },
+        {
+          "name": "cmake",
+          "version": "4.1.3-r0",
+          "license": "BSD-3-Clause",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/cmake-4.1.3-r0.apk",
+          "sha256": "615e0efc09807c66d603eb338d6aaa84b4acee088a717dc16deaa02b76829505",
+          "file": "cmake-4.1.3-r0.apk",
+          "depends": [
+            "so:libarchive.so.13",
+            "so:libc.musl-x86_64.so.1",
+            "so:libcrypto.so.3",
+            "so:libexpat.so.1",
+            "so:libgcc_s.so.1",
+            "so:librhash.so.1",
+            "so:libssl.so.3",
+            "so:libstdc++.so.6",
+            "so:libuv.so.1",
+            "so:libz.so.1"
+          ],
+          "provides": [
+            "cmd:cmake3.5=4.1.3-r0",
+            "cmd:cmake=4.1.3-r0",
+            "cmd:cpack=4.1.3-r0",
+            "cmd:ctest3.5=4.1.3-r0",
+            "cmd:ctest=4.1.3-r0"
+          ]
+        },
+        {
+          "name": "g++",
+          "version": "15.2.0-r2",
+          "license": "GPL-2.0-or-later AND LGPL-2.1-or-later",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/g++-15.2.0-r2.apk",
+          "sha256": "2519885a63d85f3b6c8771464ec0bf6d44def11b93b5ad987ffc4a1e14cd51df",
+          "file": "g++-15.2.0-r2.apk",
+          "depends": [
+            "libstdc++-dev=15.2.0-r2",
+            "gcc=15.2.0-r2",
+            "musl-dev",
+            "libstdc++=15.2.0-r2",
+            "so:libc.musl-x86_64.so.1",
+            "so:libgmp.so.10",
+            "so:libisl.so.23",
+            "so:libmpc.so.3",
+            "so:libmpfr.so.6",
+            "so:libz.so.1"
+          ],
+          "provides": [
+            "cmd:c++=15.2.0-r2",
+            "cmd:g++=15.2.0-r2",
+            "cmd:x86_64-alpine-linux-musl-c++=15.2.0-r2",
+            "cmd:x86_64-alpine-linux-musl-g++=15.2.0-r2"
+          ]
+        },
+        {
+          "name": "gcc",
+          "version": "15.2.0-r2",
+          "license": "GPL-2.0-or-later AND LGPL-2.1-or-later",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/gcc-15.2.0-r2.apk",
+          "sha256": "039886b6ad6e36a040a18db0ffa898f8ad1d0fc69eadd49d3c77270eafdc5e7e",
+          "file": "gcc-15.2.0-r2.apk",
+          "depends": [
+            "binutils",
+            "libgomp=15.2.0-r2",
+            "libatomic=15.2.0-r2",
+            "libgomp=15.2.0-r2",
+            "so:libc.musl-x86_64.so.1",
+            "so:libgcc_s.so.1",
+            "so:libgmp.so.10",
+            "so:libisl.so.23",
+            "so:libmpc.so.3",
+            "so:libmpfr.so.6",
+            "so:libstdc++.so.6",
+            "so:libz.so.1"
+          ],
+          "provides": [
+            "cmd:c89=15.2.0-r2",
+            "cmd:c99=15.2.0-r2",
+            "cmd:cc=15.2.0-r2",
+            "cmd:cpp=15.2.0-r2",
+            "cmd:gcc-ar=15.2.0-r2",
+            "cmd:gcc-nm=15.2.0-r2",
+            "cmd:gcc-ranlib=15.2.0-r2",
+            "cmd:gcc=15.2.0-r2",
+            "cmd:gcov-dump=15.2.0-r2",
+            "cmd:gcov-tool=15.2.0-r2",
+            "cmd:gcov=15.2.0-r2",
+            "cmd:lto-dump=15.2.0-r2",
+            "cmd:x86_64-alpine-linux-musl-cc=15.2.0-r2",
+            "cmd:x86_64-alpine-linux-musl-gcc-15.2.0=15.2.0-r2",
+            "cmd:x86_64-alpine-linux-musl-gcc-ar=15.2.0-r2",
+            "cmd:x86_64-alpine-linux-musl-gcc-nm=15.2.0-r2",
+            "cmd:x86_64-alpine-linux-musl-gcc-ranlib=15.2.0-r2",
+            "cmd:x86_64-alpine-linux-musl-gcc=15.2.0-r2",
+            "so:libasan.so.8=8.0.0",
+            "so:libcc1.so.0=0.0.0",
+            "so:libhwasan.so.0=0.0.0",
+            "so:libitm.so.1=1.0.0",
+            "so:liblsan.so.0=0.0.0",
+            "so:libtsan.so.2=2.0.0",
+            "so:libubsan.so.1=1.0.0"
+          ]
+        },
+        {
+          "name": "gmp",
+          "version": "6.3.0-r4",
+          "license": "LGPL-3.0-or-later OR GPL-2.0-or-later",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/gmp-6.3.0-r4.apk",
+          "sha256": "5aa4a73a11126f2bc757ef1fee1eddb70105bd38f2659ae93aae1fafa02a0359",
+          "file": "gmp-6.3.0-r4.apk",
+          "depends": [
+            "so:libc.musl-x86_64.so.1"
+          ],
+          "provides": [
+            "so:libgmp.so.10=10.5.0"
+          ]
+        },
+        {
+          "name": "isl26",
+          "version": "0.26-r1",
+          "license": "MIT",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/isl26-0.26-r1.apk",
+          "sha256": "ad583e51f55f16d83db85f0a8279ddfd15b3909f7158afff25d93c72b018a2a1",
+          "file": "isl26-0.26-r1.apk",
+          "depends": [
+            "so:libc.musl-x86_64.so.1",
+            "so:libgmp.so.10"
+          ],
+          "provides": [
+            "so:libisl.so.23=23.3.0"
+          ]
+        },
+        {
+          "name": "jansson",
+          "version": "2.14.1-r0",
+          "license": "MIT",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/jansson-2.14.1-r0.apk",
+          "sha256": "6dc100ea8b420ed1adabe13553325620afd9fbcae9b62de5b63c9bae0b7c2e91",
+          "file": "jansson-2.14.1-r0.apk",
+          "depends": [
+            "so:libc.musl-x86_64.so.1"
+          ],
+          "provides": [
+            "so:libjansson.so.4=4.14.1"
+          ]
+        },
+        {
+          "name": "libarchive",
+          "version": "3.8.5-r0",
+          "license": "BSD-2-Clause AND BSD-3-Clause AND Public-Domain",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/libarchive-3.8.5-r0.apk",
+          "sha256": "7f036360a8c43ae0c23309aca6e1e301575f069836ac193fec520a46fab3fa49",
+          "file": "libarchive-3.8.5-r0.apk",
+          "depends": [
+            "so:libacl.so.1",
+            "so:libbz2.so.1",
+            "so:libc.musl-x86_64.so.1",
+            "so:libcrypto.so.3",
+            "so:libexpat.so.1",
+            "so:liblz4.so.1",
+            "so:liblzma.so.5",
+            "so:libz.so.1",
+            "so:libzstd.so.1"
+          ],
+          "provides": [
+            "so:libarchive.so.13=13.8.5"
+          ]
+        },
+        {
+          "name": "libatomic",
+          "version": "15.2.0-r2",
+          "license": "GPL-2.0-or-later AND LGPL-2.1-or-later",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/libatomic-15.2.0-r2.apk",
+          "sha256": "81fe3f7d9935ba883bc84f4622b2738a4e9a646d0ae7c1f944fd4b799bc768f2",
+          "file": "libatomic-15.2.0-r2.apk",
+          "depends": [
+            "so:libc.musl-x86_64.so.1"
+          ],
+          "provides": [
+            "so:libatomic.so.1=1.2.0"
+          ]
+        },
+        {
+          "name": "libbz2",
+          "version": "1.0.8-r6",
+          "license": "bzip2-1.0.6",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/libbz2-1.0.8-r6.apk",
+          "sha256": "9995840a76ac97ec006259391b7a81b73b73c5cf2f462bf12bb2250afbf665b9",
+          "file": "libbz2-1.0.8-r6.apk",
+          "depends": [
+            "so:libc.musl-x86_64.so.1"
+          ],
+          "provides": [
+            "so:libbz2.so.1=1.0.8"
+          ]
+        },
+        {
+          "name": "libcrypto3",
+          "version": "3.5.8-r0",
+          "license": "Apache-2.0",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/libcrypto3-3.5.8-r0.apk",
+          "sha256": "a5592b5cf276bc7a30ac7b161d46446085490b640faa1f839ea98eb15aacad31",
+          "file": "libcrypto3-3.5.8-r0.apk",
+          "depends": [
+            "so:libc.musl-x86_64.so.1"
+          ],
+          "provides": [
+            "so:libcrypto.so.3=3"
+          ]
+        },
+        {
+          "name": "libexpat",
+          "version": "2.8.4-r0",
+          "license": "MIT",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/libexpat-2.8.4-r0.apk",
+          "sha256": "fa0f99495231c36944260ee821737c1cfe3b76a646fa8ccb59b87e097b49bb06",
+          "file": "libexpat-2.8.4-r0.apk",
+          "depends": [
+            "so:libc.musl-x86_64.so.1"
+          ],
+          "provides": [
+            "so:libexpat.so.1=1.12.4"
+          ]
+        },
+        {
+          "name": "libgcc",
+          "version": "15.2.0-r2",
+          "license": "GPL-2.0-or-later AND LGPL-2.1-or-later",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/libgcc-15.2.0-r2.apk",
+          "sha256": "4279d14cbf43311312d3a7d43619f4c15ede2e46d5608ba421ed157ded57c700",
+          "file": "libgcc-15.2.0-r2.apk",
+          "depends": [
+            "so:libc.musl-x86_64.so.1"
+          ],
+          "provides": [
+            "so:libgcc_s.so.1=1"
+          ]
+        },
+        {
+          "name": "libgomp",
+          "version": "15.2.0-r2",
+          "license": "GPL-2.0-or-later AND LGPL-2.1-or-later",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/libgomp-15.2.0-r2.apk",
+          "sha256": "7eda0581da0d10365e9ebd62f9b4e3a973cd2b791d6a174d2f7a1150c2753d64",
+          "file": "libgomp-15.2.0-r2.apk",
+          "depends": [
+            "so:libc.musl-x86_64.so.1"
+          ],
+          "provides": [
+            "so:libgomp.so.1=1.0.0"
+          ]
+        },
+        {
+          "name": "libssl3",
+          "version": "3.5.8-r0",
+          "license": "Apache-2.0",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/libssl3-3.5.8-r0.apk",
+          "sha256": "f80b76cb5e5a52cfc1ced08f8dc3022adc0ce0a3d6e7741976731b22c71fe310",
+          "file": "libssl3-3.5.8-r0.apk",
+          "depends": [
+            "libcrypto3=3.5.8-r0",
+            "so:libc.musl-x86_64.so.1",
+            "so:libcrypto.so.3"
+          ],
+          "provides": [
+            "so:libssl.so.3=3"
+          ]
+        },
+        {
+          "name": "libstdc++",
+          "version": "15.2.0-r2",
+          "license": "GPL-2.0-or-later AND LGPL-2.1-or-later",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/libstdc++-15.2.0-r2.apk",
+          "sha256": "d4be2967a06d78b499f5e136323f4ebe51ad367b381933b3369539499c4f5752",
+          "file": "libstdc++-15.2.0-r2.apk",
+          "depends": [
+            "so:libc.musl-x86_64.so.1",
+            "so:libgcc_s.so.1"
+          ],
+          "provides": [
+            "so:libstdc++.so.6=6.0.34"
+          ]
+        },
+        {
+          "name": "libstdc++-dev",
+          "version": "15.2.0-r2",
+          "license": "GPL-2.0-or-later AND LGPL-2.1-or-later",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/libstdc++-dev-15.2.0-r2.apk",
+          "sha256": "dee79044d2efdc6229896971fc86fd481c554eb0c3cd3ad337bf3d6356c08b49",
+          "file": "libstdc++-dev-15.2.0-r2.apk",
+          "depends": [
+            "libstdc++=15.2.0-r2"
+          ],
+          "provides": []
+        },
+        {
+          "name": "libuv",
+          "version": "1.52.1-r0",
+          "license": "MIT",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/libuv-1.52.1-r0.apk",
+          "sha256": "7b6e033cb708c9323135ac444bb66ea6ff3fa0bd90fe4dc8d47b6d971d0ff1d2",
+          "file": "libuv-1.52.1-r0.apk",
+          "depends": [
+            "so:libc.musl-x86_64.so.1"
+          ],
+          "provides": [
+            "so:libuv.so.1=1.0.0"
+          ]
+        },
+        {
+          "name": "lz4-libs",
+          "version": "1.10.0-r0",
+          "license": "BSD-2-Clause AND GPL-2.0-or-later",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/lz4-libs-1.10.0-r0.apk",
+          "sha256": "85766b2ab3e9fdb975e437368af06b22278fbcb1ce935f07cca07fd6611f4c62",
+          "file": "lz4-libs-1.10.0-r0.apk",
+          "depends": [
+            "so:libc.musl-x86_64.so.1"
+          ],
+          "provides": [
+            "so:liblz4.so.1=1.10.0"
+          ]
+        },
+        {
+          "name": "make",
+          "version": "4.4.1-r3",
+          "license": "GPL-3.0-or-later",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/make-4.4.1-r3.apk",
+          "sha256": "db47019dc9ebbfec1c0224efb8c30b3e26f22728b6f433b492af57da622787d5",
+          "file": "make-4.4.1-r3.apk",
+          "depends": [
+            "so:libc.musl-x86_64.so.1"
+          ],
+          "provides": [
+            "cmd:gmake=4.4.1-r3",
+            "cmd:make=4.4.1-r3"
+          ]
+        },
+        {
+          "name": "mpc1",
+          "version": "1.3.1-r1",
+          "license": "LGPL-3.0-or-later",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/mpc1-1.3.1-r1.apk",
+          "sha256": "114dcb18a4e5c7739fdab19414e156295c2783d56cdd226bcee4b5afc6a88c76",
+          "file": "mpc1-1.3.1-r1.apk",
+          "depends": [
+            "so:libc.musl-x86_64.so.1",
+            "so:libgmp.so.10",
+            "so:libmpfr.so.6"
+          ],
+          "provides": [
+            "so:libmpc.so.3=3.3.1"
+          ]
+        },
+        {
+          "name": "mpfr4",
+          "version": "4.2.2-r0",
+          "license": "LGPL-3.0-or-later",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/mpfr4-4.2.2-r0.apk",
+          "sha256": "4361c9084ae95e3987cee87fed35bbaca10c75907eb1900365707196d250bdc8",
+          "file": "mpfr4-4.2.2-r0.apk",
+          "depends": [
+            "so:libc.musl-x86_64.so.1",
+            "so:libgmp.so.10"
+          ],
+          "provides": [
+            "mpfr=4.2.2-r0",
+            "so:libmpfr.so.6=6.2.2"
+          ]
+        },
+        {
+          "name": "musl",
+          "version": "1.2.5-r23",
+          "license": "MIT",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/musl-1.2.5-r23.apk",
+          "sha256": "4f3c4a7bf9f51d2c91007e333b17459362ffd881b4a343e8da07b6c50c4f4a0d",
+          "file": "musl-1.2.5-r23.apk",
+          "depends": [],
+          "provides": [
+            "so:libc.musl-x86_64.so.1=1"
+          ]
+        },
+        {
+          "name": "musl-dev",
+          "version": "1.2.5-r23",
+          "license": "MIT",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/musl-dev-1.2.5-r23.apk",
+          "sha256": "2ea566b665ebaea4f84cee1e4b7ef093b0aa67356006e84deb26d9bd7a716c6b",
+          "file": "musl-dev-1.2.5-r23.apk",
+          "depends": [
+            "musl=1.2.5-r23"
+          ],
+          "provides": [
+            "libc-dev=1.2.5-r23"
+          ]
+        },
+        {
+          "name": "rhash-libs",
+          "version": "1.4.6-r0",
+          "license": "0BSD",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/rhash-libs-1.4.6-r0.apk",
+          "sha256": "053837d8bb973415d034cbf7cc182366ddf6d2de144bea460e9c346e6f1f95ad",
+          "file": "rhash-libs-1.4.6-r0.apk",
+          "depends": [
+            "so:libc.musl-x86_64.so.1",
+            "so:libcrypto.so.3"
+          ],
+          "provides": [
+            "so:librhash.so.1=1.4.6"
+          ]
+        },
+        {
+          "name": "xz-libs",
+          "version": "5.8.3-r0",
+          "license": "GPL-2.0-or-later AND 0BSD AND Public-Domain AND LGPL-2.1-or-later",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/xz-libs-5.8.3-r0.apk",
+          "sha256": "ef28f872c7b573e7ca7aa6d765b1028c0afc24094d8638d578df8bb5a5785096",
+          "file": "xz-libs-5.8.3-r0.apk",
+          "depends": [
+            "so:libc.musl-x86_64.so.1"
+          ],
+          "provides": [
+            "so:liblzma.so.5=5.8.3"
+          ]
+        },
+        {
+          "name": "zlib",
+          "version": "1.3.2-r0",
+          "license": "Zlib",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/zlib-1.3.2-r0.apk",
+          "sha256": "f56dea63692059bd65854bb179b7551971a441000b0d98c5b031291ca0450b56",
+          "file": "zlib-1.3.2-r0.apk",
+          "depends": [
+            "so:libc.musl-x86_64.so.1"
+          ],
+          "provides": [
+            "so:libz.so.1=1.3.2"
+          ]
+        },
+        {
+          "name": "zstd-libs",
+          "version": "1.5.7-r2",
+          "license": "BSD-3-Clause OR GPL-2.0-or-later",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64/zstd-libs-1.5.7-r2.apk",
+          "sha256": "d5fcc58f7f071a5658d97b09838668e4443203217631992915b8e60656904104",
+          "file": "zstd-libs-1.5.7-r2.apk",
+          "depends": [
+            "so:libc.musl-x86_64.so.1"
+          ],
+          "provides": [
+            "so:libzstd.so.1=1.5.7"
+          ]
+        }
+      ]
+    }
+  },
+  "rust": {
+    "version": "1.97.0",
+    "cargo_version": "1.97.0",
+    "msrv": "1.88",
+    "manifest_url": "https://static.rust-lang.org/dist/channel-rust-1.97.0.toml",
+    "manifest_sha256": "3804d2666f7c12ce64205baa69b6be52f910b45b158091013264beb7aa1de7f5"
+  }
+}

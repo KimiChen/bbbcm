@@ -1,0 +1,115 @@
+[
+  {
+    "logical_name": "ui-menu",
+    "path": "apps/web/static/img/ui-menu.svg",
+    "sha256": "0d5c3c4c2abedfe4c715cdfcfe7d971250bfc1dd68f70783c5a24ba5ca2d0d8d",
+    "content_hash_filename": "0d5c3c4c2abedfe4c715cdfcfe7d971250bfc1dd68f70783c5a24ba5ca2d0d8d.svg",
+    "mime": "image/svg+xml",
+    "width": 19,
+    "height": 19,
+    "theme": "light/dark",
+    "accessible_name": "菜单",
+    "source": "Feather official MIT source, modified by the explicitly recorded affine coordinate transformation and stroke adjustment; does not assert a license for the unknown reference SVG",
+    "source_url": "https://raw.githubusercontent.com/feathericons/feather/3dc050d97405062eba78aa57115c0a15c63abdaa/icons/menu.svg",
+    "license": "MIT",
+    "redistributable": "yes",
+    "evidence": [
+      "docs/visual/a00/licenses/feather-MIT.txt",
+      "docs/visual/a00/licenses/feather-source.json",
+      "docs/visual/a00/licenses/feather-geometry.json",
+      "docs/visual/a00/licenses/feather-upstream/menu.svg.json"
+    ],
+    "modification": "Coordinate scale 2/3; menu additionally translated by 1.5 on each axis; viewBox/dimensions set to observed box, stroke-width changed to 1.7. Source cap/join style retained."
+  },
+  {
+    "logical_name": "ui-chevron-up",
+    "path": "apps/web/static/img/ui-chevron-up.svg",
+    "sha256": "7dfd9ab469bb167d5b33fb58e4b56549a3aea38c1a45d7fb23fd31b286c47755",
+    "content_hash_filename": "7dfd9ab469bb167d5b33fb58e4b56549a3aea38c1a45d7fb23fd31b286c47755.svg",
+    "mime": "image/svg+xml",
+    "width": 16,
+    "height": 16,
+    "theme": "light/dark",
+    "accessible_name": "返回顶部",
+    "source": "Feather official MIT source, modified by the explicitly recorded affine coordinate transformation and stroke adjustment; does not assert a license for the unknown reference SVG",
+    "source_url": "https://raw.githubusercontent.com/feathericons/feather/3dc050d97405062eba78aa57115c0a15c63abdaa/icons/chevron-up.svg",
+    "license": "MIT",
+    "redistributable": "yes",
+    "evidence": [
+      "docs/visual/a00/licenses/feather-MIT.txt",
+      "docs/visual/a00/licenses/feather-source.json",
+      "docs/visual/a00/licenses/feather-geometry.json",
+      "docs/visual/a00/licenses/feather-upstream/chevron-up.svg.json"
+    ],
+    "modification": "Coordinate scale 2/3; menu additionally translated by 1.5 on each axis; viewBox/dimensions set to observed box, stroke-width changed to 1.7. Source cap/join style retained."
+  },
+  {
+    "logical_name": "ui-search",
+    "path": "apps/web/static/img/ui-search.svg",
+    "sha256": "988ac25e4fed6993f0e0af907f29f30bbd5e6ed8b44a3acdfd164a891d6c917f",
+    "content_hash_filename": "988ac25e4fed6993f0e0af907f29f30bbd5e6ed8b44a3acdfd164a891d6c917f.svg",
+    "mime": "image/svg+xml",
+    "width": 14,
+    "height": 14,
+    "theme": "light/dark",
+    "accessible_name": "搜索",
+    "source": "Feather official MIT circle/line source, modified by separately recorded exact rational similarity transforms; does not assert a license for the unknown reference SVG",
+    "source_url": "https://raw.githubusercontent.com/feathericons/feather/3dc050d97405062eba78aa57115c0a15c63abdaa/icons/search.svg",
+    "license": "MIT",
+    "redistributable": "yes",
+    "evidence": [
+      "docs/visual/a00/licenses/feather-MIT.txt",
+      "docs/visual/a00/licenses/feather-search-source.json",
+      "docs/visual/a00/licenses/feather-search-geometry.json",
+      "docs/visual/a00/licenses/feather-upstream/search.svg.json",
+      "docs/visual/a00/licenses/feather-search-provenance.md"
+    ],
+    "modification": "Circle scale 9/16 and translation (-3/16,-3/16); handle scale 70/87 and translation (-113/29,-113/29). Preserve official circle/line primitives, set viewport to 14x14 and stroke width to 1.4; keep round caps/joins."
+  },
+  {
+    "logical_name": "ui-eye",
+    "path": "apps/web/static/img/ui-eye.svg",
+    "sha256": "9c6d24b47f2ad2888c01789760f4efc5b1de4f6edaf0666a1f347fc289ba91e6",
+    "content_hash_filename": "9c6d24b47f2ad2888c01789760f4efc5b1de4f6edaf0666a1f347fc289ba91e6.svg",
+    "mime": "image/svg+xml",
+    "width": 24,
+    "height": 24,
+    "theme": "light/dark",
+    "accessible_name": "浏览",
+    "source": "Feather official MIT source, modified by an explicitly recorded topology-preserving geometric parameterization; does not assert a license for the unknown reference SVG",
+    "source_url": "https://raw.githubusercontent.com/feathericons/feather/3dc050d97405062eba78aa57115c0a15c63abdaa/icons/eye.svg",
+    "license": "MIT",
+    "redistributable": "yes",
+    "evidence": [
+      "docs/visual/a00/licenses/feather-MIT.txt",
+      "docs/visual/a00/licenses/feather-shape-source.json",
+      "docs/visual/a00/licenses/feather-shape-geometry.json",
+      "docs/visual/a00/licenses/feather-upstream/eye.svg.json",
+      "docs/visual/a00/licenses/feather-shape-provenance.md"
+    ],
+    "modification": "Preserve four smooth cubic segments and pupil; change half-width 11 to 9.5, half-height 8 to 6, outer control offset 4 to 3.5."
+  },
+  {
+    "logical_name": "ui-chat",
+    "path": "apps/web/static/img/ui-chat.svg",
+    "sha256": "067b26284184ccad775ad43c6c6a12560f7fed388b7f1f75774de24c6fddcf2b",
+    "content_hash_filename": "067b26284184ccad775ad43c6c6a12560f7fed388b7f1f75774de24c6fddcf2b.svg",
+    "mime": "image/svg+xml",
+    "width": 24,
+    "height": 24,
+    "theme": "light/dark",
+    "accessible_name": "评论",
+    "source": "Feather official MIT source, modified by an explicitly recorded topology-preserving geometric parameterization; does not assert a license for the unknown reference SVG",
+    "source_url": "https://raw.githubusercontent.com/feathericons/feather/3dc050d97405062eba78aa57115c0a15c63abdaa/icons/message-square.svg",
+    "license": "MIT",
+    "redistributable": "yes",
+    "evidence": [
+      "docs/visual/a00/licenses/feather-MIT.txt",
+      "docs/visual/a00/licenses/feather-shape-source.json",
+      "docs/visual/a00/licenses/feather-shape-geometry.json",
+      "docs/visual/a00/licenses/feather-upstream/message-square.svg.json",
+      "docs/visual/a00/licenses/feather-shape-provenance.md"
+    ],
+    "modification": "Preserve the official three-arc bubble path; change corner radius 2 to 4, bottom edge 17 to 19, tail base x 7 to 8, tail tip y 21 to 22. Left/right/top edges and stroke remain unchanged."
+  }
+]

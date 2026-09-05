@@ -1,0 +1,53 @@
+# SQLite 冒烟路由清单：<路径> <期望状态码>
+# 每个工作包退出时把本包新增路由追加到这里（plan/90 第 4 节）。
+# A00源资产仅在development/test挂载；A01指纹资产管线另行交付。
+/health 200
+/ 200
+
+# WP-MVP-A00: stable synthetic SSR, test environment only
+/__fixtures/a00/home 200
+/__fixtures/a00/new 200
+/__fixtures/a00/pinned 200
+/__fixtures/a00/featured 200
+/__fixtures/a00/forum 200
+/__fixtures/a00/topic 200
+/__fixtures/a00/login 200
+/__fixtures/a00/register 200
+/__fixtures/a00/reset 200
+/__fixtures/a00/policy 200
+/__fixtures/a00/search 200
+/__fixtures/a00/empty 200
+/__fixtures/a00/error 200
+/__fixtures/a00/profile 200
+/__fixtures/a00/assets/fonts.css 200
+/__fixtures/a00/assets/pages.css 200
+/__fixtures/a00/assets/profile.css 200
+/__fixtures/a00/assets/site.css 200
+/__fixtures/a00/assets/space-mono-latin-400-normal.woff2 200
+/__fixtures/a00/assets/space-mono-latin-700-normal.woff2 200
+/__fixtures/a00/assets/space-mono-latin-ext-400-normal.woff2 200
+/__fixtures/a00/assets/space-mono-latin-ext-700-normal.woff2 200
+/__fixtures/a00/assets/brand-mark.svg 200
+/__fixtures/a00/assets/theme-sun.svg 200
+/__fixtures/a00/assets/theme-moon.svg 200
+/__fixtures/a00/assets/ui-eye.svg 200
+/__fixtures/a00/assets/ui-chat.svg 200
+/__fixtures/a00/assets/ui-search.svg 200
+/__fixtures/a00/assets/ui-menu.svg 200
+/__fixtures/a00/assets/ui-chevron-up.svg 200
+/__fixtures/a00/assets/ui-user.svg 200
+/__fixtures/a00/assets/ui-document.svg 200
+/__fixtures/a00/assets/ui-forum.svg 200
+/__fixtures/a00/assets/oauth-google.svg 200
+/__fixtures/a00/assets/oauth-github.svg 200
+/__fixtures/a00/assets/oauth-x.svg 200
+/__fixtures/a00/assets/brand-symbol.svg 200
+/__fixtures/a00/assets/favicon-16.png 200
+/__fixtures/a00/assets/favicon-32.png 200
+/__fixtures/a00/assets/apple-touch-icon.png 200
+/__fixtures/a00/assets/favicon.ico 200
+/__fixtures/a00/assets/og-image.svg 200
+/__fixtures/a00/assets/og-image.png 200
+/__fixtures/a00/assets/email-header.svg 200
+/__fixtures/a00/unknown 404
+/__fixtures/a00/assets/unknown.css 404

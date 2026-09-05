@@ -1,0 +1,66 @@
+{
+  "work_package": "WP-M0-03",
+  "evidence_level": "development_only",
+  "recorded_at": "2026-09-05T03:36:26.191645+00:00",
+  "candidate": "enclosing Git commit; see summary.md",
+  "base_commit": "6a93847bbcbc562f4a449474975b805625a28be7",
+  "inputs_sha256": {
+    "Cargo.lock": "48d13360ca82623dfacd50c1f85ff4310c0f7d5ab2053de98436126dd7e725a4",
+    "rust-toolchain.toml": "6b7cf777f10b732acf2bf757b9a7d81c92b107d892629e5cd94378749e1097b5",
+    ".cargo/config.toml": "fdf6cf2504f17f87310b107254ba3bcbc2a77c0d8fcd6cc705d12b423e4c6347",
+    ".node-version": "5b9d0e73029969ae9000117cb877f17bb9841c1279bfe8024e294acfcf017800",
+    ".npmrc": "ed5f9c1ddd7aa78c864d317f6c8d3dd7d777b4daaf6572f57d54cace0a81b92b",
+    "package.json": "fffd7bc4dd092f42c38b625999f4f3d855f63ab196b01d5c974055e458db96e1",
+    "package-lock.json": "62341ad6ab239bb24fb36d7e6937f80a22cfd6e5e416939e71df2b86b132735c",
+    "scripts/supply-chain.py": "262aee7d6cc33e4a592065b423b2dd6ef0cb845abb761c77fa27801cc2d02f1b",
+    "scripts/supply-chain-scan.py": "11cd8953301c6af5d0608789563d779cd89f311df5363bc01f8f5e5b44a7c55c",
+    "scripts/test_supply_chain.py": "0168fdff0aa6de678276167af8f59cb34523ed26ef73ae833d43337f03c84e02",
+    "supply-chain/lock.json": "6c5d67d7bfd4cf6c134c2c53920b508dc177e97987e818388042fd82db01101a",
+    "supply-chain/postgres/Dockerfile": "eac2087e6dcf937733b442ef14df3c8bace38e55bb021dd0746ac97f39f55848",
+    "supply-chain/syft.yaml": "34393df09637110c06cd05919182d71da57b354c0a9bd14a6455b31cf14a42a8",
+    "supply-chain/trivy.yaml": "3b8827964c5edbe3c4168fcb33e4db4ed1e2f8954671ba0e9f24b82c808110df",
+    "supply-chain/trivy.ignore": "96b7d7dce922ae98fb125f811c3bd8b33865f0b067a20d8d2e17ef365b6d1d96",
+    "supply-chain/gitleaks.toml": "41b0b1acbe1db378dc5a32c835b9e957ed8f51c9bd1a0f9054eb8169f51b00e8",
+    "supply-chain/gitleaks.ignore": "7abe50846a1e804098985ad408f4351f3f9eec3b9d123f71e6d367e1d5593401"
+  },
+  "checks": {
+    "baseline_consistency": "passed",
+    "supply_chain_tests": {
+      "passed": 10,
+      "failed": 0
+    },
+    "dev_check": {
+      "exit_code": 0,
+      "workspace_unit_tests_passed": 65,
+      "sqlite_http_smoke_routes_passed": 48,
+      "sqlite_migration": "skipped: WP-MVP-A03 executor not implemented"
+    },
+    "diff_check": "passed",
+    "staged_file_review": "passed: intended scope, UTF-8/LF/final newline, deployment/personal values, protected paths unchanged",
+    "staged_secret_scan": {
+      "tool": "Gitleaks 8.30.1",
+      "exit_code": 0,
+      "findings": 0,
+      "staged_diff_sha256": "5fa294ee5cdf794604c68a626bc7783edb0ca7bd068c2d2441450e9edac2c13d",
+      "report_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "scope_note": "implementation and development logs, before final status/evidence text update; final staged set is checked again before commit"
+    }
+  },
+  "logs_sha256": {
+    "baseline-check.txt": "a2f91fbac8a133c8c83cd85cd780d4564272a991cfc78e5175fe841aca741b8a",
+    "dev-check-01.txt": "6177520d8bd6bad597f8056e7d253a113c87f6e505b2befc907c93e2150159f3",
+    "dev-check-02.txt": "60ca78f31730692c8feae147ad137772c2fe6015940fc01101a76d7ee8731f75",
+    "light-tests-01.txt": "983b6c335b5a07960f7cebb1f8cfb44557f2b0b1b425734a6135bdddce20526d",
+    "light-tests-02.txt": "c6190b78354e31f27da79e0b3d677b72a7a9f1d5c846350925f32a8e48ead928",
+    "light-tests-03.txt": "6188ca91d9815017c1645c92cdd672432696399896faf42d09cb7236af7c941c",
+    "light-tests-04.txt": "b1f1f7b20ab642f257bba15f3a1d8ade8280321f3639ef8ee22b1575146710d8"
+  },
+  "not_executed": [
+    "Docker extension image build and runtime tests",
+    "real PostgreSQL/Redis integration",
+    "cross-host reproducible builds",
+    "formal whole-candidate and image SBOM/license/vulnerability/secret-history scans",
+    "vulnerability database download",
+    "Critical/High clearance and E01 hardening gates"
+  ]
+}

@@ -1,0 +1,28 @@
+test_archive_path_escape_is_rejected (__main__.BaselineSafetyTests.test_archive_path_escape_is_rejected) ... ok
+test_corrupt_cache_is_rejected (__main__.BaselineSafetyTests.test_corrupt_cache_is_rejected) ... ok
+test_cpp_and_optional_npm_are_included (__main__.BaselineSafetyTests.test_cpp_and_optional_npm_are_included) ... ok
+test_offline_never_downloads (__main__.BaselineSafetyTests.test_offline_never_downloads) ... ok
+test_unknown_license_stays_unknown (__main__.BaselineSafetyTests.test_unknown_license_stays_unknown) ... ok
+test_vulnerability_gate_keeps_all_findings_but_blocks_high (__main__.BaselineSafetyTests.test_vulnerability_gate_keeps_all_findings_but_blocks_high) ... ok
+test_esbuild_native_transform (__main__.ToolContractTests.test_esbuild_native_transform) ... ok
+test_gitleaks_detects_synthetic_secret_and_redacts (__main__.ToolContractTests.test_gitleaks_detects_synthetic_secret_and_redacts) ... FAIL
+test_missing_vulnerability_db_fails_offline (__main__.ToolContractTests.test_missing_vulnerability_db_fails_offline) ... ok
+test_sbom_and_license_config_on_small_fixture (__main__.ToolContractTests.test_sbom_and_license_config_on_small_fixture) ... ok
+
+======================================================================
+FAIL: test_gitleaks_detects_synthetic_secret_and_redacts (__main__.ToolContractTests.test_gitleaks_detects_synthetic_secret_and_redacts)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<repo>/scripts/test_supply_chain.py", line 121, in test_gitleaks_detects_synthetic_secret_and_redacts
+    self.assertEqual(result.returncode, 1)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 0 != 1
+
+----------------------------------------------------------------------
+Ran 10 tests in 1.378s
+
+FAILED (failures=1)
+node 24.20.0
+syft 1.51.1
+trivy 0.74.0
+gitleaks 8.30.1

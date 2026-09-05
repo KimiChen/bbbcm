@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 200 200" role="img" aria-labelledby="brand-title">
+  <title id="brand-title">草莓论坛</title>
+  <style>
+    .seal { stroke: #0a0a0a; }
+    .glyph { fill: #0a0a0a; font-family: "PingFang SC", system-ui, sans-serif; font-size: 36px; font-weight: 600; text-anchor: middle; dominant-baseline: central; }
+    @media (prefers-color-scheme: dark) { .seal { stroke: #ffffff; } .glyph { fill: #ffffff; } }
+  </style>
+  <polygon class="seal" points="6.5,6.5 193.5,6.5 193.5,76 177.5,100 193.5,124 193.5,193.5 6.5,193.5 6.5,124 22.5,100 6.5,76" fill="none" stroke-width="13" />
+  <text class="glyph" x="100" y="81" textLength="108" lengthAdjust="spacing">草莓</text>
+  <text class="glyph" x="100" y="119" textLength="108" lengthAdjust="spacing">论坛</text>
+</svg>

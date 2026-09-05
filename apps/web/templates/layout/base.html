@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="zh-CN" {% block attributes %}{% endblock %}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}草莓论坛{% endblock %}</title>
+    {% block assets %}{% endblock %}
+  </head>
+  <body>
+    {% block header %}<header><a href="/">草莓论坛</a></header>{% endblock %}
+    <main id="main" class="wrap" tabindex="-1">
+      {% include "partials/error_block.html" %}
+      {% block content %}{% endblock %}
+    </main>
+    {% block footer %}<footer>草莓社区 · 骨架阶段</footer>{% endblock %}
+  </body>
+</html>

@@ -1,0 +1,35 @@
+{
+  "source": "Current public reference CSS declaration observations, collected fresh this round; no original stylesheet is distributed",
+  "purpose": "Resolve flexible element sizing not captured by fixed-viewport computed width alone",
+  "selectors": {
+    ".search-form": {
+      "desktop": {
+        "flex": "1 1 150px",
+        "max-width": "250px",
+        "min-width": "150px"
+      },
+      "mobile": {
+        "flex": "auto",
+        "max-width": "none",
+        "min-width": "0"
+      }
+    },
+    ".search-form .search-input": {
+      "flex": "auto",
+      "width": "auto",
+      "min-width": "0"
+    },
+    ".mobile-menu-button": {
+      "width": "32px",
+      "height": "32px",
+      "margin-left": "-6px",
+      "flex-shrink": "1"
+    },
+    ".forum-nav": {
+      "margin-left": "10px",
+      "flex-wrap": "wrap",
+      "max-height": "34.5px",
+      "overflow": "hidden"
+    }
+  }
+}

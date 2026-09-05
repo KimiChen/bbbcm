@@ -1,0 +1,48 @@
+[
+  {
+    "logical_name": "theme-sun",
+    "path": "apps/web/static/img/theme-sun.svg",
+    "sha256": "77789699cb08c1e6aff32f408d7c6932b142093fb069f9b5c1000d1ba586ad35",
+    "content_hash_filename": "77789699cb08c1e6aff32f408d7c6932b142093fb069f9b5c1000d1ba586ad35.svg",
+    "mime": "image/svg+xml",
+    "width": 24,
+    "height": 24,
+    "theme": "light/dark",
+    "accessible_name": "浅色主题",
+    "source": "Material Line Icons, official upstream SVG; unmodified",
+    "source_url": "https://raw.githubusercontent.com/cyberalien/line-md/2ed22555cee9c1e50d4269865681d01ee8cffd7c/svg/moon-filled-to-sunny-filled-loop-transition.svg",
+    "license": "MIT",
+    "redistributable": "yes",
+    "evidence": [
+      "docs/visual/a00/licenses/line-md-MIT.txt",
+      "docs/visual/a00/licenses/line-md-source.json",
+      "docs/visual/a00/licenses/ui-icon-comparison.json"
+    ],
+    "upstream_icon": "moon-filled-to-sunny-filled-loop-transition",
+    "upstream_sha256": "77789699cb08c1e6aff32f408d7c6932b142093fb069f9b5c1000d1ba586ad35",
+    "modification": "none; filename only changed for local logical name"
+  },
+  {
+    "logical_name": "theme-moon",
+    "path": "apps/web/static/img/theme-moon.svg",
+    "sha256": "5f05695f5e705b23939cc5e43425444c4f1807d6d0292348204608b87c615b90",
+    "content_hash_filename": "5f05695f5e705b23939cc5e43425444c4f1807d6d0292348204608b87c615b90.svg",
+    "mime": "image/svg+xml",
+    "width": 24,
+    "height": 24,
+    "theme": "light/dark",
+    "accessible_name": "深色主题",
+    "source": "Material Line Icons, official upstream SVG; unmodified",
+    "source_url": "https://raw.githubusercontent.com/cyberalien/line-md/2ed22555cee9c1e50d4269865681d01ee8cffd7c/svg/moon-filled-loop.svg",
+    "license": "MIT",
+    "redistributable": "yes",
+    "evidence": [
+      "docs/visual/a00/licenses/line-md-MIT.txt",
+      "docs/visual/a00/licenses/line-md-source.json",
+      "docs/visual/a00/licenses/ui-icon-comparison.json"
+    ],
+    "upstream_icon": "moon-filled-loop",
+    "upstream_sha256": "5f05695f5e705b23939cc5e43425444c4f1807d6d0292348204608b87c615b90",
+    "modification": "none; filename only changed for local logical name"
+  }
+]

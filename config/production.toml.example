@@ -1,0 +1,26 @@
+# 生产（完整模式）模板：PostgreSQL + Redis。
+# 以 BBBCM_CONFIG=config/production.toml ./bbbcm-web 启动。
+#
+# 本模板不含任何真实部署值。真实监听端口、连接串与容量参数由部署时的
+# config/local.toml 或环境变量注入，不入版本库。
+#
+# 环境变量：
+#   BBBCM_CONFIG                  配置文件路径（默认 config/default.toml）
+#   BBBCM_DATABASE_POSTGRES_URL   PostgreSQL 连接串，禁止写入任何配置文件
+
+[server]
+environment = "production"
+bind = "127.0.0.1:8080"
+
+[database]
+backend = "postgres"
+schema_prefix = "bcm_"
+# 连接池上限待 DEC-004-B 批准后按实测填写，此处只给可启动的保守值。
+max_connections = 8
+
+[features]
+# 生产必须为 true：限流由 Redis 承载，关闭即无速率保护（DEC-024）。
+redis = true
+
+[worker]
+embedded = false

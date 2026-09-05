@@ -9,6 +9,10 @@
 *.key
 *.crt
 
+# Local config override and SQLite data directory
+/config/local.toml
+/data/
+
 # Local databases and object-store emulators
 .data/
 .local/
@@ -33,6 +37,8 @@ node_modules/
 dist/
 .cache/
 .pytest_cache/
+__pycache__/
+*.py[cod]
 tmp/
 
 # Editor and OS files
@@ -43,3 +49,5 @@ tmp/
 *.swo
 
 AGENTS.md
+# 本地视觉证据（本轮原始参考截图由用户后处理）
+/docs/evidence/local/

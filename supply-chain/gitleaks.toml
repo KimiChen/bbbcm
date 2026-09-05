@@ -1,0 +1,7 @@
+title = "bbbcm Secret 扫描基线"
+
+[extend]
+useDefault = true
+
+# 不对应用代码、文档、历史提交或测试夹具设置目录白名单。
+# 本机忽略目录通过扫描 Git 历史/暂存区/干净 Git 快照避免进入输入。

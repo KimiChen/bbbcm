@@ -1,0 +1,132 @@
+[
+  {
+    "logical_name": "brand-symbol",
+    "path": "apps/web/static/img/brand-symbol.svg",
+    "sha256": "f5952515e24fcc527c6cbb26bffb0df8b967defdf1cb0d3adb3f1b5684512a65",
+    "content_hash_filename": "f5952515e24fcc527c6cbb26bffb0df8b967defdf1cb0d3adb3f1b5684512a65.svg",
+    "mime": "image/svg+xml",
+    "width": 512,
+    "height": 512,
+    "theme": "adaptive-light-dark",
+    "accessible_name": "草莓论坛",
+    "source": "Localized current public reference seal; target system-font text and code-native raster generation",
+    "source_url": "https://sb.sb.sb/assets/index.svg",
+    "license": "unconfirmed",
+    "redistributable": "pending",
+    "local_versioning_decision": "DEC-045",
+    "public_release": "not-approved",
+    "evidence": [
+      "docs/visual/a00/brand-localization.json",
+      "docs/visual/a00/brand-localization.md",
+      "plan/06-decisions-and-risks.md"
+    ],
+    "modification": "Keep the observed seal polygon coordinates, stroke-width 13 and light/dark colors exactly. Remove the complete original glyph path group. Add only 草莓 and 论坛 as two system-font rows in the same central region. Render the new SVG at each target size with local Chrome; no reference PNG is edited or used as pixel input."
+  },
+  {
+    "logical_name": "favicon-16",
+    "path": "apps/web/static/img/favicon-16.png",
+    "sha256": "1c1547f5c0bad97c5362db9086691cca8defa41c89334ff2025052023a8dfa21",
+    "content_hash_filename": "1c1547f5c0bad97c5362db9086691cca8defa41c89334ff2025052023a8dfa21.png",
+    "mime": "image/png",
+    "width": 16,
+    "height": 16,
+    "theme": "fixed-dark-background",
+    "accessible_name": "草莓论坛",
+    "source": "Localized current public reference seal; target system-font text and code-native raster generation",
+    "source_url": "https://sb.sb.sb/assets/favicon-16x16.png",
+    "license": "unconfirmed",
+    "redistributable": "pending",
+    "local_versioning_decision": "DEC-045",
+    "public_release": "not-approved",
+    "evidence": [
+      "docs/visual/a00/brand-localization.json",
+      "docs/visual/a00/brand-localization.md",
+      "plan/06-decisions-and-risks.md"
+    ],
+    "modification": "Keep the observed seal polygon coordinates, stroke-width 13 and light/dark colors exactly. Remove the complete original glyph path group. Add only 草莓 and 论坛 as two system-font rows in the same central region. Render the new SVG at each target size with local Chrome; no reference PNG is edited or used as pixel input."
+  },
+  {
+    "logical_name": "favicon-32",
+    "path": "apps/web/static/img/favicon-32.png",
+    "sha256": "7acc6eabbf26542b611325a560ae09b35f02d7e219f0d0807abb8d63695f28ec",
+    "content_hash_filename": "7acc6eabbf26542b611325a560ae09b35f02d7e219f0d0807abb8d63695f28ec.png",
+    "mime": "image/png",
+    "width": 32,
+    "height": 32,
+    "theme": "fixed-dark-background",
+    "accessible_name": "草莓论坛",
+    "source": "Localized current public reference seal; target system-font text and code-native raster generation",
+    "source_url": "https://sb.sb.sb/assets/favicon-32x32.png",
+    "license": "unconfirmed",
+    "redistributable": "pending",
+    "local_versioning_decision": "DEC-045",
+    "public_release": "not-approved",
+    "evidence": [
+      "docs/visual/a00/brand-localization.json",
+      "docs/visual/a00/brand-localization.md",
+      "plan/06-decisions-and-risks.md"
+    ],
+    "modification": "Keep the observed seal polygon coordinates, stroke-width 13 and light/dark colors exactly. Remove the complete original glyph path group. Add only 草莓 and 论坛 as two system-font rows in the same central region. Render the new SVG at each target size with local Chrome; no reference PNG is edited or used as pixel input."
+  },
+  {
+    "logical_name": "app-icon-180",
+    "path": "apps/web/static/img/apple-touch-icon.png",
+    "sha256": "7395823edc71fc612141d795ca5c5218b9588b1431687281ff532b66ec5b3a0e",
+    "content_hash_filename": "7395823edc71fc612141d795ca5c5218b9588b1431687281ff532b66ec5b3a0e.png",
+    "mime": "image/png",
+    "width": 180,
+    "height": 180,
+    "theme": "fixed-dark-background",
+    "accessible_name": "草莓论坛",
+    "source": "Localized current public reference seal; target system-font text and code-native raster generation",
+    "source_url": "https://sb.sb.sb/assets/apple-touch-icon.png",
+    "license": "unconfirmed",
+    "redistributable": "pending",
+    "local_versioning_decision": "DEC-045",
+    "public_release": "not-approved",
+    "evidence": [
+      "docs/visual/a00/brand-localization.json",
+      "docs/visual/a00/brand-localization.md",
+      "plan/06-decisions-and-risks.md"
+    ],
+    "modification": "Keep the observed seal polygon coordinates, stroke-width 13 and light/dark colors exactly. Remove the complete original glyph path group. Add only 草莓 and 论坛 as two system-font rows in the same central region. Render the new SVG at each target size with local Chrome; no reference PNG is edited or used as pixel input."
+  },
+  {
+    "logical_name": "favicon-ico",
+    "path": "apps/web/static/img/favicon.ico",
+    "sha256": "4dab9fb9411281b92d46891b9de2dcc3ceb568b97c18047bcdf0884ccd210cfd",
+    "content_hash_filename": "4dab9fb9411281b92d46891b9de2dcc3ceb568b97c18047bcdf0884ccd210cfd.ico",
+    "mime": "image/x-icon",
+    "width": 48,
+    "height": 48,
+    "theme": "fixed-dark-background",
+    "accessible_name": "草莓论坛",
+    "source": "Localized current public reference seal; target system-font text and code-native raster generation",
+    "source_url": "https://sb.sb/favicon.ico",
+    "license": "unconfirmed",
+    "redistributable": "pending",
+    "local_versioning_decision": "DEC-045",
+    "public_release": "not-approved",
+    "evidence": [
+      "docs/visual/a00/brand-localization.json",
+      "docs/visual/a00/brand-localization.md",
+      "plan/06-decisions-and-risks.md"
+    ],
+    "modification": "Keep the observed seal polygon coordinates, stroke-width 13 and light/dark colors exactly. Remove the complete original glyph path group. Add only 草莓 and 论坛 as two system-font rows in the same central region. Render the new SVG at each target size with local Chrome; no reference PNG is edited or used as pixel input.",
+    "sizes": [
+      {
+        "width": 16,
+        "height": 16
+      },
+      {
+        "width": 32,
+        "height": 32
+      },
+      {
+        "width": 48,
+        "height": 48
+      }
+    ],
+    "encoding": "40-byte BITMAPINFOHEADER, BI_RGB, 32bpp bottom-up BGRA XOR plus 1bpp AND mask; no palette"
+  }
+]

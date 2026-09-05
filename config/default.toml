@@ -1,0 +1,24 @@
+# 安全默认值：体验模式（SQLite、无 Redis、内嵌任务循环）。
+# 完整模式参见 production.toml.example。
+# 用法：BBBCM_CONFIG=config/default.toml ./bbbcm-web（缺省即本文件）
+# 未知键会导致启动失败，不会被静默忽略。
+
+[server]
+environment = "development"
+bind = "127.0.0.1:8080"
+
+[database]
+backend = "sqlite"
+schema_prefix = "bcm_"
+sqlite_path = "data/bbbcm.db"
+# SQLite 是单写者：该值必须为 1，否则启动被拒。
+max_connections = 1
+# PostgreSQL 连接串不入库：通过环境变量 BBBCM_DATABASE_POSTGRES_URL 注入。
+
+[features]
+# false 时不提供限流（DEC-024）：体验模式无注册/登录/找回速率保护，
+# 仅适用于本机体验与评估，不要公开部署。
+redis = false
+
+[worker]
+embedded = true

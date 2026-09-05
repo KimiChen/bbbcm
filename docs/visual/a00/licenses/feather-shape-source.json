@@ -1,0 +1,27 @@
+{
+  "upstream_project": "Feather",
+  "upstream_repository": "https://github.com/feathericons/feather",
+  "upstream_commit": "3dc050d97405062eba78aa57115c0a15c63abdaa",
+  "license": "MIT",
+  "license_url": "https://raw.githubusercontent.com/feathericons/feather/3dc050d97405062eba78aa57115c0a15c63abdaa/LICENSE",
+  "license_sha256": "308028e93fcf84972523cdf6e616f73168546b4953895f516d01287f16fe7bee",
+  "copyright": "Copyright (c) 2013-2023 Cole Bemis",
+  "icons": [
+    {
+      "logical_name": "ui-eye",
+      "upstream_icon": "eye",
+      "source_url": "https://raw.githubusercontent.com/feathericons/feather/3dc050d97405062eba78aa57115c0a15c63abdaa/icons/eye.svg",
+      "source_evidence": "docs/visual/a00/licenses/feather-upstream/eye.svg.json",
+      "upstream_sha256": "3e6c211d83ca5a71baec90ec51a97ff52ce1df17307e3c56254958bc5e54daaf",
+      "distributed_sha256": "9c6d24b47f2ad2888c01789760f4efc5b1de4f6edaf0666a1f347fc289ba91e6"
+    },
+    {
+      "logical_name": "ui-chat",
+      "upstream_icon": "message-square",
+      "source_url": "https://raw.githubusercontent.com/feathericons/feather/3dc050d97405062eba78aa57115c0a15c63abdaa/icons/message-square.svg",
+      "source_evidence": "docs/visual/a00/licenses/feather-upstream/message-square.svg.json",
+      "upstream_sha256": "6b348b2fb5661dd43e4cedc32c167a4b389809660037f91cf6351667967202d9",
+      "distributed_sha256": "067b26284184ccad775ad43c6c6a12560f7fed388b7f1f75774de24c6fddcf2b"
+    }
+  ]
+}

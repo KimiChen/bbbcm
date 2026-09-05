@@ -1,0 +1,16 @@
+{
+  "upstream_project": "Feather",
+  "upstream_repository": "https://github.com/feathericons/feather",
+  "upstream_commit": "3dc050d97405062eba78aa57115c0a15c63abdaa",
+  "license": "MIT",
+  "license_url": "https://raw.githubusercontent.com/feathericons/feather/3dc050d97405062eba78aa57115c0a15c63abdaa/LICENSE",
+  "license_sha256": "308028e93fcf84972523cdf6e616f73168546b4953895f516d01287f16fe7bee",
+  "copyright": "Copyright (c) 2013-2023 Cole Bemis",
+  "logical_name": "ui-search",
+  "upstream_icon": "search",
+  "source_url": "https://raw.githubusercontent.com/feathericons/feather/3dc050d97405062eba78aa57115c0a15c63abdaa/icons/search.svg",
+  "source_evidence": "docs/visual/a00/licenses/feather-upstream/search.svg.json",
+  "upstream_sha256": "5f27d6498c8d1746ef65458aedc42b51052a4ef1c52fb5d0cd900c19676a9db3",
+  "distributed_sha256": "988ac25e4fed6993f0e0af907f29f30bbd5e6ed8b44a3acdfd164a891d6c917f",
+  "modification_notice": "The independently obtained official circle and line are each transformed by their recorded rational similarity. This is a modified MIT Feather asset, not a licensing claim for the unknown reference SVG."
+}

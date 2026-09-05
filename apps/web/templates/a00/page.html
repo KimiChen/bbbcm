@@ -1,0 +1,56 @@
+{% extends "layout/base.html" %}
+{% block attributes %}data-theme="{{ theme }}" data-fixture-version="{{ fixture_version }}"{% endblock %}
+{% block title %}{{ title }} · 草莓论坛{% endblock %}
+{% block assets %}
+<meta name="robots" content="noindex, nofollow" />
+<link rel="icon" type="image/svg+xml" href="/__fixtures/a00/assets/brand-symbol.svg" />
+<link rel="icon" type="image/png" sizes="16x16" href="/__fixtures/a00/assets/favicon-16.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="/__fixtures/a00/assets/favicon-32.png" />
+<link rel="shortcut icon" href="/__fixtures/a00/assets/favicon.ico" />
+<link rel="apple-touch-icon" sizes="180x180" href="/__fixtures/a00/assets/apple-touch-icon.png" />
+<meta property="og:site_name" content="草莓论坛" />
+<meta property="og:title" content="{{ title }} · 草莓论坛" />
+<meta property="og:image" content="/__fixtures/a00/assets/og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="草莓论坛" />
+<link rel="stylesheet" href="/__fixtures/a00/assets/fonts.css" />
+<link rel="stylesheet" href="/__fixtures/a00/assets/site.css" />
+<link rel="stylesheet" href="/__fixtures/a00/assets/pages.css" />
+{% if page == "profile" %}<link rel="stylesheet" href="/__fixtures/a00/assets/profile.css" />{% endif %}
+{% endblock %}
+{% block header %}{% include "partials/header.html" %}{% endblock %}
+{% block content %}
+{% if page == "login" || page == "register" || page == "reset" %}
+  {% include "auth/fixture.html" %}
+{% else if page == "topic" %}
+  <div class="home-shell"><div class="forum-layout"><div class="forum-main">{% include "topic/fixture.html" %}</div>{% include "partials/sidebar.html" %}</div></div>
+{% else if page == "profile" %}
+  {% include "profile/fixture.html" %}
+{% else if page == "search" %}
+  <div class="home-shell"><div class="forum-layout"><div class="forum-main"><section class="error-panel"><p class="error-code">200</p><h1 class="error-title">出错了</h1><p class="error-message">请登录后操作</p><div class="error-actions"><a class="btn" href="/__fixtures/a00/home?theme={{ theme }}">回到首页</a><a class="error-link" href="/__fixtures/a00/policy?theme={{ theme }}">联系我们</a></div></section></div>{% include "partials/sidebar.html" %}</div></div>
+{% else if page == "policy" %}
+  {% include "a00/policy.html" %}
+{% else %}
+  <div class="home-shell home-mobile-sidebar">
+    <div class="forum-layout">
+      <div class="forum-main">
+        <section class="main-panel" aria-label="主题列表">
+          {% if page == "forum" %}<div class="forum-heading"><h1>问答/实战</h1><p>用合成主题展示版块布局。</p></div>{% endif %}
+          {% include "partials/forum_strip.html" %}
+          <nav class="topic-toolbar" aria-label="主题视图"><div class="tab-bar">
+            <a class="tab {% if active_nav == "home" %}active{% endif %}" href="/__fixtures/a00/home?theme={{ theme }}">最新回复</a>
+            <a class="tab {% if active_nav == "new" %}active{% endif %}" href="/__fixtures/a00/new?theme={{ theme }}">最新帖子</a>
+            <a class="tab {% if active_nav == "pinned" %}active{% endif %}" href="/__fixtures/a00/pinned?theme={{ theme }}">置顶</a>
+            <a class="tab {% if active_nav == "featured" %}active{% endif %}" href="/__fixtures/a00/featured?theme={{ theme }}">精华</a>
+          </div></nav>
+          {% include "forum/list.html" %}
+          {% include "partials/pagination.html" %}
+        </section>
+      </div>
+      {% include "partials/sidebar.html" %}
+    </div>
+  </div>
+{% endif %}
+{% endblock %}
+{% block footer %}{% include "partials/footer.html" %}{% endblock %}

@@ -1,0 +1,110 @@
+{
+  "purpose": "A00 developer preview only; not a visual baseline, WCAG or E04 result",
+  "browser": "Chrome/152.0.7977.76",
+  "scale": 1,
+  "zoom": 1,
+  "language": "zh-CN",
+  "javascript": false,
+  "settleMs": 2000,
+  "svgAnimationPhase": "not frozen; developer preview only",
+  "capturedAt": "2026-09-05T00:46:08.475Z",
+  "captures": [
+    {
+      "page": "home",
+      "width": 1440,
+      "height": 1000,
+      "theme": "light",
+      "screenshot": "home-1440-light.png",
+      "sha256": "4a618913502ffc698202c98e8695643404e4780807c662bb3e6204b8bcf39f36",
+      "observation": "home-1440-light.json",
+      "horizontalOverflow": false
+    },
+    {
+      "page": "home",
+      "width": 390,
+      "height": 1000,
+      "theme": "light",
+      "screenshot": "home-390-light.png",
+      "sha256": "633567b9bdd8ba67a20ad1fac90c0d8b4782a59a701cde594d844c3c48bea1f0",
+      "observation": "home-390-light.json",
+      "horizontalOverflow": false
+    },
+    {
+      "page": "home",
+      "width": 1440,
+      "height": 1000,
+      "theme": "dark",
+      "screenshot": "home-1440-dark.png",
+      "sha256": "2db8c35c7159d8bb73fd1c480fc030bb6c4c726cf40339424e1299288344196f",
+      "observation": "home-1440-dark.json",
+      "horizontalOverflow": false
+    },
+    {
+      "page": "login",
+      "width": 1440,
+      "height": 1000,
+      "theme": "light",
+      "screenshot": "login-1440-light.png",
+      "sha256": "5423ba91c044a5a5f4ad8e01f5d5af5f29bb3ab1e5e74395a99c9584c3bcc947",
+      "observation": "login-1440-light.json",
+      "horizontalOverflow": false
+    },
+    {
+      "page": "topic",
+      "width": 1440,
+      "height": 1000,
+      "theme": "light",
+      "screenshot": "topic-1440-light.png",
+      "sha256": "25b7face5524722d0d356756571aee3a93a128f1cec431b4dbc2ea912dce9a7e",
+      "observation": "topic-1440-light.json",
+      "horizontalOverflow": false
+    },
+    {
+      "page": "profile",
+      "width": 1440,
+      "height": 1000,
+      "theme": "light",
+      "screenshot": "profile-1440-light.png",
+      "sha256": "71a855e225a394c813816f183c0bc112b57aec31bb3d3fa0da305990fc88441e",
+      "observation": "profile-1440-light.json",
+      "horizontalOverflow": false
+    },
+    {
+      "page": "profile",
+      "width": 390,
+      "height": 1000,
+      "theme": "light",
+      "screenshot": "profile-390-light.png",
+      "sha256": "72ab71d56267ec06097298e5e7c0e75da06208f6aa235ad116c80f1d06e2367b",
+      "observation": "profile-390-light.json",
+      "horizontalOverflow": false
+    }
+  ],
+  "requests": [
+    "/__fixtures/a00/home?theme=light",
+    "/__fixtures/a00/assets/fonts.css",
+    "/__fixtures/a00/assets/site.css",
+    "/__fixtures/a00/assets/pages.css",
+    "/__fixtures/a00/assets/ui-search.svg",
+    "/__fixtures/a00/assets/theme-sun.svg",
+    "/__fixtures/a00/assets/ui-user.svg",
+    "/__fixtures/a00/assets/ui-forum.svg",
+    "/__fixtures/a00/assets/ui-eye.svg",
+    "/__fixtures/a00/assets/ui-chat.svg",
+    "/__fixtures/a00/assets/ui-document.svg",
+    "/__fixtures/a00/assets/space-mono-latin-400-normal.woff2",
+    "/__fixtures/a00/assets/space-mono-latin-700-normal.woff2",
+    "/__fixtures/a00/assets/favicon.ico",
+    "/__fixtures/a00/assets/ui-menu.svg",
+    "/__fixtures/a00/home?theme=dark",
+    "/__fixtures/a00/assets/theme-moon.svg",
+    "/__fixtures/a00/login?theme=light",
+    "/__fixtures/a00/assets/oauth-google.svg",
+    "/__fixtures/a00/assets/oauth-github.svg",
+    "/__fixtures/a00/assets/oauth-x.svg",
+    "/__fixtures/a00/topic?theme=light",
+    "/__fixtures/a00/profile?theme=light",
+    "/__fixtures/a00/assets/profile.css"
+  ],
+  "externalRequests": []
+}

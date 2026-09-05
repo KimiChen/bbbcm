@@ -1,0 +1,336 @@
+
+== 1/7 格式化检查
+
+== 2/7 Clippy -D warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.34s
+
+== 3/7 单元测试
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.13s
+     Running unittests src/main.rs (target/debug/deps/bbbcm_cli-ee379273cbaa8969)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/main.rs (target/debug/deps/bbbcm_web-d929d1dac11376c4)
+
+running 8 tests
+test error::tests::internal_response_body_is_generic ... ok
+test error::tests::maps_status_codes ... ok
+test router::tests::page_frames_and_topic_text_are_html_escaped ... ok
+test router::tests::authentication_fixtures_have_no_submission_endpoint ... ok
+test router::tests::production_like_environments_never_mount_fixtures ... ok
+test router::tests::unknown_pages_and_invalid_themes_fail_closed ... ok
+test router::tests::fixture_assets_are_allowlisted_and_local_only ... ok
+test router::tests::every_fixture_is_html_and_deterministic_in_local_environments ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running unittests src/main.rs (target/debug/deps/bbbcm_worker-2f838d65809c339b)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/content-ca74494ac35ae7bf)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/identity-34666dd53b673413)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/interaction-701a9275beabce8d)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/manage-4059d2a6c8d80fee)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/media-473fa0d34c4d94d8)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/moderation-1f9c93238ad42925)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/platform-f0c95fd037cd27e7)
+
+running 49 tests
+test cache::ratelimit::tests::rejects_invalid_refill_rate ... ok
+test cache::ratelimit::tests::burst_then_throttle ... ok
+test cache::tests::lease_is_exclusive_and_token_bound ... ok
+test cache::tests::wakeup_consumes_notification_once ... ok
+test config::tests::defaults_are_experience_mode ... ok
+test config::tests::env_override_injects_postgres_url ... ok
+test cache::tests::memory_cache_is_bounded ... ok
+test cache::ratelimit::tests::distinct_keys_do_not_grow_unbounded ... ok
+test config::tests::bad_schema_prefix_is_rejected ... ok
+test config::tests::mysql8_is_reserved_and_refused_at_startup ... ok
+test config::tests::bad_bind_is_rejected ... ok
+test config::tests::production_without_redis_is_rejected ... ok
+test config::tests::postgres_requires_url_from_env ... ok
+test config::tests::sqlite_rejects_multiple_connections ... ok
+test config::tests::unknown_environment_is_rejected ... ok
+test config::tests::unknown_key_is_rejected ... ok
+test db::tests::double_quoted_identifier_is_rejected ... ok
+test db::tests::block_comment_question_mark_is_not_a_placeholder ... ok
+test config::tests::loads_repository_default_config ... ok
+test db::tests::escaped_quote_does_not_leak_out_of_string ... ok
+test db::tests::explicit_dollar_placeholder_is_rejected ... ok
+test db::tests::line_comment_question_mark_is_not_a_placeholder ... ok
+test db::tests::mysql8_is_reserved_but_not_implemented ... ok
+test db::tests::nested_block_comment_is_tracked ... ok
+test db::tests::postgres_renders_numbered_placeholders ... ok
+test db::tests::encoded_times_sort_lexicographically ... ok
+test db::tests::quoted_placeholders_are_literal ... ok
+test db::tests::sqlite_keeps_question_marks ... ok
+test db::tests::time_encoding_is_fixed_width_and_roundtrips ... ok
+test db::tests::unterminated_string_is_rejected ... ok
+test error::tests::client_errors_keep_their_message ... ok
+test error::tests::internal_detail_never_reaches_the_client ... ok
+test error::tests::status_codes_cover_the_contract ... ok
+test flags::tests::all_flags_default_off ... ok
+test flags::tests::flag_keys_are_unique ... ok
+test identifiers::tests::accepts_default_prefix ... ok
+test identifiers::tests::every_logical_schema_renders ... ok
+test identifiers::tests::flat_rendering_is_unique_across_schemas ... ok
+test identifiers::tests::rejects_invalid_prefixes ... ok
+test identifiers::tests::rejects_over_long_identifier ... ok
+test identifiers::tests::rejects_unknown_schema ... ok
+test identifiers::tests::rejects_untrusted_table_names ... ok
+test types::tests::display_is_decimal ... ok
+test types::tests::deserialization_rejects_non_canonical ... ok
+test types::tests::rejects_non_positive ... ok
+test types::tests::serialization_roundtrips_as_string ... ok
+test cache::tests::memory_cache_expires_after_ttl ... ok
+test cache::tests::lease_expires ... ok
+test cache::ratelimit::tests::full_buckets_are_swept_after_refill ... ok
+
+test result: ok. 49 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running unittests src/lib.rs (target/debug/deps/platform_audit-8313a5297ba3b9f3)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/platform_db-02f554cea3b9cd8e)
+
+running 8 tests
+test migrations::tests::repository_migrations_are_aligned ... ok
+test tests::mysql8_is_refused ... ok
+test migrations::tests::bad_file_name_is_rejected ... ok
+test migrations::tests::duplicate_number_in_same_track_is_rejected ... ok
+test migrations::tests::misaligned_sets_fail ... ok
+test migrations::tests::paired_sets_pass_with_empty_track_exempt ... ok
+test migrations::tests::filled_third_track_must_align ... ok
+test tests::sqlite_applies_pragmas_and_probes_fts5 ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src/lib.rs (target/debug/deps/platform_outbox-31fb10700ddb53a7)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/privacy-5a888e9f4c4bdea0)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/support-fd67f15ccfe8b8c9)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/trust-6f4dd08e1a9316e6)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests content
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests identity
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests interaction
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests manage
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests media
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests moderation
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests platform
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests platform_audit
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests platform_db
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests platform_outbox
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests privacy
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests support
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests trust
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+== 4/7 SQLite 冒烟
+  迁移执行器尚未接入，跳过（WP-MVP-A03）
+  /health → 200
+  / → 200
+  /__fixtures/a00/home → 200
+  /__fixtures/a00/new → 200
+  /__fixtures/a00/pinned → 200
+  /__fixtures/a00/featured → 200
+  /__fixtures/a00/forum → 200
+  /__fixtures/a00/topic → 200
+  /__fixtures/a00/login → 200
+  /__fixtures/a00/register → 200
+  /__fixtures/a00/reset → 200
+  /__fixtures/a00/policy → 200
+  /__fixtures/a00/search → 200
+  /__fixtures/a00/empty → 200
+  /__fixtures/a00/error → 200
+  /__fixtures/a00/profile → 200
+  /__fixtures/a00/assets/fonts.css → 200
+  /__fixtures/a00/assets/pages.css → 200
+  /__fixtures/a00/assets/profile.css → 200
+  /__fixtures/a00/assets/site.css → 200
+  /__fixtures/a00/assets/space-mono-latin-400-normal.woff2 → 200
+  /__fixtures/a00/assets/space-mono-latin-700-normal.woff2 → 200
+  /__fixtures/a00/assets/space-mono-latin-ext-400-normal.woff2 → 200
+  /__fixtures/a00/assets/space-mono-latin-ext-700-normal.woff2 → 200
+  /__fixtures/a00/assets/brand-mark.svg → 200
+  /__fixtures/a00/assets/theme-sun.svg → 200
+  /__fixtures/a00/assets/theme-moon.svg → 200
+  /__fixtures/a00/assets/ui-eye.svg → 200
+  /__fixtures/a00/assets/ui-chat.svg → 200
+  /__fixtures/a00/assets/ui-search.svg → 200
+  /__fixtures/a00/assets/ui-menu.svg → 200
+  /__fixtures/a00/assets/ui-chevron-up.svg → 200
+  /__fixtures/a00/assets/ui-user.svg → 200
+  /__fixtures/a00/assets/ui-document.svg → 200
+  /__fixtures/a00/assets/ui-forum.svg → 200
+  /__fixtures/a00/assets/oauth-google.svg → 200
+  /__fixtures/a00/assets/oauth-github.svg → 200
+  /__fixtures/a00/assets/oauth-x.svg → 200
+  /__fixtures/a00/assets/brand-symbol.svg → 200
+  /__fixtures/a00/assets/favicon-16.png → 200
+  /__fixtures/a00/assets/favicon-32.png → 200
+  /__fixtures/a00/assets/apple-touch-icon.png → 200
+  /__fixtures/a00/assets/favicon.ico → 200
+  /__fixtures/a00/assets/og-image.svg → 200
+  /__fixtures/a00/assets/og-image.png → 200
+  /__fixtures/a00/assets/email-header.svg → 200
+  /__fixtures/a00/unknown → 404
+  /__fixtures/a00/assets/unknown.css → 404
+
+== 5/7 git diff --check
+
+== 6/7 暂存区复核
+  .cargo/config.toml
+  .node-version
+  .npmrc
+  README.md
+  docs/evidence/m0/wp-m0-03/dev-20260905/dev-check-01.txt
+  docs/evidence/m0/wp-m0-03/dev-20260905/light-tests-01.txt
+  docs/evidence/m0/wp-m0-03/dev-20260905/light-tests-02.txt
+  docs/evidence/m0/wp-m0-03/dev-20260905/light-tests-03.txt
+  docs/evidence/m0/wp-m0-03/dev-20260905/summary.md
+  docs/evidence/m0/wp-m0-03/dev-20260905/upstream.json
+  package-lock.json
+  package.json
+  plan/02-technical-architecture.md
+  plan/04-execution-roadmap.md
+  plan/10-m0.md
+  plan/90-quality-release.md
+  plan/99-traceability.md
+  scripts/README.md
+  scripts/supply-chain-scan.py
+  scripts/supply-chain.py
+  scripts/test_supply_chain.py
+  supply-chain/README.md
+  supply-chain/gitleaks.ignore
+  supply-chain/gitleaks.toml
+  supply-chain/lock.json
+  supply-chain/postgres/Dockerfile
+  supply-chain/syft.yaml
+  supply-chain/trivy.ignore
+  supply-chain/trivy.yaml
+
+== 7/7 静态守卫
+  handler 无 sqlx 引用
+
+✓ 开发期最小集全部通过

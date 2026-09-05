@@ -1,0 +1,7 @@
+{
+  "encoding": "UTF-8",
+  "source_url": "https://raw.githubusercontent.com/feathericons/feather/3dc050d97405062eba78aa57115c0a15c63abdaa/icons/eye.svg",
+  "sha256": "3e6c211d83ca5a71baec90ec51a97ff52ce1df17307e3c56254958bc5e54daaf",
+  "source_text": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg>",
+  "container_note": "JSON preserves the exact original UTF-8 SVG bytes, including its lack of final newline; the repository evidence container itself uses UTF-8/LF/final newline."
+}

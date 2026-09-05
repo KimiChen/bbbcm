@@ -1,0 +1,40 @@
+{
+  "scanner": "scripts/a00-asset-text-scan.py",
+  "scanner_sha256": "03f8c914434e11ceb91c12ab38d0298b170239cff352a9d9e3b7b6539db8c3bd",
+  "scope": "isolated temporary copies only; no source or screenshot mutation",
+  "checks": [
+    {
+      "check": "PNG tEXt/zTXt and compressed/uncompressed iTXt legacy text including NFKC full-width normalization",
+      "result": "pass",
+      "detected_fields": [
+        "png.iTXt[0].text",
+        "png.iTXt[1].text",
+        "png.tEXt[0].text",
+        "png.zTXt[0].text"
+      ]
+    },
+    {
+      "check": "WOFF2 name, OpenType meta, WOFF XML with entity-encoded old name",
+      "result": "pass",
+      "detected_fields": [
+        "name[0].id0.platform3.encoding1.language1033",
+        "opentype.meta.dlng",
+        "woff.metadata.xml.node[2].text"
+      ]
+    },
+    {
+      "check": "SVG Unicode filename, entity-decoded description and XML comment",
+      "result": "pass",
+      "detected_fields": [
+        "filename",
+        "xml.node[1].text",
+        "xml.node[2].text",
+        "xml.raw"
+      ]
+    },
+    {
+      "check": "System Python without fontTools explicitly fails with setup command guidance; no silent skipped font scan",
+      "result": "pass"
+    }
+  ]
+}

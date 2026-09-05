@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="160" viewBox="0 0 640 160" role="img" aria-labelledby="email-title">
+<title id="email-title">草莓论坛</title>
+<rect width="640" height="160" fill="#0a0a0a"/>
+<g transform="translate(192 44) scale(0.36)">
+<polygon stroke="#ffffff" points="6.5,6.5 193.5,6.5 193.5,76 177.5,100 193.5,124 193.5,193.5 6.5,193.5 6.5,124 22.5,100 6.5,76" fill="none" stroke-width="13" />
+<text fill="#ffffff" font-family="PingFang SC, system-ui, sans-serif" font-size="36" font-weight="600" text-anchor="middle" dominant-baseline="central" x="100" y="81" textLength="108" lengthAdjust="spacing">草莓</text>
+<text fill="#ffffff" font-family="PingFang SC, system-ui, sans-serif" font-size="36" font-weight="600" text-anchor="middle" dominant-baseline="central" x="100" y="119" textLength="108" lengthAdjust="spacing">论坛</text>
+</g>
+<text x="288" y="96" fill="#ffffff" font-family="PingFang SC, system-ui, sans-serif" font-size="40" font-weight="600">草莓论坛</text>
+</svg>
