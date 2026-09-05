@@ -1,0 +1,51 @@
+{
+  "date": "2026-09-05",
+  "phase": "development",
+  "decision_commit": "236ba57",
+  "implementation_version": "commit containing this evidence",
+  "dev_check": {
+    "command": "./scripts/dev-check.sh",
+    "result": "passed",
+    "tests_passed": 215,
+    "tests_failed": 0,
+    "tests_ignored": 1,
+    "sqlite_migration": "real temporary database, 0001 through 0007",
+    "http_smoke_routes": 73
+  },
+  "focused_suites": {
+    "identity": 26,
+    "identity_core": 7,
+    "identity_settings": 7,
+    "identity_http": 9,
+    "identity_rate": 3,
+    "trust": 3,
+    "moderation": 2,
+    "web": 19,
+    "schema_sql_lint": 8
+  },
+  "asset_freeze": "passed, original A00 file hashes unchanged after existing asset URL normalization",
+  "independent_review": [
+    "authentication, authorization, transactions, token persistence, mail retry and sensitive logs",
+    "settings owner and credential changes",
+    "trust, policy reader and new migration ACL",
+    "HTTP, rate-limit enumeration and revoked-session operation query"
+  ],
+  "not_executed": [
+    "real PostgreSQL 16 integration and ACL execution",
+    "real Redis 8 integration",
+    "full security, concurrent and performance matrices",
+    "full browser and visual matrix",
+    "real email delivery or provider callbacks",
+    "push, deployment, privileged account bootstrap"
+  ],
+  "status_limit": "no Verified, phase or release gate advancement",
+  "staged_review": {
+    "files": 54,
+    "explicit_paths": true,
+    "per_file_diff_check": "passed",
+    "utf8_lf_and_no_binary_artifacts": "passed",
+    "sensitive_pattern_and_ignored_path_check": "passed",
+    "unstaged_changes_at_review": 0,
+    "full_secret_scan": "not executed; no full security gate claim"
+  }
+}

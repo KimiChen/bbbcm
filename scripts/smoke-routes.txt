@@ -60,3 +60,23 @@
 /status?theme=dark 200
 /health/live 200
 /health/ready 200
+
+# B01/B02/B04 identity routes remain closed in a fresh isolated database.
+/login 404
+/register 404
+/verify-email 404
+/forgot-password 404
+/reset-password 404
+/confirm-email 404
+/reauth 404
+/logout 404
+/settings/profile 404
+/settings/email 404
+/settings/username 404
+/settings/password 404
+/settings/sessions 404
+/me/invites 404
+/u/synthetic-not-a-user 404
+/terms 404
+/privacy 404
+/rules 404

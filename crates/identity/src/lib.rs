@@ -5,3 +5,19 @@ pub mod contract;
 pub mod core;
 pub mod http;
 pub mod repo;
+pub mod settings;
+mod settings_repo;
+pub mod web_view;
+
+#[cfg(test)]
+mod settings_tests;
+
+pub mod mail_source;
+
+pub mod rate;
+
+#[cfg(test)]
+mod core_tests;
+
+#[cfg(test)]
+mod http_tests;

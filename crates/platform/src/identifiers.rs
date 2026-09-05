@@ -33,6 +33,81 @@ pub struct TableRegistration {
 
 pub const TABLES: &[TableRegistration] = &[
     TableRegistration {
+        schema: "identity",
+        table: "mail_recipients",
+        identity_column: None,
+    },
+    TableRegistration {
+        schema: "identity",
+        table: "users",
+        identity_column: Some("id"),
+    },
+    TableRegistration {
+        schema: "identity",
+        table: "credentials",
+        identity_column: None,
+    },
+    TableRegistration {
+        schema: "identity",
+        table: "sessions",
+        identity_column: Some("id"),
+    },
+    TableRegistration {
+        schema: "identity",
+        table: "one_time_tokens",
+        identity_column: None,
+    },
+    TableRegistration {
+        schema: "identity",
+        table: "invitations",
+        identity_column: Some("id"),
+    },
+    TableRegistration {
+        schema: "identity",
+        table: "policy_consents",
+        identity_column: None,
+    },
+    TableRegistration {
+        schema: "identity",
+        table: "username_claims",
+        identity_column: None,
+    },
+    TableRegistration {
+        schema: "identity",
+        table: "username_history",
+        identity_column: None,
+    },
+    TableRegistration {
+        schema: "identity",
+        table: "mail_requests",
+        identity_column: None,
+    },
+    TableRegistration {
+        schema: "identity",
+        table: "request_principals",
+        identity_column: Some("id"),
+    },
+    TableRegistration {
+        schema: "trust",
+        table: "identity_snapshots",
+        identity_column: Some("id"),
+    },
+    TableRegistration {
+        schema: "trust",
+        table: "invite_uses",
+        identity_column: Some("id"),
+    },
+    TableRegistration {
+        schema: "trust",
+        table: "risk_events",
+        identity_column: None,
+    },
+    TableRegistration {
+        schema: "moderation",
+        table: "policy_versions",
+        identity_column: Some("id"),
+    },
+    TableRegistration {
         schema: "operations",
         table: "status_announcements",
         identity_column: None,
@@ -126,6 +201,10 @@ pub const TABLES: &[TableRegistration] = &[
 
 /// 仅本轮引擎所需索引；迁移与表注册同时版本化。
 pub const INDEXES: &[(&str, &str)] = &[
+    ("identity", "session_owner_idx"),
+    ("identity", "invite_owner_idx"),
+    ("identity", "token_owner_idx"),
+    ("trust", "risk_actor_idx"),
     ("platform", "mail_recipient_idx"),
     ("platform", "mail_observed_idx"),
     ("platform", "mail_feedback_time_idx"),
@@ -347,7 +426,7 @@ mod tests {
         }
         let r = SchemaRenderer::new("bcm_").unwrap();
         assert_eq!(
-            r.table(Backend::Sqlite, "identity", "users"),
+            r.table(Backend::Sqlite, "identity", "unregistered_table"),
             Err(SchemaError::UnknownTable)
         );
         assert_eq!(

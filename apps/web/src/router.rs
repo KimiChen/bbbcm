@@ -26,7 +26,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/health", get(health))
         .merge(crate::status::router())
         .merge(crate::assets::router())
-        .merge(identity::http::router())
+        .merge(identity::http::router(state.identity.clone()))
         .merge(content::http::router())
         .merge(media::http::router())
         .merge(interaction::http::router())

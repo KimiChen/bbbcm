@@ -19,4 +19,5 @@ pub mod commit_signal;
 pub mod integrations;
 pub mod mail;
 pub mod observability;
+pub mod policy;
 pub mod status;

@@ -7,6 +7,7 @@ mod contract;
 mod error;
 mod fixture_assets;
 mod fixtures;
+mod identity_web;
 mod jobs;
 mod middleware;
 mod router;
@@ -56,6 +57,7 @@ async fn run() -> Result<(), String> {
     platform::commit_signal::install(runtime.wakeup.clone()).map_err(|e| e.to_string())?;
     let mut state = app_state::AppState::new(config.clone(), assets);
     state.runtime = Some(runtime.clone());
+    identity_web::connect(&mut state).await?;
     let state = Arc::new(state);
 
     // 内嵌任务循环与 HTTP 服务共享同一取消令牌：优雅退出时先停任务循环再落地。

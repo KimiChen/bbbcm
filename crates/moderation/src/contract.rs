@@ -1,1 +1,2 @@
-//! 请求/响应/视图类型、状态枚举与领域错误码。随 WP-MVP-D01 细化。
+//! The MOD-010 identity slice only reads immutable consent versions.
+pub use platform::policy::{PolicyError, PolicySet, PolicyVersion};

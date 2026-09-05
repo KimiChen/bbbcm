@@ -246,4 +246,5 @@ pub mod outbox_repo;
 
 pub mod analytics_repo;
 pub mod mail_repo;
+pub mod policy;
 pub mod status_repo;

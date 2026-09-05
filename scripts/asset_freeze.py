@@ -32,18 +32,18 @@ def check():
                 changed.append(name)
                 continue
         raise AssertionError(f'A00 freeze drift beyond asset URL wiring: {name}')
-    # A05 adds its explicitly scoped status page; the complete original A00 inventory
+    # A05/B01 add explicitly scoped status and identity pages; the complete original A00 inventory
     # and every original byte/structure stay frozen. Other additions still fail closed.
-    additions = {'apps/web/templates/status/index.html'}
+    additions = {'apps/web/templates/status/index.html', 'apps/web/templates/auth/live.html'}
     inventory = {p.relative_to(ROOT).as_posix() for p in (ROOT / 'apps/web/templates').rglob('*.html')}
     assert inventory == set(freeze['template_tag_order']) | additions
     original_classes = set()
     for name in freeze['template_tag_order']:
-        for value in re.findall(r'class="([^"]*)"', (ROOT / name).read_text()):
-            original_classes.update(value.split())
+        for value in re.findall(r'class="((?:{%.*?%}|[^"])*)"', (ROOT / name).read_text()):
+            original_classes.update(re.sub(r"{%.*?%}", "", value).split())
     for name in additions:
-        for value in re.findall(r'class="([^"]*)"', (ROOT / name).read_text()):
-            assert set(value.split()) <= original_classes, f'A05 introduced unreviewed component classes: {name}'
+        for value in re.findall(r'class="((?:{%.*?%}|[^"])*)"', (ROOT / name).read_text()):
+            assert set(value.split()) <= original_classes, f'New page introduced unreviewed component classes: {name}'
     return {'status': 'pass', 'url_only_templates': changed, 'original_freeze_unchanged': True,
             'scope': 'whole-source hashes after exact helper reversal; no visual gate claim'}
 

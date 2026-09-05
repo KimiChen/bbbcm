@@ -53,7 +53,7 @@ struct Entry {
     mime: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct LoadedAsset {
     mime: &'static str,
     bytes: Bytes,
@@ -82,7 +82,7 @@ impl BrandAssetOverrides for NoBrandOverrides {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Assets {
     urls: BTreeMap<String, String>,
     files: BTreeMap<String, LoadedAsset>,

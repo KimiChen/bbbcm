@@ -90,6 +90,11 @@ pub enum HttpRoute {
     Diagnostics,
     Fixture,
     Asset,
+    Auth,
+    AccountSettings,
+    Profile,
+    Policy,
+    Invitation,
     Other,
 }
 impl HttpRoute {
@@ -99,6 +104,27 @@ impl HttpRoute {
             "/status" => Self::Status,
             "/health" | "/health/live" | "/health/ready" => Self::Health,
             "/__diagnostics/metrics" => Self::Diagnostics,
+            "/login" | "/register" | "/verify-email" | "/forgot-password" | "/reset-password"
+            | "/confirm-email" | "/reauth" | "/logout" | "/auth/operations" => Self::Auth,
+            "/settings/profile"
+            | "/settings/email"
+            | "/settings/username"
+            | "/settings/password"
+            | "/settings/sessions"
+            | "/settings/sessions/revoke" => Self::AccountSettings,
+            "/terms" | "/privacy" | "/rules" => Self::Policy,
+            "/me/invites"
+            | "/me/invites/revoke"
+            | "/settings/invitations"
+            | "/settings/invitations/revoke" => Self::Invitation,
+            // Match the route shape only. The opaque profile identifier never becomes
+            // a metric dimension, even for an invalid or missing user.
+            p if p
+                .strip_prefix("/u/")
+                .is_some_and(|id| !id.is_empty() && !id.contains(['/', '?', '#'])) =>
+            {
+                Self::Profile
+            }
             p if p.starts_with("/__fixtures/a00/") => Self::Fixture,
             p if p.starts_with("/assets/") => Self::Asset,
             _ => Self::Other,
@@ -427,6 +453,64 @@ impl PoolRegistry {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn identity_routes_are_closed_and_dynamic_identifiers_never_escape() {
+        let metrics = GroupedMetrics::default();
+        for (path, expected) in [
+            ("/register", HttpRoute::Auth),
+            ("/login", HttpRoute::Auth),
+            ("/verify-email", HttpRoute::Auth),
+            ("/forgot-password", HttpRoute::Auth),
+            ("/reset-password", HttpRoute::Auth),
+            ("/confirm-email", HttpRoute::Auth),
+            ("/reauth", HttpRoute::Auth),
+            ("/logout", HttpRoute::Auth),
+            ("/auth/operations", HttpRoute::Auth),
+            ("/settings/profile", HttpRoute::AccountSettings),
+            ("/settings/email", HttpRoute::AccountSettings),
+            ("/settings/username", HttpRoute::AccountSettings),
+            ("/settings/password", HttpRoute::AccountSettings),
+            ("/settings/sessions", HttpRoute::AccountSettings),
+            ("/settings/sessions/revoke", HttpRoute::AccountSettings),
+            ("/me/invites", HttpRoute::Invitation),
+            ("/me/invites/revoke", HttpRoute::Invitation),
+            ("/settings/invitations", HttpRoute::Invitation),
+            ("/settings/invitations/revoke", HttpRoute::Invitation),
+            ("/terms", HttpRoute::Policy),
+            ("/privacy", HttpRoute::Policy),
+            ("/rules", HttpRoute::Policy),
+            ("/u/PRIVATE_SENTINEL", HttpRoute::Profile),
+            ("/u/another_private_identifier", HttpRoute::Profile),
+            ("/u/", HttpRoute::Other),
+            ("/u/PRIVATE_SENTINEL/devices", HttpRoute::Other),
+            ("/settings/PRIVATE_SENTINEL", HttpRoute::Other),
+            ("/auth/PRIVATE_SENTINEL", HttpRoute::Other),
+            ("/verify-email/PRIVATE_SENTINEL", HttpRoute::Other),
+            ("/unknown/PRIVATE_SENTINEL", HttpRoute::Other),
+        ] {
+            let route = HttpRoute::from_path(path);
+            assert_eq!(route, expected);
+            metrics.duration(
+                SeriesKey::HttpHeadersSeconds {
+                    backend: DatabaseBackend::Sqlite,
+                    route,
+                    method: HttpMethod::Get,
+                    status_class: HttpStatusClass::Success,
+                    cache_state: CacheState::NotConnected,
+                },
+                Duration::from_millis(1),
+            );
+        }
+        let series = metrics.snapshot();
+        assert_eq!(series.len(), 6);
+        assert!(
+            !serde_json::to_string(&series)
+                .unwrap()
+                .contains("PRIVATE_SENTINEL")
+        );
+        assert!(!format!("{series:?}").contains("private_identifier"));
+    }
 
     #[test]
     fn closed_dimensions_separate_routes_statuses_and_units() {
