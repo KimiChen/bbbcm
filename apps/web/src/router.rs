@@ -8,13 +8,14 @@ use std::sync::Arc;
 
 use askama::Template;
 use axum::Router;
-use axum::extract::{Path, Query};
+use axum::extract::{Path, Query, State};
 use axum::response::Html;
 use axum::routing::get;
 use platform::config::Environment;
 use platform::error::AppError;
 
 use crate::app_state::AppState;
+use crate::assets::Assets;
 use crate::contract::{HomeTemplate, PageFrame};
 use crate::error::ApiError;
 use crate::fixtures::{self, FixtureQuery};
@@ -23,6 +24,7 @@ pub fn router(state: Arc<AppState>) -> Router {
     let app = Router::new()
         .route("/", get(home))
         .route("/health", get(health))
+        .merge(crate::assets::router())
         .merge(identity::http::router())
         .merge(content::http::router())
         .merge(media::http::router())
@@ -39,7 +41,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         Environment::Development | Environment::Test
     ) {
         app.route("/__fixtures/a00/{page}", get(fixture))
-            .merge(crate::assets::router())
+            .merge(crate::fixture_assets::router())
     } else {
         app
     };
@@ -48,26 +50,30 @@ pub fn router(state: Arc<AppState>) -> Router {
 
 /// 渲染模板。渲染失败返回 500 并记录原因，不在请求内 panic——
 /// handler 里的 panic 会中断该连接，且把内部细节暴露给客户端。
-fn render<T: Template>(template: &T) -> Result<Html<String>, ApiError> {
+fn render<T: Template>(template: &T, assets: &Assets) -> Result<Html<String>, ApiError> {
     template
-        .render()
+        .render_with_values(&("assets", assets as &dyn std::any::Any))
         .map(Html)
         .map_err(|err| ApiError(AppError::Internal(format!("模板渲染失败: {err}"))))
 }
 
-async fn home() -> Result<Html<String>, ApiError> {
-    render(&HomeTemplate {
-        frame: PageFrame::default(),
-    })
+async fn home(State(state): State<Arc<AppState>>) -> Result<Html<String>, ApiError> {
+    render(
+        &HomeTemplate {
+            frame: PageFrame::default(),
+        },
+        &state.assets,
+    )
 }
 
 async fn fixture(
+    State(state): State<Arc<AppState>>,
     Path(page): Path<String>,
     Query(query): Query<FixtureQuery>,
 ) -> Result<Html<String>, ApiError> {
     let template = fixtures::page(&page, query.theme)
         .ok_or_else(|| ApiError(AppError::NotFound("没有这个视觉夹具".into())))?;
-    render(&template)
+    render(&template, &state.assets)
 }
 
 async fn health() -> &'static str {
@@ -88,7 +94,10 @@ mod tests {
         let mut config = Config::default();
         config.server.environment = environment;
         config.features.redis = environment.is_production_like();
-        router(Arc::new(AppState::new(config)))
+        router(Arc::new(AppState::new(
+            config,
+            crate::assets::tests::local(),
+        )))
     }
 
     async fn request(app: &Router, path: &str) -> Response {
@@ -307,18 +316,22 @@ mod tests {
         fixture.title = UNSAFE;
         fixture.topics.items[0].title = UNSAFE;
         fixture.topics.items[0].author = UNSAFE;
-        let html = render(&fixture).unwrap_or_else(|_| panic!("合成文本应能渲染"));
+        let html = render(&fixture, &crate::assets::tests::local())
+            .unwrap_or_else(|_| panic!("合成文本应能渲染"));
         assert!(html.0.contains("合成攻击字符串"));
         assert!(!html.0.contains(UNSAFE));
         assert!(!html.0.contains("<script>alert(1)</script>"));
 
-        let home = render(&HomeTemplate {
-            frame: PageFrame {
-                flash: Some(UNSAFE),
-                error: Some(UNSAFE),
-                empty: Some(UNSAFE),
+        let home = render(
+            &HomeTemplate {
+                frame: PageFrame {
+                    flash: Some(UNSAFE),
+                    error: Some(UNSAFE),
+                    empty: Some(UNSAFE),
+                },
             },
-        })
+            &crate::assets::tests::local(),
+        )
         .unwrap_or_else(|_| panic!("骨架页错误块应能渲染"));
         assert!(home.0.contains("合成攻击字符串"));
         assert!(!home.0.contains(UNSAFE));

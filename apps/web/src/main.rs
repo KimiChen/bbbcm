@@ -5,6 +5,7 @@ mod app_state;
 mod assets;
 mod contract;
 mod error;
+mod fixture_assets;
 mod fixtures;
 mod jobs;
 mod middleware;
@@ -43,7 +44,12 @@ async fn run() -> Result<(), String> {
         .validate()
         .map_err(|err| format!("配置校验失败（{config_path}）: {err}"))?;
 
-    let state = Arc::new(app_state::AppState::new(config.clone()));
+    let assets = assets::Assets::from_environment(
+        config.server.environment,
+        Arc::new(assets::NoBrandOverrides),
+    )
+    .map_err(|err| format!("静态资产加载失败: {err}"))?;
+    let state = Arc::new(app_state::AppState::new(config.clone(), assets));
 
     // 内嵌任务循环与 HTTP 服务共享同一取消令牌：优雅退出时先停任务循环再落地。
     let cancel = CancellationToken::new();

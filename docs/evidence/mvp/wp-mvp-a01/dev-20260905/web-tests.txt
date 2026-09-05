@@ -1,0 +1,22 @@
+   Compiling bbbcm-web v0.1.0 (${REPO}/apps/web)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.95s
+     Running unittests src/main.rs (target/debug/deps/bbbcm_web-5141e42b2b64fcab)
+
+running 15 tests
+test error::tests::internal_response_body_is_generic ... ok
+test error::tests::maps_status_codes ... ok
+test router::tests::authentication_fixtures_have_no_submission_endpoint ... ok
+test assets::tests::symlinks_at_root_manifest_directory_and_file_are_rejected ... ok
+test router::tests::fixture_assets_are_allowlisted_and_local_only ... ok
+test router::tests::page_frames_and_topic_text_are_html_escaped ... ok
+test router::tests::production_like_environments_never_mount_fixtures ... ok
+test router::tests::unknown_pages_and_invalid_themes_fail_closed ... ok
+test assets::tests::only_never_built_default_local_dist_can_use_source_mode ... ok
+test assets::tests::fingerprint_get_head_and_failure_cache_contract ... ok
+test assets::tests::runtime_brand_contract_is_restricted_versioned_and_has_priority ... ok
+test assets::tests::missing_helper_context_and_unknown_template_assets_are_errors ... ok
+test assets::tests::manifest_load_checks_hashes_names_mime_and_duplicate_entries ... ok
+test router::tests::every_fixture_is_html_and_deterministic_in_local_environments ... ok
+test assets::tests::ssr_uses_real_manifest_helper_and_production_isolation_is_preserved ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.15s

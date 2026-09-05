@@ -1,0 +1,16 @@
+{
+  "status": "pass",
+  "manifest_sha256": "dab77582fb6fdebca468b4625d0021163cf06c12714ba215cf287fbad52a2817",
+  "assets": 30,
+  "http_checks": 492,
+  "fingerprint_ssr_variants": 84,
+  "startup_failures_correctly_rejected": 8,
+  "a00_original_ssr_bytes_after_url_reversal": "pass",
+  "environments": [
+    "development",
+    "test",
+    "staging",
+    "production"
+  ],
+  "scope": "loopback HTTP assets and SSR; no real PostgreSQL/Redis, E2E browser or visual gate"
+}

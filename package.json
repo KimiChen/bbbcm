@@ -3,7 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "license": "AGPL-3.0-only",
-  "description": "M0-03 与 A01 共用的资产构建前置；实际管线由 A01 接入",
+  "description": "M0-03 与 A01 共用的锁定静态资产构建管线",
+  "scripts": {
+    "assets:build": "node scripts/build-assets.mjs build",
+    "assets:test": "node --test scripts/test-assets.mjs",
+    "assets:clean": "node scripts/build-assets.mjs clean"
+  },
   "engines": {
     "node": "24.20.0",
     "npm": "11.19.0"

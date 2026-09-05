@@ -9,6 +9,7 @@ import unicodedata
 import urllib.error
 import urllib.request
 from pathlib import Path
+from asset_freeze import normalize_asset_helpers
 
 ROOT = Path(__file__).resolve().parents[1]
 DOC = ROOT / 'docs/visual/a00'
@@ -24,7 +25,7 @@ if page_declaration is None or re.findall(r'"([^"]+)"', page_declaration.group(1
 terms = json.loads((DOC / 'old-names.json').read_text())['terms']
 normalize = lambda s: unicodedata.normalize('NFKC', s).casefold()
 terms = [normalize(s) for s in terms]
-source = sorted((ROOT / 'apps/web/templates').rglob('*.html')) + sorted((ROOT / 'apps/web/static').rglob('*.css')) + sorted((ROOT / 'apps/web/static').rglob('*.svg')) + [ROOT / 'apps/web/src/fixtures.rs']
+source = sorted((ROOT / 'apps/web/templates').rglob('*.html')) + sorted((ROOT / 'apps/web/static/css').rglob('*.css')) + sorted((ROOT / 'apps/web/static/img').rglob('*.svg')) + [ROOT / 'apps/web/src/fixtures.rs']
 file_hashes = {}
 classes = set()
 template_structure = {}
@@ -49,7 +50,10 @@ for path in source:
     rel = path.relative_to(ROOT).as_posix()
     check_text(rel + '\n' + path.read_text(), rel)
     text = path.read_text()
-    file_hashes[rel] = hashlib.sha256(path.read_bytes()).hexdigest()
+    # A01 permits only exact URL -> helper wiring. Reverse just that substitution
+    # before comparing the complete original bytes; never reset the A00 freeze.
+    frozen_text = normalize_asset_helpers(text) if path.suffix == '.html' and not args.freeze else text
+    file_hashes[rel] = hashlib.sha256(frozen_text.encode()).hexdigest()
     if path.suffix == '.html':
         # Ignore template control expressions before collecting literal CSS classes.
         clean = re.sub(r'{[%{].*?[%}]}', '', text, flags=re.S)

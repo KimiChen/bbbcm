@@ -20,6 +20,7 @@ cargo build --release
 | 变量 | 作用 |
 |---|---|
 | `BBBCM_CONFIG` | 配置文件路径，默认 `config/default.toml` |
+| `BBBCM_ASSET_DIST` | 指纹资源目录；默认 `apps/web/static/dist`，显式指定时缺失或损坏必须拒绝启动 |
 | `BBBCM_DATABASE_POSTGRES_URL` | PostgreSQL 连接串。只从环境变量注入，禁止写入任何配置文件 |
 | `RUST_LOG` | 日志级别，默认 `info` |
 
@@ -60,10 +61,14 @@ cargo test --workspace --locked
 工具链由 `rust-toolchain.toml` 钉定，`rustup` 会自动切换。
 
 Node/npm/esbuild、服务测试镜像、供应链扫描与离线缓存的受控复现入口见
-[`supply-chain/README.md`](supply-chain/README.md)。A01 共用根目录 npm 锁文件，资产构建管线仍待 A01 接入。
+[`supply-chain/README.md`](supply-chain/README.md)。A01 共用根目录 npm 锁文件；执行
+`./scripts/assets.py build` 生成指纹资源，重启 web 后现有 SSR 使用 manifest helper。
+构建、测试、运行、错误处理与清理见 [静态资产手册](docs/development/assets.md)。
+开发/测试的默认 dist 从未生成时保留明确提示的 A00 源模式；staging/production 必须有有效 dist。
+完整资产构建不无条件加入每次 dev-check（DEC-039）。
 
 ## 许可证
 
-本项目采用 [GNU AGPL-3.0-only](LICENSE)（`DEC-023`）。许可证适用于本项目自有代码、迁移、配置模板与 `plan/` 文档。
+本项目采用 [GNU AGPL-3.0-only](LICENSE)。许可证适用于本项目自有代码、迁移、配置模板与 `plan/` 文档。
 
-仓库中的品牌图形、图标与字体等静态资产各有独立来源与许可，逐项登记在资产清单（见 `plan/05-visual-brand-spec.md` 第 4 节）；未确认可再分发的第三方资产不随本仓库分发。
+仓库中的品牌图形、图标与字体等静态资产各有独立来源与许可，逐项登记在资产清单（见 `plan/05-visual-brand-spec.md` 第 4 节）。本机版本化遵守 DEC-045/046，未知许可如实记录，不作为本轮开发或本机提交的阻塞；不据此宣称已取得第三方授权，对外发布前仍须处理相应权利。

@@ -12,3 +12,9 @@ Clippy 或测试未刷新的普通可执行文件；它仍是七步开发期检�
 `WP-M0-03` 的工具链安装、npm ci、版本/摘要一致性、PostgreSQL 扩展构建上下文及独立扫描入口见
 [`supply-chain/README.md`](../supply-chain/README.md)。开发期相关检查为 `supply-chain.py check`
 与 `python3 scripts/test_supply_chain.py`；不自动加入每次 dev-check，完整扫描留 E01。
+
+`WP-MVP-A01` 的独立 `assets.py build/test/clean` 入口共用 M0-03 的安装器与根 npm 锁文件。
+`asset_freeze.py` 对原 A00 冻结做完整字节复核，仅允许已接线的资源 URL 替换；
+`test-assets-http.py` 以真实 dist 和临时 loopback 服务检查四环境、资源与 SSR。
+操作及失败边界见 [`docs/development/assets.md`](../docs/development/assets.md)。
+上述资产构建和针对性验证按变更范围显式运行，不加入每次七步 dev-check。

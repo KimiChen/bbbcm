@@ -35,6 +35,7 @@ coverage/
 # Frontend and tool caches
 node_modules/
 dist/
+/apps/web/static/.dist-*/
 .cache/
 .pytest_cache/
 __pycache__/
@@ -49,5 +50,6 @@ tmp/
 *.swo
 
 AGENTS.md
+/g.md
 # 本地视觉证据（本轮原始参考截图由用户后处理）
 /docs/evidence/local/

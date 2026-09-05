@@ -1,0 +1,97 @@
+{
+  "status": "pass (development only)",
+  "manifest_sha256": "dab77582fb6fdebca468b4625d0021163cf06c12714ba215cf287fbad52a2817",
+  "assets": 30,
+  "http_checks": 492,
+  "fingerprint_ssr_variants": 84,
+  "startup_failures_correctly_rejected": 8,
+  "a00_original_ssr_bytes_after_url_reversal": "pass",
+  "environments": [
+    "development",
+    "test",
+    "staging",
+    "production"
+  ],
+  "scope": "A01 build, manifest, SSR, assets, environment isolation and development minimum; no E01/E04 gate claim",
+  "work_package": "WP-MVP-A01",
+  "code_version": "same commit as this evidence; base da905630dc1ea43b5b2c240076a3a21c07080521",
+  "toolchain": {
+    "rust": "1.97.0",
+    "node": "24.20.0",
+    "npm": "11.19.0",
+    "esbuild": "0.28.2",
+    "python_for_supply_chain": "3.12.14"
+  },
+  "workspace_unit_tests": 72,
+  "web_unit_tests": 15,
+  "asset_build_tests": 5,
+  "http_smoke_routes": 51,
+  "dev_check_dist_mode": "default dist absent after explicit clean; no unconditional asset build",
+  "format": "pass",
+  "clippy": "pass",
+  "diff_check": "pass",
+  "sqlite_migrations": "SKIPPED: runner not implemented (WP-MVP-A03); not migration verification",
+  "shared_lockfiles": "package-lock.json unchanged; Cargo.lock adds only existing serde_json/sha2/thiserror links for web, no registry version changes",
+  "supply_chain_baseline_check": "pass: 16 workspace members, 247 registry crates, 27 npm packages, 77 locked archives",
+  "feature_flags": "no added or enabled business flag; registry unchanged",
+  "preserved": "existing g.md edit excluded; all original source assets and A00 freeze unchanged",
+  "fixed_failures": [
+    {
+      "command": "./scripts/supply-chain.py install-tools node",
+      "exit_code": 1,
+      "failure": "system Python lacks tomllib",
+      "resolution": "used existing Python 3.12.14 and the unchanged M0-03 installation entry"
+    },
+    {
+      "command": "./scripts/assets.py build (first attempt)",
+      "exit_code": 1,
+      "failure": "js/.gitkeep was treated as an asset",
+      "resolution": "only empty regular .gitkeep placeholders are omitted; other unknown files still fail"
+    },
+    {
+      "command": "./scripts/assets.py test (first attempt)",
+      "exit_code": 1,
+      "passed": 1,
+      "failed": 4,
+      "failure": "placeholder rejection and macOS /var ancestor alias differing from esbuild canonical input paths",
+      "resolution": "reject source symlinks first, then canonicalize the root; all five tests now pass"
+    },
+    {
+      "command": "git diff --cached --check (first staged review)",
+      "failure": "web-tests.txt log had an extra blank line at EOF",
+      "resolution": "normalized saved text logs to one final newline and reran staged diff check",
+      "result": "failure diagnostic observed; command exit code not separately captured"
+    }
+  ],
+  "deferred": [
+    "E01 full scans and cross-platform locked builds",
+    "real PostgreSQL/Redis integration, full security/concurrency matrix",
+    "E04 full browser/visual/WCAG matrix and DEC-019 baseline approval",
+    "ADMIN-005 upload/object storage/configuration/approval/audit implementation"
+  ],
+  "a01_remaining_development_gap": "none",
+  "release_claim": "not Verified; no stage or release gate passed; no deployment or push",
+  "evidence_sha256": {
+    "build-tests.txt": "407ab246cdd83bde5f1e124a8e87a1d93eb11aa5681c002961067194582d5341",
+    "build.txt": "45b4afec00c8ceaf77c65ad1a427d9d60d20f17320c822433ccb4a832ed84423",
+    "commands.txt": "93416b0b2d86c23966ab97b6cdfb08e6db96638bee36b3e29df21da7042b4daf",
+    "dev-check.txt": "78f8d4ffa9acc4c8aef439a25e5f484d561e5827be4494b9a29ba76708d0e7ee",
+    "freeze.json": "9cfbd0a960ff5f7fd76c9976eaaa6a511e2f110d0b1e7cff9d374bf842b57e86",
+    "http.json": "f7f7ba5a354c9c75924161ed8a8ce229518de924021d029396c54135eff63f2e",
+    "summary.md": "fb34bd84efd1e1dc1f182d7fef18a1cb5d66621b3086ae8b8310bd8980c29bb0",
+    "web-tests.txt": "8732117fbee5d2469b4405a3411775e54dd365f1c2b21bb67bb6297bec763090"
+  },
+  "staged_review": {
+    "result": "pass",
+    "files": 36,
+    "checks": [
+      "per-file cached diff review",
+      "UTF-8/LF/final newline",
+      "scope and sensitive-value review",
+      "local documentation links and evidence hashes",
+      "cached/worktree byte equality",
+      "g.md preserved and unstaged",
+      "dist/caches/AGENTS ignored"
+    ]
+  }
+}

@@ -138,7 +138,7 @@ WP-MVP-A00 参考标的本地化（开发第一步，无依赖）
 
 交付：Rust workspace、`bbbcm-web`、`bbbcm-worker`、`bbbcm-cli`、格式化、Clippy、测试、依赖审计、Secret 扫描和构建产物。
 
-已落地（状态与证据见 `99`）：16 成员 workspace、三个可执行、`rustfmt.toml`、`rust-toolchain.toml`，以及 `scripts/dev-check.sh` 开发期最小集入口。工具链/锁文件和依赖审计、Secret 扫描规则/入口由 `WP-M0-03` 共用交付，不在 A01 建第二套。A01 待交付实际 esbuild 静态资产构建脚本——输入 `apps/web/static/{css,js,img,fonts}`，输出 `static/dist/` 内容哈希文件与 `manifest.json`，由 `apps/web/src/assets.rs` 读取，指纹路径响应 `Cache-Control: immutable, max-age=1y`，源路径不入生产；M0-03 锁定前置不等于 A01 完成。
+已落地（状态与证据见 `99` 第 5.3 节）：16 成员 workspace、三个可执行、`rustfmt.toml`、`rust-toolchain.toml`，以及 `scripts/dev-check.sh` 开发期最小集入口。工具链/锁文件和依赖审计、Secret 扫描规则/入口由 `WP-M0-03` 共用交付，不在 A01 建第二套。A01 的 `scripts/assets.py` 与 `build-assets.mjs` 实际编译 `apps/web/static/{css,js,img,fonts}`，输出 `static/dist/` 完整 SHA-256 文件名与 `manifest.json`，处理 CSS 字体/图片及 JS 文件导入；`apps/web/src/assets.rs` 启动校验后为现有 SSR 注入 helper，并以 `/assets/{*path}` 提供一年 immutable 的允许列表资源。staging/production 缺失或损坏产物拒绝启动，不暴露源资产或 A00 夹具；开发/测试仅在默认 dist 尚未生成时提供明确提示的源模式。DEC-035 采用空品牌覆盖契约，写入/对象存储仍归 ADMIN-005。A00 模板仅接资源 URL，不重置冻结记录。操作手册为 `docs/development/assets.md`；独立资产测试不无条件加入 dev-check（DEC-039）。
 
 开发期验证：格式化、Clippy `-D warnings`、单元测试、SQLite 冒烟（适用时）。
 

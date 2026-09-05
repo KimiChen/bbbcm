@@ -1,0 +1,18 @@
+
+> bbbcm-build@0.1.0 assets:test
+> node --test scripts/test-assets.mjs
+
+✔ actual A00 inventory: complete SHA-256 manifest, CSS references and byte-identical rebuild (68.605542ms)
+✔ esbuild bundles CSS imports, TypeScript, JS imports and local binary exports; hashes propagate (29.872583ms)
+✔ remote CSS/imports, unknown/missing dependencies and code warnings fail without replacing old dist (77.895833ms)
+✔ symlink source and output cannot escape or expose other files (4.221542ms)
+✔ clean is repeatable, scoped to dist, and never steals a concurrent build lock (13.786958ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 247.173333
+node 24.20.0

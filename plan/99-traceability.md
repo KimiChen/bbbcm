@@ -103,7 +103,7 @@
 | `WP-M0-03` | Implemented（开发期，2026-09-05） | 技术与供应链基线已交付：保留 Rust/Cargo、共用 Node/npm/esbuild 锁文件、固定测试镜像与扩展输入、扫描配置及复现入口。负责人、依赖、交付物、测试设计与证据见第 5.2 节；沿用现有 Workspace 与 A00，未授予 Verified 或推进任何阶段/发布门禁。 |
 | `WP-M0-04..06` | Not started | 已存在的架构和配置骨架属于提前开发，不替代这些工作包所需的负责人登记、完整交付与评审证据。 |
 | `WP-MVP-A00` | Implemented（开发期重做，2026-09-05） | 14个隔离SSR夹具、30项本地源资产、模板结构/CSS类名冻结、17张本机原始参考截图和开发期检查已交付，详见第5.1节。按用户修改后的 `05` 与 `DEC-045` 如实登记未知许可并本机版本化；E04/DEC-019仍未执行，不授予 `Verified`。代码版本为本条记录所在实现提交。 |
-| `WP-MVP-A01` | In progress（开发期，2026-09-05） | 交付物随 `386df32` 与后续评审提交落地：`Cargo.toml`（16 成员 workspace，`rust-version = 1.88`）、三个可执行、`rustfmt.toml`、`rust-toolchain.toml`（钉 1.97.0）、七步 `scripts/dev-check.sh` 与 `smoke-routes.txt`、`LICENSE`、`.editorconfig`、`.gitattributes`。本轮 M0-03 共用交付 Node/npm/esbuild 和 Cargo/npm 锁定策略、Syft/Trivy/Gitleaks 配置与扫描入口，见第 5.2 节；不再另建 cargo-deny/cargo-audit 或另一套 npm 锁文件。**待交付**：实际 esbuild 管线、static/dist 内容哈希、manifest helper 与 immutable 资产路由。正式全量依赖/Secret 扫描、跨平台锁定构建留 E01。当前最小集 65 个单元测试和 48 条 HTTP 冒烟通过，SQLite 迁移执行器未接入而跳过（A03），不记作迁移验证。依赖仍按 `04` 的 M0-01/M0-03，开发前置交付不代表 A01 完成。 |
+| `WP-MVP-A01` | Implemented（开发期，2026-09-05） | 沿用16成员Workspace、三个可执行与七步dev-check；复用 M0-03 锁定的 Node/npm/esbuild 和根 npm 锁文件，完成真实资产构建、30项 SHA-256 产物与 manifest、Rust 加载校验/SSR helper、immutable 指纹路由、生产隔离及操作手册。原A00冻结未改，模板仅11处资源URL接线。5项构建测试、15项web测试、四环境492次HTTP/84个SSR变体/8次启动拒绝、最小集72个单元测试和51条HTTP冒烟、diff与暂存区逐文件复核通过；SQLite迁移明确跳过（A03）。本轮开发交付无剩余缺口，代码版本为本条证据所在的 `新增：完成 WP-MVP-A01 静态资产构建与指纹服务` 提交；完整说明、依赖、测试与证据见第5.3节。E01/E04完整矩阵和阶段/发布门禁仍未通过。 |
 | `WP-MVP-A02` | In progress（开发期，2026-09-05） | 部分交付：`config/default.toml` 与 development/test/production 三份脱敏模板（含 `server.environment`、`database.schema_prefix`、`max_connections`）、`crates/platform/src/config.rs`（`Environment` 枚举、全结构 `deny_unknown_fields`、`validate()` 覆盖预留后端拒绝启动／SQLite 单写者／前缀合法性／绑定地址／生产必须启用 Redis）、`crates/platform/src/flags.rs`（14 个 MVP flag，默认全关，key 唯一性有单元测试）。**待交付**：配置分层加载与 `config/local.toml` 覆盖、flag 持久化与两个受控写入口（`DEC-028`）、只读与紧急关闭 |
 | `WP-MVP-A03` | In progress（开发期，2026-09-05） | 部分交付：`db/migrations/{postgres,sqlite,mysql8}/` 三轨目录、`crates/platform-db/src/migrations.rs` 的 `verify_alignment` N 轨编号对齐骨架（文件名格式、同轨重复编号、集合差异与仓库目录测试）、`crates/platform-db/src/lib.rs` 双后端连接池（连接数取自配置、SQLite WAL/busy_timeout/外键、FTS5 单连接探测、PostgreSQL 扩展探测）、`crates/platform/src/identifiers.rs` 的受信 `SchemaRenderer`（15 个逻辑 schema 注册表、表名校验、63 字节上限、`DEC-029` 渲染）。**已知缺口**：当前 `verify_alignment` 豁免所有空轨，尚未收紧为只豁免 `mysql8`；PostgreSQL 或 SQLite 单轨为空时可能误判通过。**待交付**：修复该缺口、迁移执行器、初始 schema、`bbbcm-cli db migrate/status/seed`、PostgreSQL 角色与 ACL policy、共享 SQL lint。 |
 | `WP-MVP-A04..A06` | Not started | - |
@@ -146,13 +146,27 @@
 | 当前交付与证据 | 负责人/依赖/测试设计在实施前登记，并随用户并行提交 `6a93847` 保留。Rust/Cargo 1.97.0 与 Cargo.lock 未升级；Node 24.20.0/npm 11.19.0/esbuild 0.28.2 共用锁定；PostgreSQL 16.15、Redis 8.2.9 双平台 manifest/config 摘要、pg_jieba 1.1.1 三层源码与 pg_trgm 1.6、58 个 APK 的来源/摘要/包内元数据已核实，配置在 `supply-chain/lock.json`。入口为 `scripts/supply-chain.py`、`supply-chain-scan.py` 与 `test_supply_chain.py`，工具版本为 Syft 1.51.1、Trivy 0.74.0、Gitleaks 8.30.1。最新开发期证据见 [`summary.md`](../docs/evidence/m0/wp-m0-03/dev-20260905/summary.md) 及同级 `upstream.json`、`validation.json`。受控 npm ci 和离线重装、两个离线构建上下文、10 项合成夹具测试、./scripts/dev-check.sh（65 个单元测试、48 条 HTTP 冒烟）、git diff --check 和暂存区逐文件复核均通过；暂存区 Gitleaks 无发现，SQLite 迁移明确跳过。保留初次失败和修正记录，未以开发期结果替代 E01 全量验收。 |
 | 剩余与硬化边界 | M0-03 不实现 A01 的资产构建管线、dist、manifest helper 或 immutable 路由。本机无 Docker，未运行扩展镜像构建、真实 PostgreSQL/Redis；派生镜像只锁输入及配方，没有虚构产物 digest。跨宿主重构建、实际镜像/完整候选 SBOM、许可证/漏洞/Secret 全量扫描、Critical/High 清零和正式证据由 E01 执行；E04/DEC-019 与各生产待决保持原范围。A00 未修改，DEC-045/046 的资产登记与本机版本化边界保持，不新增业务 Feature Flag。 |
 
+### 5.3 `WP-MVP-A01` 静态资产构建与指纹服务（2026-09-05）
+
+| 设计项 | 登记内容 |
+|---|---|
+| 状态与责任 | 实施前已登记为 `In progress` 并补齐设计；本轮全部开发期交付、针对性测试和最小集完成，当前为 `Implemented`。项目负责人及最终批准人：项目所有者（用户）；Codex 负责实现、验证和本机新建提交。代码版本为本条证据所在的 `新增：完成 WP-MVP-A01 静态资产构建与指纹服务` 提交。仅本机开发，不部署、不推送；本轮开始时已有的 `g.md` 改动保持未暂存。 |
+| 需求与依赖 | 平台任务 `WP-MVP-A01`，对应 `01` §7.1、§7.5 内容哈希资源一年缓存、§8.1 与 `02` §2.2/2.3/2.4；不代表产品需求或 `ADMIN-005` 完成。主依赖 `WP-M0-01`、`WP-M0-03` 已 Implemented，复用现有 Workspace 和 A00。遵守 DEC-020/032/035/039/045/046；DEC-019 及生产 provider 待决不改变本包实现范围。 |
+| 交付物 | 沿用三个可执行、16 成员 Workspace、七步开发期最小集及 M0-03 共用 Node 24.20.0/npm 11.19.0/esbuild 0.28.2、根 package-lock.json 与受控安装入口。`scripts/assets.py`、`build-assets.mjs` 编译 CSS/JS/TS 并指纹化图片/字体，生成30项 SHA-256 产物与 manifest；`assets.rs`、`fixture_assets.rs`、AppState/main/router 提供启动校验、SSR helper、指纹路由及原源资产环境隔离。模板只11处URL改为helper，原冻结记录不改。`test-assets.mjs`、`assets_tests.rs`、`test-assets-http.py` 和 `asset_freeze.py` 提供针对性验证；操作说明见 `docs/development/assets.md`。npm锁文件与版本未动，Cargo.lock仅给web链接已有 serde_json/sha2/thiserror，不升级registry包；dist、缓存与临时产物保持忽略。 |
+| 接口与失败边界 | 独立按需构建/测试/清理命令；`/assets/{*path}` 仅返回经 manifest 校验的指纹资源，成功响应一年 immutable 和 nosniff，未知资源404、非法路径明确拒绝。启动加载后保留不可变内存快照，不按请求拼文件路径；staging/production 缺失或损坏 manifest 拒绝启动，源资产与 A00 夹具不可达。仅 development/test 在默认 dist 尚未生成时允许明确提示的 A00 源模式，使干净 dev-check 不依赖完整资产构建；显式指定目录或已有损坏 manifest 不回退。 |
+| 模板与品牌覆盖 | A00 现有模板只允许资源 URL/helper 接线，保持标签顺序、CSS 类名与全部源资产字节；保留原 structure-freeze.json，不重新采集、截图、制作资产或重置冻结。DEC-035 只提供受限品牌覆盖解析契约及空覆盖装配，未来上传、对象存储、尺寸/格式校验、审批/审计与生效版本由 ADMIN-005 所属包交付，本轮不开放写入口。 |
+| 数据、迁移、权限、事务与 Outbox | 全部不适用：无业务数据读写、Schema、迁移、权限或业务状态事务，不定义 Outbox 事件；资源允许列表和环境隔离是静态服务边界，不新增业务授权系统。 |
+| 测试设计 | 按需运行实际 esbuild 构建验证：内容哈希、重复构建一致性、清单覆盖/文件摘要、CSS 字体及图片引用、无热链、JS/TS 合成夹具和失败保留旧产物；Rust 单元及路由测试覆盖 manifest 缺失/损坏/不完整、helper 错误与品牌覆盖优先级、SSR 实际指纹 URL、GET/HEAD 缓存头、404、非法路径、任意文件/源资产/夹具生产隔离。独立核对冻结模板只发生 URL 替换。随后 ./scripts/dev-check.sh、git diff --check、暂存区逐文件复核。SQLite 迁移未接入如实跳过；正式全量扫描、跨平台、安全与视觉完整矩阵留 E01/E04，不向每次 dev-check 无条件加入资产构建。 |
+| Feature Flag 与状态边界 | 不新增、不启用任何业务 Feature Flag。原资产未知许可继续如实登记，DEC-045/046 已取消的本机版本化前置不恢复。只同步 `04`、`20`、`99` 实际交付与证据；不标记 Verified，不宣布阶段或发布门禁通过。 |
+| 当前证据与缺口 | 实施前已核对 AGENTS、计划入口及01/02/04/05/06/10/20/90/99。最新证据见 [summary.md](../docs/evidence/mvp/wp-mvp-a01/dev-20260905/summary.md) 及同级 validation.json、http.json、freeze.json 和命令/日志。真实构建及5项构建测试、15项web测试、492次四环境HTTP/84个SSR变体/8次启动拒绝、M0-03基线一致性、无dist下 ./scripts/dev-check.sh（72个单元测试、51条HTTP冒烟）、git diff --check 与36个暂存文件逐文件复核通过；SQLite迁移执行器未接入，明确跳过。原A00全部源资产/冻结保持，实际SSR反向还原URL后与原42种响应字节一致。初次Python前置、占位文件、macOS路径和证据文件末尾空行失败均保留修正记录；本轮开发期交付无剩余缺口。真实依赖/全量扫描/跨平台/安全完整矩阵留E01，视觉与DEC-019留E04，ADMIN-005业务写入与对象存储未提前实施。 |
+
 ## 6. 门禁状态
 
 | 门禁 | 当前状态 | 原因 |
 |---|---|---|
 | M0 Repository Ready | In progress | `WP-M0-01`、`WP-M0-03` 已为 `Implemented`；`WP-M0-02` 受 `DEC-019` 阻塞，`WP-M0-04..06` 尚未完成，统一硬化证据和阶段门禁尚未通过。 |
 | M0 Production Approved | Blocked | 多项决策、人员和生产事项待定 |
-| MVP Repository Ready | In progress | `WP-MVP-A01..A03` 已部分落地，`WP-MVP-A00` 已完成本轮开发交付（DEC-045本机版本化），其余 MVP 工作包及统一硬化尚未完成。 |
+| MVP Repository Ready | In progress | `WP-MVP-A00/A01` 已完成开发期交付，`A02/A03` 仍为部分交付，其余 MVP 工作包及统一硬化尚未完成；DEC-045/046本机版本化不代替正式门禁。 |
 | MVP Production Approved | Blocked | 依赖 M0、真实依赖和 18 条门槛 |
 | P1-A/P1-B/P2/Later | Closed | 前置阶段和 `DEC-014` 未满足 |
 

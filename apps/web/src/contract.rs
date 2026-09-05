@@ -1,5 +1,6 @@
 //! 页面模板使用的视图合同；不暴露数据库行或领域内部结构。
 
+use crate::assets::filters;
 use askama::Template;
 
 /// 每个页面都显式携带提示、错误与空状态，模板在编译期检查这些字段。

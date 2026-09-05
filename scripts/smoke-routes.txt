@@ -1,7 +1,10 @@
 # SQLite 冒烟路由清单：<路径> <期望状态码>
 # 每个工作包退出时把本包新增路由追加到这里（plan/90 第 4 节）。
-# A00源资产仅在development/test挂载；A01指纹资产管线另行交付。
+# A00源资产仅在development/test挂载；A01指纹成功响应见独立 test-assets-http.py。
 /health 200
+/assets/unknown.css 404
+/assets/manifest.json 404
+/assets/%2e%2e%2f.env 400
 / 200
 
 # WP-MVP-A00: stable synthetic SSR, test environment only

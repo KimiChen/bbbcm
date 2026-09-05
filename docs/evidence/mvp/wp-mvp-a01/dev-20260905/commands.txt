@@ -1,0 +1,18 @@
+# 使用已有 Python 3.12.14 运行共用 M0-03 Python 入口；Node/npm 由入口按锁定版本选择。
+./scripts/supply-chain.py install-tools node
+./scripts/supply-chain.py npm-ci
+./scripts/supply-chain.py check
+./scripts/assets.py build
+./scripts/assets.py test
+python3 scripts/asset_freeze.py
+cargo test --locked --package bbbcm-web
+python3 scripts/test-assets-http.py --output .cache/a01/http-validation-final.json
+./scripts/assets.py clean
+./scripts/dev-check.sh
+# 以无 dist 的状态完成最小集后恢复本机生成产物，并用当前源码复核 HTTP。
+./scripts/assets.py build
+python3 scripts/test-assets-http.py --output .cache/a01/http-validation-final.json
+git diff --check
+# 仅显式暂存本轮相关文件，然后逐文件查看 git diff --cached -- <file>。
+git diff --cached --check
+git diff --cached --stat

@@ -1,0 +1,6 @@
+
+> bbbcm-build@0.1.0 assets:build
+> node scripts/build-assets.mjs build
+
+Built 30 fingerprint assets and manifest.json
+node 24.20.0
