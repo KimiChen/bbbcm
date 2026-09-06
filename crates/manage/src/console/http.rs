@@ -10,7 +10,7 @@
 use crate::console::view::{Field, Link, Page, PageRenderer};
 use axum::{
     Form, Router,
-    extract::{OriginalUri, Path, State},
+    extract::{OriginalUri, Path, Query, State},
     http::{HeaderMap, StatusCode, header},
     response::{IntoResponse, Redirect, Response},
     routing::get,
@@ -70,6 +70,22 @@ pub trait ConsoleBackend: Send + Sync {
         id: i64,
         form: &'a HashMap<String, String>,
     ) -> BoxFuture<'a, Result<(), ConsoleError>>;
+    /// 加载移帖表单所需的主题事实：(标题, 当前版块名, 当前版本, 可选版块列表)。
+    ///
+    /// 版本号由服务端在此填入隐藏字段，而不是让人手填——它是乐观并发的 CAS 令牌，
+    /// 手填既难用又容易填错，而填错的后果是一次静默失败或误覆盖。
+    fn move_form<'a>(
+        &'a self,
+        raw_session: &'a str,
+        csrf: &'a str,
+        topic_id: i64,
+    ) -> BoxFuture<'a, Result<MoveForm, ConsoleError>>;
+    /// 全站举报明细队列。
+    fn reports<'a>(
+        &'a self,
+        raw_session: &'a str,
+        csrf: &'a str,
+    ) -> BoxFuture<'a, Result<Vec<ReportRow>, ConsoleError>>;
     /// 移帖。
     fn move_topic<'a>(
         &'a self,
@@ -80,6 +96,11 @@ pub trait ConsoleBackend: Send + Sync {
 }
 
 pub type BoxFuture<'a, T> = std::pin::Pin<Box<dyn std::future::Future<Output = T> + Send + 'a>>;
+
+/// 移帖表单所需的主题事实：(标题, 当前版块名, 当前版本, 可选目标版块列表)。
+pub type MoveForm = (String, String, i64, Vec<(String, String)>);
+/// 一行举报明细：(类型, 时间, 举报人标识)。
+pub type ReportRow = (String, String, String);
 
 /// 控制台错误。
 ///
@@ -114,6 +135,7 @@ where
         .route("/manage/mfa", get(page).post(submit))
         .route("/manage", get(page))
         .route("/manage/cases", get(page))
+        .route("/manage/reports", get(page))
         .route("/manage/cases/{id}", get(page).post(submit))
         .route("/manage/content", get(page).post(submit))
         .with_state(state)
@@ -185,23 +207,33 @@ fn render(state: &ConsoleState, page: &Page, status: StatusCode) -> Response {
 }
 
 fn navigation(path: &str) -> Vec<Link> {
-    ["/manage", "/manage/cases", "/manage/content"]
-        .into_iter()
-        .zip(["工作队列", "案件", "内容治理"])
-        .map(|(href, label)| {
-            let mut link = Link::new(label, href);
-            link.active = path == href;
-            link
-        })
-        .collect()
+    [
+        "/manage",
+        "/manage/cases",
+        "/manage/reports",
+        "/manage/content",
+    ]
+    .into_iter()
+    .zip(["工作队列", "案件", "举报", "内容治理"])
+    .map(|(href, label)| {
+        let mut link = Link::new(label, href);
+        link.active = path == href;
+        link
+    })
+    .collect()
 }
 
 async fn page(
     State(state): State<ConsoleState>,
     OriginalUri(uri): OriginalUri,
+    Query(query): Query<HashMap<String, String>>,
     headers: HeaderMap,
 ) -> Response {
     let path = uri.path();
+    // 只解析本模块用到的两个查询参数：主题 ID 与动作结果标识。
+    // 其余参数一律忽略，不做任何转发或回显，避免把查询串变成注入面。
+    let topic_query = query.get("topic_id").and_then(|v| v.parse::<i64>().ok());
+    let done = query.get("done").map(String::as_str);
     let Some(backend) = state.backend.clone() else {
         // 未装配：整体不可用，而不是渲染一个空壳后台。
         return StatusCode::NOT_FOUND.into_response();
@@ -240,6 +272,13 @@ async fn page(
 
     let mut page = Page::new("管理后台");
     page.nav = navigation(path);
+    // 动作完成后经重定向回到本页，用查询参数带上结果标识再渲染提示——
+    // 直接渲染会让刷新变成重复提交。
+    page.notice = match done {
+        Some("moved") => Some("主题已移动，并已写入审计。".into()),
+        Some("case") => Some("案件已更新。".into()),
+        _ => None,
+    };
     page.operator = Some(operator);
     page.csrf = csrf.clone();
     match path {
@@ -282,16 +321,52 @@ async fn page(
                 None => return StatusCode::NOT_FOUND.into_response(),
             }
         }
+        "/manage/reports" => {
+            page.title = "举报队列".into();
+            match backend.reports(&raw, &csrf).await {
+                Ok(rows) => {
+                    page.case = Some(crate::console::view::CaseDetail {
+                        id: 0,
+                        target: "全站举报".into(),
+                        status: "",
+                        priority: "",
+                        escalated: false,
+                        reports: rows.len() as i64,
+                        evidence: Vec::new(),
+                        transitions: Vec::new(),
+                        report_details: rows,
+                    })
+                }
+                Err(ConsoleError::Denied) => page.error = Some("没有查看举报的权限。".into()),
+                Err(_) => page.error = Some("暂时无法读取举报队列。".into()),
+            }
+        }
         "/manage/content" => {
             page.title = "内容治理".into();
             page.action = "/manage/content".into();
-            page.submit = "移动主题";
-            page.fields
-                .push(Field::input("topic_id", "主题 ID", "number"));
-            page.fields
-                .push(Field::input("forum_id", "目标版块 ID", "number"));
-            page.fields
-                .push(Field::input("version", "主题版本", "number"));
+            // 两步：先按主题 ID 加载，再确认移动。第一步只填一个数字；
+            // 第二步的版本号由服务端填进隐藏字段，目标版块用下拉选。
+            match topic_query {
+                Some(topic_id) => match backend.move_form(&raw, &csrf, topic_id).await {
+                    Ok((title, current, version, forums)) => {
+                        page.submit = "移动主题";
+                        page.notice = Some(format!("《{title}》当前位于「{current}」。"));
+                        page.fields
+                            .push(Field::hidden("topic_id", topic_id.to_string()));
+                        page.fields
+                            .push(Field::hidden("version", version.to_string()));
+                        page.fields
+                            .push(Field::select("forum_id", "目标版块", forums));
+                    }
+                    Err(ConsoleError::Denied) => page.error = Some("没有移动主题的权限。".into()),
+                    Err(_) => page.error = Some("找不到该主题，或它当前不可移动。".into()),
+                },
+                None => {
+                    page.submit = "加载主题";
+                    page.fields
+                        .push(Field::input("topic_id", "主题 ID", "number"));
+                }
+            }
         }
         _ => {
             page.title = "工作队列".into();
@@ -372,7 +447,13 @@ async fn submit(
                 Err(e) => Err(e),
             }
         }
-        "/manage/content" => backend.move_topic(&raw, &csrf, &form).await.map(|_| ()),
+        "/manage/content" => {
+            return match backend.move_topic(&raw, &csrf, &form).await {
+                // 带上结果标识重定向：刷新不会重复提交，用户也能确认动作确实完成了。
+                Ok(_) => redirect("/manage/content?done=moved"),
+                Err(error) => failure_page(&state, &path, csrf, error),
+            };
+        }
         path if path.starts_with("/manage/cases/") => {
             match path.rsplit('/').next().and_then(|v| v.parse().ok()) {
                 Some(id) => backend.case_action(&raw, &csrf, id, &form).await,
@@ -382,32 +463,35 @@ async fn submit(
         _ => return StatusCode::NOT_FOUND.into_response(),
     };
     match outcome {
-        Ok(()) => redirect(&path),
+        Ok(()) => redirect(&format!("{path}?done=case")),
         Err(ConsoleError::BindingRequired) => redirect("/manage/mfa"),
         Err(ConsoleError::Unauthenticated) => redirect("/manage/login"),
-        Err(error) => {
-            let mut page = Page::new("操作未完成");
-            page.nav = navigation(&path);
-            page.csrf = csrf;
-            page.error = Some(
-                match error {
-                    ConsoleError::Denied => "没有执行该操作的权限。",
-                    ConsoleError::InvalidInput => "输入无效，请检查后重试。",
-                    _ => "操作暂时无法完成，请稍后重试。",
-                }
-                .into(),
-            );
-            render(
-                &state,
-                &page,
-                match error {
-                    ConsoleError::Denied => StatusCode::FORBIDDEN,
-                    ConsoleError::InvalidInput => StatusCode::BAD_REQUEST,
-                    _ => StatusCode::SERVICE_UNAVAILABLE,
-                },
-            )
-        }
+        Err(error) => failure_page(&state, &path, csrf, error),
     }
+}
+
+/// 失败页。错误文案只分三档，与 `ConsoleError` 的粒度一致，不透露更细的原因。
+fn failure_page(state: &ConsoleState, path: &str, csrf: String, error: ConsoleError) -> Response {
+    let mut page = Page::new("操作未完成");
+    page.nav = navigation(path);
+    page.csrf = csrf;
+    page.error = Some(
+        match error {
+            ConsoleError::Denied => "没有执行该操作的权限。",
+            ConsoleError::InvalidInput => "输入无效，请检查后重试。",
+            _ => "操作暂时无法完成，请稍后重试。",
+        }
+        .into(),
+    );
+    render(
+        state,
+        &page,
+        match error {
+            ConsoleError::Denied => StatusCode::FORBIDDEN,
+            ConsoleError::InvalidInput => StatusCode::BAD_REQUEST,
+            _ => StatusCode::SERVICE_UNAVAILABLE,
+        },
+    )
 }
 
 fn set_cookie(state: &ConsoleState, response: &mut Response, name: &str, value: &str) {

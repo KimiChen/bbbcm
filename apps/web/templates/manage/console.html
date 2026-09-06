@@ -44,6 +44,7 @@
 <dl class="stats-grid"><div><dt>目标</dt><dd>{{ case.target }}</dd></div><div><dt>状态</dt><dd>{{ case.status }}</dd></div><div><dt>优先级</dt><dd>{{ case.priority }}</dd></div><div><dt>举报数</dt><dd>{{ case.reports }}</dd></div></dl>
 {% if !case.evidence.is_empty() %}<ul class="post-list">{% for item in case.evidence %}<li class="post-item"><div class="post-meta"><code>{{ item.0 }}</code><time>{{ item.1 }}</time></div></li>{% endfor %}</ul>{% endif %}
 {% if !case.transitions.is_empty() %}<nav class="post-meta" aria-label="状态推进">{% for t in case.transitions %}<a href="{{ t.href }}">{{ t.label }}</a>{% endfor %}</nav>{% endif %}
+{% if !case.report_details.is_empty() %}<ul class="post-list">{% for report in case.report_details %}<li class="post-item"><div class="post-meta"><span>{{ report.0 }}</span><time>{{ report.1 }}</time><span>{{ report.2 }}</span></div></li>{% endfor %}</ul>{% endif %}
 {% endif %}
 
 {% if !page.action.is_empty() %}
@@ -53,6 +54,7 @@
 {% if field.kind == "hidden" %}<input type="hidden" name="{{ field.name }}" value="{{ field.value }}" />
 {% else %}<label class="grid"><span>{{ field.label }}</span>
 {% if field.kind == "textarea" %}<textarea name="{{ field.name }}"{% if field.required %} required{% endif %}>{{ field.value }}</textarea>
+{% else if field.kind == "select" %}<select name="{{ field.name }}"{% if field.required %} required{% endif %}>{% for option in field.options %}<option value="{{ option.0 }}">{{ option.1 }}</option>{% endfor %}</select>
 {% else %}<input type="{{ field.kind }}" name="{{ field.name }}" value="{{ field.value }}"{% if field.required %} required{% endif %} autocomplete="off" />{% endif %}</label>{% endif %}
 {% endfor %}
 <button class="auth-submit" type="submit">{{ page.submit }}</button>

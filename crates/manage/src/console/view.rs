@@ -29,6 +29,11 @@ pub struct Field {
     pub kind: &'static str,
     pub value: String,
     pub required: bool,
+    /// `select` 字段的选项：(取值, 显示名)。其他类型为空。
+    ///
+    /// 下拉而不是让人手填 ID：填错版块 ID 会把主题移到一个存在但完全无关的版块，
+    /// 而这类错误在事后很难被发现。
+    pub options: Vec<(String, String)>,
 }
 impl Field {
     pub fn input(name: &'static str, label: &'static str, kind: &'static str) -> Self {
@@ -38,6 +43,18 @@ impl Field {
             kind,
             value: String::new(),
             required: true,
+            options: Vec::new(),
+        }
+    }
+    /// 下拉选择字段。
+    pub fn select(name: &'static str, label: &'static str, options: Vec<(String, String)>) -> Self {
+        Self {
+            name,
+            label,
+            kind: "select",
+            value: String::new(),
+            required: true,
+            options,
         }
     }
     pub fn hidden(name: &'static str, value: impl Into<String>) -> Self {
@@ -47,6 +64,7 @@ impl Field {
             kind: "hidden",
             value: value.into(),
             required: false,
+            options: Vec::new(),
         }
     }
 }
@@ -79,6 +97,11 @@ pub struct CaseDetail {
     pub evidence: Vec<(String, String)>,
     /// 允许推进到的下一状态。由封闭迁移表算出，前端不做判断。
     pub transitions: Vec<Link>,
+    /// 本案的举报明细：(类型, 时间, 举报人标识)。
+    ///
+    /// 举报正文不在这里——它由举报人自由填写，属于案件材料而非队列信息，
+    /// 展示它会让审核员在列表页就接触到大量未经处理的用户文本。
+    pub report_details: Vec<(String, String, String)>,
 }
 
 /// 一个管理页面。

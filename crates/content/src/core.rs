@@ -711,6 +711,40 @@ impl ContentService {
         Ok(counted)
     }
 
+    /// 版块目录，供管理侧的目标版块选择使用。
+    ///
+    /// 返回全部版块（含仅成员可见的），因为调用方已经通过管理授权——
+    /// 管理动作的可见性由权限与 ABAC 范围决定，不由公开可见性决定。
+    pub async fn catalog(&self, now: DateTime<Utc>) -> Result<Vec<Forum>, ContentError> {
+        let mut tx = DbTransaction::begin_read(&self.pool).await?;
+        let mut c = tx.connection();
+        self.flags(&mut c, None).await?;
+        let _ = canonical(now)?;
+        let forums = repo::forums(&mut c, &self.renderer).await;
+        tx.rollback().await?;
+        forums
+    }
+
+    /// 主题的管理侧摘要：(标题, 当前版块 ID, 当前版本)。
+    ///
+    /// 版本号是移帖的乐观并发 CAS 令牌，由这里读出后填进表单隐藏字段，
+    /// 而不是让操作者手填——手填既难用，填错时又只会得到一次静默的冲突失败。
+    pub async fn topic_summary(
+        &self,
+        topic_id: i64,
+        now: DateTime<Utc>,
+    ) -> Result<(String, i64, i64), ContentError> {
+        positive(topic_id)?;
+        let mut tx = DbTransaction::begin_read(&self.pool).await?;
+        let mut c = tx.connection();
+        self.flags(&mut c, None).await?;
+        let _ = canonical(now)?;
+        let topic = repo::topic(&mut c, &self.renderer, topic_id).await;
+        tx.rollback().await?;
+        let topic = topic?.ok_or(ContentError::NotFound)?;
+        Ok((topic.title, topic.forum_id, topic.version))
+    }
+
     /// `NAV-004` 站点统计。
     ///
     /// 独立只读事务：它挂在每个页面的侧栏上，不应该被卷进任何写路径，

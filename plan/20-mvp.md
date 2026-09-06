@@ -85,7 +85,7 @@ DEC-052批准C01/C02使用A02/B01/B02/B06既有技术切片；安全Markdown/预
 
 开发期最小集（每次提交）：
 
-- [ ] 格式化、Clippy `-D warnings`、单元测试、SQLite 冒烟、`git diff --check` 与暂存区复核通过（`DEC-039`：不含独立构建步）。
+- [x] 格式化、Clippy `-D warnings`、单元测试、SQLite 冒烟、`git diff --check` 与暂存区复核通过（`DEC-039`：不含独立构建步）。本项按「每次提交」口径成立：`./scripts/dev-check.sh` 七步在每一轮提交前均通过，最新一次结果登记于 `99` 对应实施小节。
 
 统一硬化阶段（`WP-MVP-E01/E02/E04/E05`）：
 

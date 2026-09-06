@@ -103,5 +103,6 @@
 /manage 404
 /manage/login 404
 /manage/cases 404
+/manage/reports 404
 /manage/users 404
 /manage/config 404

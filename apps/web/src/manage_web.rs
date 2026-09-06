@@ -369,6 +369,23 @@ impl ConsoleBackend for Backend {
                         .collect(),
                     // 可推进的状态由封闭迁移表算出，前端不做判断。
                     transitions: allowed_transitions(case.status, id),
+                    report_details: moderation::case_repo::report_details(
+                        &mut c,
+                        &self.renderer,
+                        id,
+                        100,
+                    )
+                    .await
+                    .map_err(|_| ConsoleError::Unavailable)?
+                    .into_iter()
+                    .map(|(category, at, reporter)| {
+                        (
+                            category_label(&category).to_owned(),
+                            at.format("%Y-%m-%d %H:%M UTC").to_string(),
+                            format!("#{reporter}"),
+                        )
+                    })
+                    .collect(),
                 })
             }
             .await;
@@ -439,6 +456,109 @@ impl ConsoleBackend for Backend {
         })
     }
 
+    fn move_form<'a>(
+        &'a self,
+        raw: &'a str,
+        csrf: &'a str,
+        topic_id: i64,
+    ) -> BoxFuture<'a, Result<manage::console::http::MoveForm, ConsoleError>> {
+        Box::pin(async move {
+            let mut tx = DbTransaction::begin(&self.pool)
+                .await
+                .map_err(|_| ConsoleError::Unavailable)?;
+            let outcome = async {
+                let mut c = tx.connection();
+                // 加载表单同样要过授权门：没有移帖权限的人连表单都不该看到，
+                // 否则它会变成一个「这个主题在哪个版块」的探测接口。
+                crate::management_gate::authorize(
+                    &mut c,
+                    &self.renderer,
+                    raw,
+                    csrf,
+                    "community.content.move",
+                    "content",
+                    topic_id,
+                    None,
+                    Utc::now(),
+                )
+                .await
+                .map_err(|_| ConsoleError::Denied)?;
+                let catalog = self
+                    .content
+                    .catalog(Utc::now())
+                    .await
+                    .map_err(|_| ConsoleError::Unavailable)?;
+                let topic = self
+                    .content
+                    .topic_summary(topic_id, Utc::now())
+                    .await
+                    .map_err(|_| ConsoleError::InvalidInput)?;
+                let current = catalog
+                    .iter()
+                    .find(|f| f.id == topic.1)
+                    .map(|f| f.name.clone())
+                    .unwrap_or_else(|| format!("版块 #{}", topic.1));
+                // 目标版块列表排除当前版块：移到原地会被命令拒绝，
+                // 让它出现在下拉里只会制造一次必然失败的操作。
+                let forums = catalog
+                    .into_iter()
+                    .filter(|f| f.id != topic.1)
+                    .map(|f| (f.id.to_string(), f.name))
+                    .collect();
+                Ok::<_, ConsoleError>((topic.0, current, topic.2, forums))
+            }
+            .await;
+            let _ = tx.rollback().await;
+            outcome
+        })
+    }
+
+    fn reports<'a>(
+        &'a self,
+        raw: &'a str,
+        csrf: &'a str,
+    ) -> BoxFuture<'a, Result<Vec<manage::console::http::ReportRow>, ConsoleError>> {
+        Box::pin(async move {
+            let mut tx = DbTransaction::begin(&self.pool)
+                .await
+                .map_err(|_| ConsoleError::Unavailable)?;
+            let outcome = async {
+                let mut c = tx.connection();
+                crate::management_gate::authorize(
+                    &mut c,
+                    &self.renderer,
+                    raw,
+                    csrf,
+                    "moderation.cases.read",
+                    "case",
+                    0,
+                    None,
+                    Utc::now(),
+                )
+                .await
+                .map_err(|_| ConsoleError::Denied)?;
+                moderation::case_repo::report_details(&mut c, &self.renderer, 0, 100)
+                    .await
+                    .map_err(|_| ConsoleError::Unavailable)
+            }
+            .await;
+            let _ = tx.rollback().await;
+            outcome.map(|rows| {
+                rows.into_iter()
+                    .map(|(category, at, reporter)| {
+                        (
+                            category_label(&category).to_owned(),
+                            at.format("%Y-%m-%d %H:%M UTC").to_string(),
+                            // 只给举报人的内部 ID，不带用户名或邮箱：
+                            // 举报人身份属 C2，暴露它会让举报变成一件有风险的事。
+                            format!("#{reporter}"),
+                        )
+                    })
+                    .collect()
+            })
+        })
+    }
+
     fn move_topic<'a>(
         &'a self,
         raw: &'a str,
@@ -473,6 +593,21 @@ impl ConsoleBackend for Backend {
                     _ => ConsoleError::Unavailable,
                 })
         })
+    }
+}
+
+/// 举报类型的中文标签。未知取值原样返回，不猜测也不隐藏。
+fn category_label(key: &str) -> &str {
+    match key {
+        "spam" => "垃圾广告",
+        "harassment" => "辱骂骚扰",
+        "illegal" => "违法违规",
+        "privacy" => "隐私泄露",
+        "infringement" => "侵权",
+        "fraud" => "诈骗",
+        "malware" => "恶意文件",
+        "other" => "其他",
+        other => other,
     }
 }
 

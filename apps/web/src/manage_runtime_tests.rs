@@ -41,7 +41,6 @@ async fn management_routes_outside_this_wave_are_absent_on_the_server() {
     let app = app();
     for path in [
         "/manage/users",
-        "/manage/reports",
         "/manage/support",
         "/manage/privacy",
         "/manage/invites",
@@ -71,6 +70,7 @@ async fn console_is_entirely_absent_until_the_backend_is_assembled() {
         "/manage",
         "/manage/login",
         "/manage/cases",
+        "/manage/reports",
         "/manage/content",
     ] {
         assert_eq!(

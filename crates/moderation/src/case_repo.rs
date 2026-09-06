@@ -266,6 +266,32 @@ pub async fn evidence_digests(
     .collect()
 }
 
+/// 举报明细：(类型, 时间, 举报人标识)。
+///
+/// 刻意不返回举报正文：正文由举报人自由填写，属于案件材料而非队列信息，
+/// 在列表里展示会让审核员在分流阶段就大量接触未经处理的用户文本。
+/// `case_id` 为 0 表示取全站未关闭案件下的举报。
+pub async fn report_details(
+    tx: &mut TransactionConnection<'_>,
+    r: &SchemaRenderer,
+    case_id: i64,
+    limit: i64,
+) -> Result<Vec<(String, DateTime<Utc>, i64)>, ModerationError> {
+    let reports = table(tx, r, "reports")?;
+    let cases = table(tx, r, "cases")?;
+    let rows = tx.fetch_all(&format!("SELECT rp.category AS category, rp.created_at AS created_at, rp.reporter_id AS reporter_id FROM {reports} rp JOIN {cases} c ON c.id = rp.case_id WHERE (? = 0 OR rp.case_id = ?) AND (? <> 0 OR c.closed_at = ?) ORDER BY rp.id DESC LIMIT ?"),
+        &[case_id.into(), case_id.into(), case_id.into(), never(), limit.into()]).await?;
+    rows.iter()
+        .map(|row| {
+            Ok((
+                row.text("category")?,
+                row.time("created_at")?,
+                row.i64("reporter_id")?,
+            ))
+        })
+        .collect()
+}
+
 pub async fn insert_note(
     tx: &mut TransactionConnection<'_>,
     r: &SchemaRenderer,
