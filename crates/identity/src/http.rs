@@ -33,6 +33,7 @@ where
         "/login",
         "/register",
         "/verify-email",
+        "/resend-verification",
         "/forgot-password",
         "/reset-password",
         "/confirm-email",
@@ -141,6 +142,10 @@ fn failure(state: &IdentityWebState, error: IdentityError) -> Response {
         IdentityError::CommitUnknown { .. } => {
             (StatusCode::ACCEPTED, "提交结果尚待确认，请查询原操作")
         }
+        IdentityError::ChallengeRequired { .. } => (
+            StatusCode::PRECONDITION_REQUIRED,
+            "需要完成本地测试挑战后再提交原请求。",
+        ),
         IdentityError::Unavailable => (
             StatusCode::SERVICE_UNAVAILABLE,
             "请求暂未确认，请使用原请求重试",
@@ -169,7 +174,10 @@ async fn gate(
     let policy_read = matches!(path, "/terms" | "/privacy" | "/rules");
     let flag = if path == "/register" {
         Flag::Registration
-    } else if matches!(path, "/verify-email" | "/confirm-email") {
+    } else if matches!(
+        path,
+        "/verify-email" | "/confirm-email" | "/resend-verification"
+    ) {
         Flag::EmailVerification
     } else {
         Flag::PublicRead
@@ -204,6 +212,13 @@ fn row(label: impl Into<String>, value: impl Into<String>) -> Row {
         action: None,
         action_label: "",
         reference: String::new(),
+    }
+}
+fn trust_label(level: Option<&str>) -> &'static str {
+    match level {
+        Some("t0") => "T0",
+        Some("t1") => "T1",
+        _ => "待确认",
     }
 }
 fn value<'a>(form: &'a HashMap<String, String>, name: &str) -> Result<&'a str, IdentityError> {
@@ -285,6 +300,7 @@ async fn build_page(
         "/login" => ("登录", "/login"),
         "/register" => ("邀请注册", "/register"),
         "/verify-email" => ("验证邮箱", "/verify-email"),
+        "/resend-verification" => ("重发验证邮件", "/resend-verification"),
         "/forgot-password" => ("找回密码", "/forgot-password"),
         "/reset-password" => ("重置密码", "/reset-password"),
         "/confirm-email" => ("确认新邮箱", "/confirm-email"),
@@ -316,10 +332,8 @@ async fn build_page(
                     bio.value = profile.public.bio;
                     view.fields.push(bio);
                     view.preset_avatar = true;
-                    view.rows.push(row(
-                        "信任等级",
-                        profile.public.trust_level.unwrap_or("待确认"),
-                    ));
+                    view.rows
+                        .push(row("信任等级", trust_label(profile.public.trust_level)));
                     view.rows.push(row("用户名", profile.public.username));
                     view.rows.push(row("邮箱", profile.email));
                     view.rows
@@ -364,6 +378,9 @@ async fn build_page(
                 }
                 "/settings/invitations" => {
                     view.submit = "生成邀请码";
+                    let mut days = Field::input("days", "有效天数（1至7天）", "number");
+                    days.value = "3".into();
+                    view.fields.push(days);
                     let invites = service.invitations(&identity, chrono::Utc::now()).await?;
                     view.rows.push(row(
                         "今日生成",
@@ -378,7 +395,7 @@ async fn build_page(
                             invite.state == "available" && invite.expires_at > chrono::Utc::now();
                         let label = match invite.state.as_str() {
                             "available" if available => "可使用",
-                            "available" => "已过期",
+                            "available" | "expired" => "已过期",
                             "used" => "已使用",
                             "revoked" => "已撤销",
                             "frozen" => "已冻结",
@@ -400,9 +417,30 @@ async fn build_page(
                 .push(Field::input("password", "当前密码", "password"));
         }
     } else {
-        let preauth = service.create_preauth(chrono::Utc::now()).await?;
-        view.csrf = preauth.csrf.expose().into();
-        grant = Some(preauth);
+        let existing = cookie(headers, &cookie_name(state, "preauth"))
+            .zip(cookie(headers, &cookie_name(state, "preauth_csrf")));
+        if let Some((token, csrf)) = existing {
+            match service
+                .validate_public_context(
+                    &RequestContext::new(
+                        token.into(),
+                        csrf.clone().into(),
+                        view.idempotency_key.clone(),
+                    ),
+                    chrono::Utc::now(),
+                )
+                .await
+            {
+                Ok(()) => view.csrf = csrf,
+                Err(IdentityError::Csrf) => {}
+                Err(error) => return Err(error),
+            }
+        }
+        if view.csrf.is_empty() {
+            let preauth = service.create_preauth(chrono::Utc::now()).await?;
+            view.csrf = preauth.csrf.expose().into();
+            grant = Some(preauth);
+        }
         match path {
             "/register" => {
                 view.fields.extend([
@@ -422,7 +460,7 @@ async fn build_page(
                 Field::input("identifier", "用户名或邮箱", "text"),
                 Field::input("password", "密码", "password"),
             ]),
-            "/forgot-password" => {
+            "/forgot-password" | "/resend-verification" => {
                 view.fields
                     .push(Field::input("identifier", "用户名或邮箱", "text"))
             }
@@ -439,7 +477,20 @@ async fn build_page(
     }
     let mut result = response(state, &view, StatusCode::OK);
     if let Some(grant) = grant {
-        set_cookie(&mut result, state, "preauth", grant.token.expose(), None);
+        set_cookie(
+            &mut result,
+            state,
+            "preauth",
+            grant.token.expose(),
+            Some(7200),
+        );
+        set_cookie(
+            &mut result,
+            state,
+            "preauth_csrf",
+            grant.csrf.expose(),
+            Some(7200),
+        );
     }
     if cookie(headers, &cookie_name(state, "device")).is_none() {
         set_cookie(&mut result, state, "device", random_secret().expose(), None);
@@ -475,6 +526,9 @@ async fn submit(
         Err(IdentityError::CommitUnknown { operation_id }) => {
             pending(&state, &operation_id, scope_for_path(uri.path()), &form)
         }
+        Err(IdentityError::ChallengeRequired { challenge_id }) => {
+            challenge_page(&state, uri.path(), &challenge_id, &form)
+        }
         Err(error) => failure(&state, error),
     }
 }
@@ -497,6 +551,7 @@ async fn submit_inner(
         "/login"
             | "/register"
             | "/forgot-password"
+            | "/resend-verification"
             | "/reset-password"
             | "/verify-email"
             | "/confirm-email"
@@ -505,10 +560,12 @@ async fn submit_inner(
             .validate_public_context(&context(state, headers, form)?, now)
             .await?;
     }
+    let mut challenge_required = false;
+    let mut hard_rate_limited = false;
     if let Some(action) = match path {
         "/register" => Some("registration"),
         "/login" | "/reauth" => Some("login"),
-        "/forgot-password" | "/reset-password" => Some("recovery"),
+        "/forgot-password" | "/reset-password" | "/resend-verification" => Some("recovery"),
         "/settings/invitations" => Some("invitation"),
         _ => None,
     } {
@@ -543,29 +600,44 @@ async fn submit_inner(
         };
         let device = cookie(headers, &cookie_name(state, "device")).ok_or(IdentityError::Csrf)?;
         if rate.redis_enabled {
-            match rate
-                .check(
-                    action,
-                    &normalized,
-                    peer.ok_or(IdentityError::Unavailable)?.ip(),
-                    &device,
-                )
-                .await
-            {
+            let ip = peer.ok_or(IdentityError::Unavailable)?.ip();
+            let hard = rate.check(action, &normalized, ip, &device).await;
+            if matches!(
+                path,
+                "/login" | "/register" | "/forgot-password" | "/resend-verification"
+            ) {
+                challenge_required = rate.check_soft(action, ip, &device).await?;
+            }
+            match hard {
                 Err(IdentityError::RateLimited)
-                    if matches!(path, "/login" | "/forgot-password" | "/register") =>
+                    if matches!(
+                        path,
+                        "/login" | "/forgot-password" | "/register" | "/resend-verification"
+                    ) =>
                 {
-                    // Account aliases share a private bucket. A limited account must not
-                    // expose that mapping through a distinct public status or work cost.
-                    service.passwords.verify("limited-fixed-cost", None);
-                    match path {
-                        "/login" => return Err(IdentityError::Rejected),
-                        "/register" => {
-                            view.frame.flash = Some("请求已受理；符合条件时将生成邮箱验证邮件。")
+                    if challenge_required || form.contains_key("challenge_id") {
+                        // A private account bucket must not alter the challenge response
+                        // selected by public device/IP state. Core prepares/validates the
+                        // challenge but cannot run a business command with this marker.
+                        hard_rate_limited = true;
+                    } else {
+                        // Account aliases share a private bucket. A limited account must not
+                        // expose that mapping through a distinct public status or work cost.
+                        service.passwords.verify("limited-fixed-cost", None);
+                        match path {
+                            "/login" => return Err(IdentityError::Rejected),
+                            "/register" => {
+                                view.frame.flash =
+                                    Some("请求已受理；符合条件时将生成邮箱验证邮件。")
+                            }
+                            "/resend-verification" => {
+                                view.frame.flash =
+                                    Some("请求已受理；符合条件时将生成邮箱验证邮件。")
+                            }
+                            _ => view.frame.flash = Some("请求已受理；符合条件时将生成恢复邮件。"),
                         }
-                        _ => view.frame.flash = Some("请求已受理；符合条件时将生成恢复邮件。"),
+                        return Ok(response(state, &view, StatusCode::OK));
                     }
-                    return Ok(response(state, &view, StatusCode::OK));
                 }
                 result => {
                     result?;
@@ -608,8 +680,20 @@ async fn submit_inner(
     } else {
         trust::risk::RiskSignals::default()
     };
-    let request_context =
-        || context(state, headers, form).map(|c| c.with_risk_signals(signals.clone()));
+    let request_context = || {
+        let submission = match form.get("challenge_id") {
+            Some(id) if !id.is_empty() => Some(crate::challenge::ChallengeSubmission {
+                challenge_id: id.clone(),
+                proof: value(form, "challenge_proof")?.to_owned().into(),
+            }),
+            _ => None,
+        };
+        context(state, headers, form).map(|c| {
+            c.with_risk_signals(signals.clone())
+                .with_challenge(challenge_required, submission)
+                .with_hard_rate_limited(hard_rate_limited)
+        })
+    };
     let mut session_grant = None;
     let mut clear = false;
     match path {
@@ -654,6 +738,12 @@ async fn submit_inner(
                 .request_reset(&request_context()?, value(form, "identifier")?, now)
                 .await?;
             view.frame.flash = Some("请求已受理；符合条件时将生成恢复邮件。");
+        }
+        "/resend-verification" => {
+            service
+                .resend_verification(&request_context()?, value(form, "identifier")?, now)
+                .await?;
+            view.frame.flash = Some("请求已受理；符合条件时将生成邮箱验证邮件。");
         }
         "/verify-email" => {
             service
@@ -752,8 +842,12 @@ async fn submit_inner(
                     clear = reference == identity.session_ref();
                 }
                 "/settings/invitations" => {
+                    let days = form
+                        .get("days")
+                        .map(|v| v.parse::<u8>().map_err(|_| IdentityError::Rejected))
+                        .transpose()?;
                     let grant = service
-                        .generate_invitation_with_signals(&identity, csrf, key, signals, now)
+                        .generate_invitation_with_signals(&identity, csrf, key, days, signals, now)
                         .await?;
                     view.rows
                         .push(row("邀请码（仅显示一次）", grant.code.expose()));
@@ -802,7 +896,7 @@ async fn public_profile(State(state): State<IdentityWebState>, Path(id): Path<St
         page.show_form = false;
         page.preset_avatar = true;
         page.rows = vec![
-            row("信任等级", profile.trust_level.unwrap_or("待确认")),
+            row("信任等级", trust_label(profile.trust_level)),
             row("用户名", profile.username),
             row("简介", profile.bio),
             row("加入时间", profile.joined_at.to_string()),
@@ -853,11 +947,70 @@ async fn policy(State(state): State<IdentityWebState>, OriginalUri(uri): Origina
         Err(error) => failure(&state, error),
     }
 }
+fn challenge_page(
+    state: &IdentityWebState,
+    path: &str,
+    challenge_id: &str,
+    form: &HashMap<String, String>,
+) -> Response {
+    let action = match path {
+        "/login" => "/login",
+        "/register" => "/register",
+        "/forgot-password" => "/forgot-password",
+        "/resend-verification" => "/resend-verification",
+        _ => return failure(state, IdentityError::Rejected),
+    };
+    let mut page = Page::new("本地测试挑战 · LOCAL TEST", action);
+    page.csrf = form.get("csrf").cloned().unwrap_or_default();
+    page.idempotency_key = form.get("idempotency_key").cloned().unwrap_or_default();
+    page.frame.flash = Some("请完成本地测试挑战，并重新填写原请求中的秘密字段。这是开发测试能力。");
+    page.fields
+        .push(Field::hidden("challenge_id", challenge_id));
+    page.rows.push(row("本地挑战引用", challenge_id));
+    // Reflect only these non-secret values, never passwords, invitation codes or proof.
+    for (name, label, kind) in if path == "/register" {
+        vec![
+            ("invitation", "原邀请码", "text"),
+            ("username", "原用户名", "text"),
+            ("email", "原邮箱", "email"),
+            ("password", "原密码", "password"),
+        ]
+    } else if path == "/login" {
+        vec![
+            ("identifier", "原用户名或邮箱", "text"),
+            ("password", "原密码", "password"),
+        ]
+    } else {
+        vec![("identifier", "原用户名或邮箱", "text")]
+    } {
+        let mut field = Field::input(name, label, kind);
+        if matches!(name, "username" | "email" | "identifier") {
+            field.value = form.get(name).cloned().unwrap_or_default();
+        }
+        page.fields.push(field);
+    }
+    if path == "/register" {
+        for kind in ["terms", "privacy", "community"] {
+            page.fields.push(Field::hidden(
+                kind,
+                form.get(kind).cloned().unwrap_or_default(),
+            ));
+        }
+        page.policy_consent = true;
+    }
+    page.fields.push(Field::input(
+        "challenge_proof",
+        "本地测试挑战凭据",
+        "password",
+    ));
+    response(state, &page, StatusCode::PRECONDITION_REQUIRED)
+}
 fn scope_for_path(path: &str) -> &'static str {
     match canonical_path(path) {
         "/register" => "identity.public.register",
         "/login" => "identity.public.login",
         "/forgot-password" => "identity.public.recovery",
+        "/resend-verification" => "identity.public.resend_verification",
         "/verify-email" => "identity.public.verify",
         "/reset-password" => "identity.public.reset",
         "/confirm-email" => "identity.public.email_confirm",
@@ -912,7 +1065,9 @@ async fn operation(
         let key = value(&form, "original_key")?;
         let gate_path = match scope {
             "identity.public.register" => "/register",
-            "identity.public.verify" | "identity.public.email_confirm" => "/verify-email",
+            "identity.public.verify"
+            | "identity.public.email_confirm"
+            | "identity.public.resend_verification" => "/verify-email",
             _ => "/login",
         };
         let service = gate(&state, gate_path, false).await?;

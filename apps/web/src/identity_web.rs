@@ -5,10 +5,12 @@ use crate::{
 };
 use askama::Template;
 use identity::{
-    contract::{DisabledPasswordScreen, IdentityError, UnapprovedIdentityPolicy},
+    contract::{IdentityError, PasswordScreen, Secret},
     core::{IdentityService, PasswordEngine},
     http::IdentityWebState,
-    rate::RateProtection,
+    password_screen::{CommonPasswordScreen, OfflinePasswordScreen},
+    policy::ApprovedIdentityPolicy,
+    rate::{RateProtection, RiskSignalKey},
     web_view::{Page, PageFrame, PageRenderer},
 };
 use std::sync::Arc;
@@ -46,32 +48,95 @@ pub async fn connect(state: &mut AppState) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     let renderer = platform::identifiers::SchemaRenderer::new(&state.config.database.schema_prefix)
         .map_err(|e| e.to_string())?;
-    let service = IdentityService::new(
-        pool.clone(),
-        renderer.clone(),
-        Arc::new(UnapprovedIdentityPolicy),
-        Arc::new(moderation::core::CurrentPolicyReader::new(
-            state.config.server.environment,
-        )),
-        Arc::new(
-            PasswordEngine::new(8, Arc::new(DisabledPasswordScreen)).map_err(|e| e.to_string())?,
-        ),
-    );
-    state.identity.service = Some(Arc::new(service));
+    // Identity writes require the complete local delivery/risk assembly. PublicRead
+    // may serve other domains; it must not make existing accounts writable without it.
+    state.identity.service = if state.config.identity.active_token_version.is_some() {
+        Some(Arc::new(service(
+            &state.config,
+            pool.clone(),
+            renderer.clone(),
+        )?))
+    } else {
+        None
+    };
     state.identity.flags = Some(Arc::new(platform_db::flags_repo::DbFlagReader::new(
         pool, renderer,
     )));
     if let Some(runtime) = state.runtime.as_ref() {
-        state.identity.rate = Some(RateProtection {
-            redis_enabled: state.config.features.redis,
-            limiter: runtime.rate_limiter.clone(),
-            registration: None,
-            login: None,
-            recovery: None,
-            invitation: None,
-        });
+        state.identity.rate = Some(RateProtection::approved_v1(
+            state.config.features.redis,
+            runtime.rate_limiter.clone(),
+        ));
     }
+    state.identity.risk_signals = state
+        .config
+        .identity
+        .risk_key
+        .as_ref()
+        .map(|key| {
+            RiskSignalKey::new(Secret::from(key.to_string()))
+                .map(Arc::new)
+                .map_err(|_| "identity risk key unavailable".to_string())
+        })
+        .transpose()?;
     Ok(())
+}
+
+/// Same ordinary runtime construction used by local route integration tests.
+fn service(
+    config: &platform::config::Config,
+    pool: platform_db::Pool,
+    renderer: platform::identifiers::SchemaRenderer,
+) -> Result<IdentityService, String> {
+    let material = crate::identity_services::tokens(config)?;
+    if material.active.is_none() {
+        return Err("identity local delivery and risk configuration required".into());
+    }
+    let screen: Arc<dyn PasswordScreen> = match (
+        &config.identity.password_corpus_path,
+        &config.identity.password_corpus_sha256,
+    ) {
+        (Some(path), Some(digest)) => Arc::new(
+            OfflinePasswordScreen::load(std::path::Path::new(path), digest)
+                .map_err(|_| "identity offline password corpus unavailable".to_string())?,
+        ),
+        (None, None) => Arc::new(CommonPasswordScreen::new()),
+        _ => return Err("identity offline corpus configuration incomplete".into()),
+    };
+    let mut service = IdentityService::new(
+        pool,
+        renderer,
+        Arc::new(ApprovedIdentityPolicy),
+        Arc::new(moderation::core::CurrentPolicyReader::new(
+            config.server.environment,
+        )),
+        Arc::new(
+            PasswordEngine::new(config.identity.password_minimum, screen)
+                .map_err(|_| "identity password engine unavailable".to_string())?,
+        ),
+    )
+    .with_risk_policy(Arc::new(trust::risk::ApprovedIdentityRiskPolicy));
+    if let Some(issuer) = material.active {
+        let root = platform::integrations::local::LocalRoot::new(
+            std::path::Path::new(
+                config
+                    .adapters
+                    .local_root
+                    .as_deref()
+                    .ok_or("missing local adapter root")?,
+            ),
+            config.server.environment,
+        )
+        .map_err(|_| "identity local challenge root unavailable")?;
+        service = service
+            .with_token_issuer(issuer.clone())
+            .with_challenge_provider(Arc::new(
+                identity::challenge::LocalChallengeProvider::new(root, issuer)
+                    .with_retained_issuers(material.retained)
+                    .map_err(|_| "identity retained challenge keys unavailable")?,
+            ));
+    }
+    Ok(service)
 }
 
 #[cfg(test)]
@@ -128,3 +193,7 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+#[path = "identity_web/runtime_tests.rs"]
+mod runtime_tests;

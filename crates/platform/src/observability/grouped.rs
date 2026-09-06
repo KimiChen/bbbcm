@@ -104,8 +104,16 @@ impl HttpRoute {
             "/status" => Self::Status,
             "/health" | "/health/live" | "/health/ready" => Self::Health,
             "/__diagnostics/metrics" => Self::Diagnostics,
-            "/login" | "/register" | "/verify-email" | "/forgot-password" | "/reset-password"
-            | "/confirm-email" | "/reauth" | "/logout" | "/auth/operations" => Self::Auth,
+            "/login"
+            | "/register"
+            | "/verify-email"
+            | "/resend-verification"
+            | "/forgot-password"
+            | "/reset-password"
+            | "/confirm-email"
+            | "/reauth"
+            | "/logout"
+            | "/auth/operations" => Self::Auth,
             "/settings/profile"
             | "/settings/email"
             | "/settings/username"
@@ -461,6 +469,7 @@ mod tests {
             ("/register", HttpRoute::Auth),
             ("/login", HttpRoute::Auth),
             ("/verify-email", HttpRoute::Auth),
+            ("/resend-verification", HttpRoute::Auth),
             ("/forgot-password", HttpRoute::Auth),
             ("/reset-password", HttpRoute::Auth),
             ("/confirm-email", HttpRoute::Auth),
@@ -487,6 +496,7 @@ mod tests {
             ("/settings/PRIVATE_SENTINEL", HttpRoute::Other),
             ("/auth/PRIVATE_SENTINEL", HttpRoute::Other),
             ("/verify-email/PRIVATE_SENTINEL", HttpRoute::Other),
+            ("/resend-verification/PRIVATE_SENTINEL", HttpRoute::Other),
             ("/unknown/PRIVATE_SENTINEL", HttpRoute::Other),
         ] {
             let route = HttpRoute::from_path(path);

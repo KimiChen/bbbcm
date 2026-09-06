@@ -550,7 +550,7 @@ async fn upgrades_a03_database_to_engine_and_flags_without_changing_old_data() {
         let before = status(&f.cfg, &f.root).await.unwrap();
         let current = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../db/migrations");
         let result = migrate(&f.cfg, &current).await.unwrap();
-        assert_eq!(result.applied, [2, 3, 4, 5, 6, 7]);
+        assert_eq!(result.applied, [2, 3, 4, 5, 6, 7, 8]);
         assert_eq!(result.skipped, [1]);
         let after = status(&f.cfg, &current).await.unwrap();
         assert_eq!(before[0].checksum, after[0].checksum);

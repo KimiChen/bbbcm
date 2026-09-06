@@ -132,15 +132,18 @@ async fn initial_facts_and_invite_use_share_commit_and_rollback_without_any_gran
     .unwrap();
     assert!(verified.email_verified());
     assert_eq!(verified.level(), TrustLevel::Pending);
-    assert_eq!(verified.reason_code(), "awaiting_trust_policy");
-    assert!(!verified.invitation_allowed());
+    assert_eq!(verified.reason_code(), "email_verified_invitation_eligible");
+    assert!(verified.invitation_allowed());
+    assert_eq!(verified.policy_version(), INVITATION_POLICY_VERSION);
     tx.commit().await.unwrap();
     let mut tx = DbTransaction::begin(&f.pool).await.unwrap();
     assert_eq!(
         authorize_invitation(&mut tx.connection(), &f.renderer, f.invitee)
             .await
             .unwrap(),
-        InvitationAuthorization::NotGranted
+        InvitationAuthorization::Allowed {
+            policy_version: INVITATION_POLICY_VERSION
+        }
     );
     let repeated = mark_email_verified(
         &mut tx.connection(),
@@ -260,4 +263,62 @@ fn policy_absence_cannot_be_misrepresented_as_allow_and_signals_reject_raw_metad
         assert!(SignalDigest::from_keyed_hash(value.into()).is_err());
     }
     assert!(RiskDecision::new(7, RiskAction::Challenge, RiskReason::ExplicitChallenge).is_ok());
+}
+
+#[tokio::test]
+async fn approved_invitation_qualification_keeps_every_existing_level_and_repairs_unqualified_snapshot()
+ {
+    use crate::risk::{ApprovedIdentityRiskPolicy, RiskPolicy};
+    let f = Fixture::new().await;
+    let mut tx = DbTransaction::begin(&f.pool).await.unwrap();
+    f.initial(&mut tx.connection()).await;
+    tx.commit().await.unwrap();
+    for level in [TrustLevel::Pending, TrustLevel::T0, TrustLevel::T1] {
+        let mut tx = DbTransaction::begin(&f.pool).await.unwrap();
+        let table = f
+            .renderer
+            .table(tx.connection().backend(), "trust", "identity_snapshots")
+            .unwrap();
+        // Preexisting level is a synthetic fact for preservation, never a service grant.
+        tx.connection().execute(&format!("UPDATE {table} SET level = ?, email_verified = ?, invitation_allowed = ?, policy_version = ?, reason_code = ?, version = version + 1 WHERE user_id = ?"), &[level.as_str().into(), DbValue::Bool(true), DbValue::Bool(false), (if level == TrustLevel::Pending { 0_i64 } else { 1 }).into(), "awaiting_trust_policy".into(), f.invitee.into()]).await.unwrap();
+        let snapshot = mark_email_verified(&mut tx.connection(), &f.renderer, f.invitee, at())
+            .await
+            .unwrap();
+        assert_eq!(snapshot.level(), level);
+        assert!(snapshot.email_verified() && snapshot.invitation_allowed());
+        assert_eq!(snapshot.policy_version(), 1);
+        let context = TrustedRiskContext {
+            actor_id: Some(f.invitee),
+            snapshot: Some(snapshot),
+            kind: RiskEventKind::Invitation,
+            signals: Default::default(),
+        };
+        let decision = ApprovedIdentityRiskPolicy.assess(&context).unwrap();
+        assert_eq!(decision.action(), RiskAction::Allow);
+        assert_eq!(decision.rule_version(), 1);
+        tx.commit().await.unwrap();
+    }
+    let absent = TrustedRiskContext {
+        actor_id: None,
+        snapshot: None,
+        kind: RiskEventKind::Invitation,
+        signals: Default::default(),
+    };
+    assert_eq!(
+        ApprovedIdentityRiskPolicy.assess(&absent).unwrap().reason(),
+        RiskReason::AccountUnavailable
+    );
+    for kind in [RiskEventKind::Login, RiskEventKind::Registration] {
+        let context = TrustedRiskContext {
+            kind,
+            ..absent.clone()
+        };
+        assert!(
+            ApprovedIdentityRiskPolicy
+                .assess(&context)
+                .unwrap()
+                .allowed()
+        );
+    }
+    f.pool.close().await;
 }

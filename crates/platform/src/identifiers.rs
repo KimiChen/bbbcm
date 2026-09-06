@@ -34,6 +34,11 @@ pub struct TableRegistration {
 pub const TABLES: &[TableRegistration] = &[
     TableRegistration {
         schema: "identity",
+        table: "challenges",
+        identity_column: None,
+    },
+    TableRegistration {
+        schema: "identity",
         table: "mail_recipients",
         identity_column: None,
     },

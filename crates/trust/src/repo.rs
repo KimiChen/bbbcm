@@ -1,6 +1,6 @@
 //! Identity trust repositories borrow the existing transaction and never commit.
 use crate::{
-    contract::{TrustError, TrustLevel, TrustSnapshot},
+    contract::{INVITATION_POLICY_VERSION, TrustError, TrustLevel, TrustSnapshot},
     risk::RiskEvent,
 };
 use chrono::{DateTime, Utc};
@@ -38,13 +38,13 @@ fn snapshot(row: &DbRow) -> Result<TrustSnapshot, TrustError> {
         || value.updated_at < value.created_at
         || (value.level != TrustLevel::Pending
             && (!value.email_verified || value.policy_version == 0))
-        || (value.invitation_allowed
-            && (value.level == TrustLevel::Pending
-                || !value.email_verified
-                || value.policy_version == 0))
+        || (value.invitation_allowed && (!value.email_verified || value.policy_version == 0))
         || !matches!(
             value.reason_code.as_str(),
-            "awaiting_email_verification" | "awaiting_trust_policy" | "approved_policy"
+            "awaiting_email_verification"
+                | "awaiting_trust_policy"
+                | "approved_policy"
+                | "email_verified_invitation_eligible"
         )
     {
         return Err(TrustError::CorruptData);
@@ -98,13 +98,8 @@ pub(crate) async fn confirm_email(
 ) -> Result<(), TrustError> {
     let snapshots = table(tx, r, "identity_snapshots")?;
     let uses = table(tx, r, "invite_uses")?;
-    let reason = if previous.level == TrustLevel::Pending {
-        "awaiting_trust_policy"
-    } else {
-        "approved_policy"
-    };
-    tx.execute_versioned(&format!("UPDATE {snapshots} SET email_verified = ?, reason_code = ?, updated_at = ?, version = version + 1 WHERE id = ? AND version = ?"),
-        &[DbValue::Bool(true), text(reason), DbValue::Time(now), DbValue::I64(previous.id), DbValue::I64(previous.version)]).await?;
+    tx.execute_versioned(&format!("UPDATE {snapshots} SET email_verified = ?, invitation_allowed = ?, policy_version = ?, reason_code = ?, updated_at = ?, version = version + 1 WHERE id = ? AND version = ?"),
+        &[DbValue::Bool(true), DbValue::Bool(true), DbValue::I64(INVITATION_POLICY_VERSION), text("email_verified_invitation_eligible"), DbValue::Time(now), DbValue::I64(previous.id), DbValue::I64(previous.version)]).await?;
     tx.execute(&format!("UPDATE {uses} SET email_verified = ?, updated_at = ?, version = version + 1 WHERE invitee_id = ? AND email_verified = ?"),
         &[DbValue::Bool(true), DbValue::Time(now), DbValue::I64(previous.user_id), DbValue::Bool(false)]).await?;
     Ok(())

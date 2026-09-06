@@ -1,6 +1,8 @@
 //! bbbcm-worker：后台任务宿主（Outbox 消费、邮件、媒体、清理、聚合）。
 //! 使用与内嵌 jobs 相同的调度器；本进程不写业务规则。
 
+#[path = "../../identity_services.rs"]
+mod identity_services;
 #[path = "../../worker_services.rs"]
 mod worker_services;
 use platform_outbox::HostLock;

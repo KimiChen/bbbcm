@@ -309,6 +309,7 @@ name = "bbbcm-worker"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "identity",
  "platform",
  "platform-audit",
  "platform-db",

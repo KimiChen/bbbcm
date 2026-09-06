@@ -1,0 +1,97 @@
+{
+  "date": "2026-09-05",
+  "timezone": "America/Los_Angeles",
+  "phase": "development",
+  "decision_commits": [
+    "18808a7",
+    "44cb95b"
+  ],
+  "prior_commits": [
+    "236ba57",
+    "24360bf"
+  ],
+  "implementation_version": "commit containing this evidence",
+  "dev_check": {
+    "command": "./scripts/dev-check.sh",
+    "result": "passed",
+    "candidate": "r5",
+    "tests_passed": 241,
+    "tests_failed": 0,
+    "tests_ignored": 1,
+    "sqlite_migration": "real temporary database, 0001 through 0008",
+    "http_smoke_routes": 74,
+    "log_path": ".local/identity-validation/dev-check-defaults-r5.log",
+    "log_sha256": "7f0341663639f0f9a1b9edeb28ba7a9f65a05f8637cb954fcc47cde3ca582db2"
+  },
+  "focused_suites": {
+    "identity": 46,
+    "identity_http": 17,
+    "identity_rate": 4,
+    "approved_policy": 3,
+    "approved_invitation": 1,
+    "challenge": 4,
+    "token_reissue": 2,
+    "password_screen": 1,
+    "web": 22,
+    "web_actual_runtime": 3,
+    "trust": 4,
+    "moderation": 2,
+    "platform": 76,
+    "platform_db": 62,
+    "sql_lint": 8
+  },
+  "asset_freeze": "passed; existing A00 source unchanged after approved URL helper normalization",
+  "independent_review": {
+    "authentication": "passed; identity token and challenge transactions, replay, privacy",
+    "http": "passed; hard/soft and expired proof enumeration fixed",
+    "trust_policy_invitation": "passed; pending preserved, verified eligibility, quota and normalization",
+    "config_worker": "passed; keyring, strict local delivery and risk materials, missing assembly closed",
+    "sensitive_log_test": "parallel tracing capture isolated without weakening assertions; 8 consecutive complete Web suites passed"
+  },
+  "failures_retained": [
+    {
+      "candidate": "r1",
+      "reason": "CLI first migration expected 7 migrations; updated to 8"
+    },
+    {
+      "candidate": "r2",
+      "reason": "CLI skip migration expected 7 migrations; updated to 8"
+    },
+    {
+      "candidate": "r3",
+      "reason": "parallel tracing callsite-interest test isolation; repaired scoped dispatch capture"
+    },
+    {
+      "candidate": "r4",
+      "reason": "Flag registry migration tests expected 7 migrations; updated both arrays to 8"
+    }
+  ],
+  "not_executed": [
+    "real PostgreSQL16 and ACL execution",
+    "real Redis8",
+    "full security/concurrency/performance matrices",
+    "full browser/visual matrix",
+    "real email/provider callbacks",
+    "full secret scanning",
+    "push/deployment/privileged bootstrap"
+  ],
+  "package_status": {
+    "B01": "In progress",
+    "B02": "Implemented (development adapter scope)",
+    "B04": "In progress",
+    "B06": "In progress",
+    "A02": "In progress",
+    "A06": "In progress"
+  },
+  "status_limit": "all business Flags default off; no real anti-bot claim; no Verified or stage/release gates",
+  "staged_review": {
+    "files": 53,
+    "explicit_paths": true,
+    "per_file_diff_check": "passed",
+    "utf8_lf_and_no_binary_artifacts": "passed",
+    "old_migrations": "0001-0007 unchanged",
+    "full_secret_scan": "not executed",
+    "sensitive_pattern_and_ignored_path_check": "passed (bounded checks only)",
+    "unstaged_changes_at_review": 0
+  }
+}

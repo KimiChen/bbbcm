@@ -336,6 +336,28 @@ pub(crate) async fn invalidate_tokens(
     .await?;
     Ok(())
 }
+pub(crate) async fn invalidate_token_purpose(
+    tx: &mut TransactionConnection<'_>,
+    r: &SchemaRenderer,
+    user_id: i64,
+    purpose: &str,
+) -> Result<(), TransactionError> {
+    if !matches!(purpose, "verify_email" | "reset_password" | "change_email") {
+        return Err(TransactionError::InvalidInput);
+    }
+    let t = table(tx, r, "one_time_tokens")?;
+    tx.execute(
+        &format!("UPDATE {t} SET consumed = ? WHERE user_id = ? AND purpose = ? AND consumed = ?"),
+        &[
+            DbValue::Bool(true),
+            user_id.into(),
+            text(purpose),
+            DbValue::Bool(false),
+        ],
+    )
+    .await?;
+    Ok(())
+}
 #[derive(Clone)]
 pub(crate) struct Invite {
     pub id: i64,

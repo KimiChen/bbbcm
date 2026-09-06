@@ -18,7 +18,7 @@
 <div class="auth-shell">
 <nav class="tab-bar auth-tabs" aria-label="账号页面">
 {% if page.account_page %}<a class="tab" href="/settings/profile">资料</a><a class="tab" href="/settings/email">邮箱</a><a class="tab" href="/settings/username">用户名</a><a class="tab" href="/settings/password">密码</a><a class="tab" href="/settings/sessions">设备</a><a class="tab" href="/me/invites">邀请</a><a class="tab" href="/logout">退出</a>
-{% else %}<a class="tab" href="/login">登录</a><a class="tab" href="/register">注册</a><a class="tab" href="/forgot-password">找回密码</a>{% endif %}
+{% else %}<a class="tab" href="/login">登录</a><a class="tab" href="/register">注册</a><a class="tab" href="/forgot-password">找回密码</a><a class="tab" href="/resend-verification">重发验证邮件</a>{% endif %}
 </nav>
 <div class="form-panel auth-panel">
 <h1 class="auth-heading">{{ page.title }}</h1>
@@ -36,7 +36,7 @@
 {% if field.kind == "hidden" %}<input type="hidden" name="{{ field.name }}" value="{{ field.value }}" />
 {% else %}<label class="grid"><span>{{ field.label }}</span>
 {% if field.kind == "textarea" %}<textarea name="{{ field.name }}"{% if field.required %} required{% endif %}>{{ field.value }}</textarea>
-{% else %}<input type="{{ field.kind }}" name="{{ field.name }}" value="{{ field.value }}"{% if field.required %} required{% endif %}{% if field.name == "token" %} autocomplete="off"{% else if field.kind == "password" %}{% if page.action == "/login" || page.action == "/reauth" %} autocomplete="current-password"{% else %} autocomplete="new-password"{% endif %}{% endif %} />{% endif %}</label>{% endif %}
+{% else %}<input type="{{ field.kind }}" name="{{ field.name }}" value="{{ field.value }}"{% if field.required %} required{% endif %}{% if field.name == "days" %} min="1" max="7" step="1"{% endif %}{% if field.name == "token" || field.name == "challenge_proof" %} autocomplete="off"{% else if field.kind == "password" %}{% if page.action == "/login" || page.action == "/reauth" %} autocomplete="current-password"{% else %} autocomplete="new-password"{% endif %}{% endif %} />{% endif %}</label>{% endif %}
 {% endfor %}
 {% if page.policy_consent %}<label class="auth-agree"><input type="checkbox" name="consent" value="yes" required /><span>我已阅读并同意本页列明版本的<a href="/terms">服务条款</a>、<a href="/privacy">隐私政策</a>和<a href="/rules">社区规则</a></span></label>{% endif %}
 <button class="auth-submit" type="submit">{{ page.submit }}</button>

@@ -4,7 +4,7 @@ use platform::{
     config::Config,
     identifiers::SchemaRenderer,
     integrations::{AdapterMode, AdapterRuntime, UnwiredEffectSource},
-    mail::{MailAlertSink, MailSink, UnwiredMailSource},
+    mail::{MailAlertSink, MailSink},
 };
 use platform_db::Pool;
 use platform_outbox::{ExternalEffects, LocalSink, Scheduler, Settings, SinkRegistry};
@@ -51,7 +51,7 @@ pub fn scheduler(config: &Config, pool: Pool, runtime: &RedisRuntime) -> Result<
         .map_err(|e| e.to_string())?;
     registry
         .register(Arc::new(MailSink {
-            source: Arc::new(UnwiredMailSource),
+            source: crate::identity_services::mail_source(config, pool.clone(), renderer.clone())?,
             store: mail.clone(),
             provider: adapters.mail.clone(),
         }))
@@ -113,7 +113,7 @@ pub async fn observe_mail(config: Config, pool: Pool, cancel: CancellationToken)
             let result = tokio::select! { biased; ()=cancel.cancelled()=>return, result=store.metric_snapshot(start,end,simulated)=>result };
             match result {
                 Ok(sample) => {
-                    tracing::info!(process_instance=%observations.instance_id(),provider_mode=?config.adapters.mode, source_state="not_connected", simulated, submitted=sample.submitted,delivered=sample.delivered,delayed=sample.delayed,bounced=sample.bounced,complained=sample.complained,max_delay_ms=?sample.max_delay_ms,window_start=%start,window_end=%end,"mail metrics");
+                    tracing::info!(process_instance=%observations.instance_id(),provider_mode=?config.adapters.mode, source_state=if config.identity.active_token_version.is_some() { "identity_local" } else { "not_connected" }, simulated, submitted=sample.submitted,delivered=sample.delivered,delayed=sample.delayed,bounced=sample.bounced,complained=sample.complained,max_delay_ms=?sample.max_delay_ms,window_start=%start,window_end=%end,"mail metrics");
                     if let Ok(alerts) = config.mail_alerts.evaluate(&sample) {
                         for alert in alerts {
                             tracing::warn!(simulated,alert=?alert,"mail metric alert");

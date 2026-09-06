@@ -68,6 +68,7 @@ mod tests {
     };
     use std::sync::{Arc, Mutex};
     use tower::ServiceExt;
+    use tracing::instrument::WithSubscriber;
     #[derive(Clone)]
     struct Writer(Arc<Mutex<Vec<u8>>>);
     impl std::io::Write for Writer {
@@ -79,6 +80,9 @@ mod tests {
             Ok(())
         }
     }
+    fn registration_probe() {
+        tracing::info!("test capture ready");
+    }
     #[tokio::test(flavor = "current_thread")]
     async fn log_and_response_keep_generated_correlation_without_sensitive_input() {
         let output = Arc::new(Mutex::new(Vec::new()));
@@ -88,7 +92,13 @@ mod tests {
             .with_ansi(false)
             .with_writer(move || Writer(writer.clone()))
             .finish();
-        let _guard = tracing::subscriber::set_default(subscriber);
+        // Other parallel router tests run without a subscriber. Keep both scoped
+        // dispatchers registered: tracing-core's single-dispatch optimization would
+        // otherwise cache a new callsite from whichever thread reaches it first.
+        let _unobserved = tracing::Dispatch::new(tracing::subscriber::NoSubscriber::default());
+        let capture = tracing::Dispatch::new(subscriber);
+        // Deterministically exercise first registration on an unobserved thread.
+        std::thread::spawn(registration_probe).join().unwrap();
         let router = Router::new()
             .route(
                 "/probe",
@@ -102,18 +112,23 @@ mod tests {
                 Backend::Sqlite,
                 observe,
             ));
-        let response = router
-            .oneshot(
-                HttpRequest::builder()
-                    .uri("/probe?token=PRIVATE_SENTINEL")
-                    .header("cookie", "PRIVATE_SENTINEL")
-                    .header("x-request-id", "PRIVATE_SENTINEL")
-                    .header("traceparent", "PRIVATE_SENTINEL")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
+        let response = async {
+            registration_probe();
+            router
+                .oneshot(
+                    HttpRequest::builder()
+                        .uri("/probe?token=PRIVATE_SENTINEL")
+                        .header("cookie", "PRIVATE_SENTINEL")
+                        .header("x-request-id", "PRIVATE_SENTINEL")
+                        .header("traceparent", "PRIVATE_SENTINEL")
+                        .body(Body::empty())
+                        .unwrap(),
+                )
+                .await
+                .unwrap()
+        }
+        .with_subscriber(capture)
+        .await;
         let request_id = response.headers()["x-request-id"]
             .to_str()
             .unwrap()
@@ -127,7 +142,14 @@ mod tests {
         )
         .unwrap();
         let log = String::from_utf8(output.lock().unwrap().clone()).unwrap();
-        assert!(log.contains(&request_id) && log.contains("request completed"));
+        assert!(log.contains("test capture ready"));
+        assert!(
+            log.contains(&request_id) && log.contains("request completed"),
+            "correlation missing: lines={}, generated_id={}, completion={}",
+            log.lines().count(),
+            log.contains(&request_id),
+            log.contains("request completed")
+        );
         assert!(!log.contains("PRIVATE_SENTINEL") && !log.contains("postgres://"));
         assert!(!body.contains("PRIVATE_SENTINEL"));
         assert!(metrics().grouped.snapshot().iter().any(|series| matches!(

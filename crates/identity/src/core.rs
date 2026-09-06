@@ -199,6 +199,7 @@ pub struct IdentityService {
     pub(crate) passwords: Arc<PasswordEngine>,
     pub(crate) token_issuer: Option<Arc<TokenIssuer>>,
     pub(crate) risk_policy: Arc<dyn trust::risk::RiskPolicy>,
+    pub(crate) challenge_provider: Option<Arc<crate::challenge::LocalChallengeProvider>>,
     registration_analytics_excluded: bool,
 }
 impl IdentityService {
@@ -217,11 +218,19 @@ impl IdentityService {
             passwords,
             token_issuer: None,
             risk_policy: Arc::new(trust::risk::UnconfiguredRiskPolicy),
+            challenge_provider: None,
             registration_analytics_excluded: true,
         }
     }
     pub fn with_token_issuer(mut self, issuer: Arc<TokenIssuer>) -> Self {
         self.token_issuer = Some(issuer);
+        self
+    }
+    pub fn with_challenge_provider(
+        mut self,
+        provider: Arc<crate::challenge::LocalChallengeProvider>,
+    ) -> Self {
+        self.challenge_provider = Some(provider);
         self
     }
     /// Application-derived test/robot/source fact, never a form field. Default excludes unconfigured local runs.
@@ -414,6 +423,7 @@ pub(crate) async fn queue_token(
     let account = repo::account_by_id(tx, r, user_id)
         .await?
         .ok_or(TransactionError::InvalidInput)?;
+    repo::invalidate_token_purpose(tx, r, user_id, purpose).await?;
     let id = new_operation_id();
     let nonce = random_secret();
     let secret = issuer.derive(
@@ -595,7 +605,6 @@ impl IdentityService {
         let now = normalized_now(now);
         let username = self.policy.username(&input.username)?;
         let email = self.policy.email(&input.email)?;
-        let password_hash = self.passwords.hash(input.password.expose())?;
         let issuer = self
             .token_issuer
             .clone()
@@ -619,15 +628,33 @@ impl IdentityService {
         policies.validate().map_err(|_| IdentityError::Rejected)?;
         let canonical = serde_json::to_vec(&(
             username.key.clone(),
+            username.display.clone(),
             email.key.clone(),
+            email.display.clone(),
             input.password.expose(),
             input.invitation.expose(),
             &input.policies,
         ))
         .map_err(|_| IdentityError::Rejected)?;
+        let challenge = self
+            .prepare_challenge(
+                context,
+                crate::challenge::ChallengeAction::Register,
+                &canonical,
+                now,
+            )
+            .await?;
         let command = self
             .public_command(context, "identity.public.register", &canonical, now)
             .await?;
+        if crate::challenge::hard_blocked(context, challenge.as_ref()) {
+            self.passwords.verify("registration-fixed-cost", None);
+            return Ok(MutationResult {
+                resource_ref: None,
+                replayed: false,
+            });
+        }
+        let password_hash = self.passwords.hash(input.password.expose())?;
         let invite_hash = secret_hash(input.invitation.expose());
         let mut read = DbTransaction::begin_read(&self.pool).await?;
         let invite = repo::invite_by_hash(&mut read.connection(), &self.renderer, &invite_hash)
@@ -642,8 +669,10 @@ impl IdentityService {
         let context = context.clone();
         let public_id = new_operation_id();
         let pseudonym = new_operation_id();
-        registration_outcome(execute_command(&self.pool,&self.renderer,&command,&lock_plan,now,move|tx|{let service=service.clone();let context=context.clone();let username=username.clone();let email=email.clone();let password_hash=password_hash.clone();let invite_hash=invite_hash.clone();let public_id=public_id.clone();let pseudonym=pseudonym.clone();let issuer=issuer.clone();Box::pin(async move{
+        registration_outcome(execute_command(&self.pool,&self.renderer,&command,&lock_plan,now,move|tx|{let service=service.clone();let context=context.clone();let username=username.clone();let email=email.clone();let password_hash=password_hash.clone();let invite_hash=invite_hash.clone();let public_id=public_id.clone();let pseudonym=pseudonym.clone();let issuer=issuer.clone();let challenge=challenge.clone();Box::pin(async move{
+            if context.hard_rate_limited { return Err(TransactionError::InvalidInput); }
             repo::principal(tx,&service.renderer,&context,now).await?;assert_flags(tx,&service.renderer,&[Flag::Registration,Flag::EmailVerification]).await?;repo::assert_unlocked(tx,&service.renderer,Flag::RegistrationLock).await?;repo::assert_unlocked(tx,&service.renderer,Flag::InvitationLock).await?;
+            service.consume_challenge(tx,challenge.as_ref(),now).await?;
             service.policy_reader.require_current(tx,&service.renderer,&policies).await.map_err(|_|TransactionError::InvalidInput)?;
             let invitation=repo::invite_by_hash(tx,&service.renderer,&invite_hash).await?.ok_or(TransactionError::InvalidInput)?;
             if invitation.state!="available"||invitation.expires_at<=now{return Err(TransactionError::InvalidInput)}
@@ -687,9 +716,14 @@ impl IdentityService {
             None => None,
         };
         tx.rollback().await?;
-        let password_ok = self
-            .passwords
-            .verify(input.password.expose(), hash.as_deref());
+        let password_ok = self.passwords.verify(
+            input.password.expose(),
+            if context.hard_rate_limited {
+                None
+            } else {
+                hash.as_deref()
+            },
+        );
         let account = account.filter(|a| a.status == "active" && password_ok);
         if input.device_summary.len() > 96 || input.device_summary.chars().any(char::is_control) {
             return Err(IdentityError::Rejected);
@@ -704,9 +738,20 @@ impl IdentityService {
         .to_owned();
         let canonical = serde_json::to_vec(&(input.identifier, input.password.expose(), &device))
             .map_err(|_| IdentityError::Rejected)?;
+        let challenge = self
+            .prepare_challenge(
+                context,
+                crate::challenge::ChallengeAction::Login,
+                &canonical,
+                now,
+            )
+            .await?;
         let command = self
             .public_command(context, "identity.public.login", &canonical, now)
             .await?;
+        if crate::challenge::hard_blocked(context, challenge.as_ref()) {
+            return Err(IdentityError::Rejected);
+        }
         let token = random_secret();
         let csrf = random_secret();
         let session_ref = new_operation_id();
@@ -730,9 +775,16 @@ impl IdentityService {
                 let csrf_hash = csrf_hash.clone();
                 let session_ref = session_ref.clone();
                 let device = device.clone();
+                let challenge = challenge.clone();
                 Box::pin(async move {
+                    if context.hard_rate_limited {
+                        return Err(TransactionError::InvalidInput);
+                    }
                     repo::principal(tx, &service.renderer, &context, now).await?;
                     assert_flags(tx, &service.renderer, &[Flag::PublicRead]).await?;
+                    service
+                        .consume_challenge(tx, challenge.as_ref(), now)
+                        .await?;
                     let risk = record_risk(
                         tx,
                         &service,
@@ -805,6 +857,14 @@ impl IdentityService {
         };
         // Recovery takes the same password work unit for all account outcomes.
         self.passwords.verify("recovery-fixed-cost", None);
+        let challenge = self
+            .prepare_challenge(
+                context,
+                crate::challenge::ChallengeAction::Recovery,
+                identifier.as_bytes(),
+                now,
+            )
+            .await?;
         let command = self
             .public_command(
                 context,
@@ -813,6 +873,12 @@ impl IdentityService {
                 now,
             )
             .await?;
+        if crate::challenge::hard_blocked(context, challenge.as_ref()) {
+            return Ok(MutationResult {
+                resource_ref: None,
+                replayed: false,
+            });
+        }
         let mut tx = DbTransaction::begin_read(&self.pool).await?;
         let account = if let Ok(ref key) = normalized {
             repo::account_by_identifier(&mut tx.connection(), &self.renderer, &key.key, is_email)
@@ -836,9 +902,16 @@ impl IdentityService {
                     let context = context.clone();
                     let account = account.clone();
                     let issuer = issuer.clone();
+                    let challenge = challenge.clone();
                     Box::pin(async move {
+                        if context.hard_rate_limited {
+                            return Err(TransactionError::InvalidInput);
+                        }
                         repo::principal(tx, &service.renderer, &context, now).await?;
                         assert_flags(tx, &service.renderer, &[Flag::PublicRead]).await?;
+                        service
+                            .consume_challenge(tx, challenge.as_ref(), now)
+                            .await?;
                         if let Some(account) = account {
                             let current = repo::account_by_id(tx, &service.renderer, account.id)
                                 .await?
@@ -1030,22 +1103,32 @@ impl IdentityService {
             session,
             csrf,
             key,
+            None,
             trust::risk::RiskSignals::default(),
             now,
         )
         .await
     }
+    #[allow(clippy::too_many_arguments)]
     pub async fn generate_invitation_with_signals(
         &self,
         session: &SessionIdentity,
         csrf: &str,
         key: &str,
+        days: Option<u8>,
         signals: trust::risk::RiskSignals,
         now: DateTime<Utc>,
     ) -> Result<InvitationGrant, IdentityError> {
         check_csrf(session, csrf)?;
         let now = normalized_now(now);
-        let window = self.policy.invitation_window(now)?;
+        let days = days.unwrap_or(crate::policy::DEFAULT_INVITATION_DAYS);
+        if !(1..=crate::policy::MAX_INVITATION_DAYS).contains(&days) {
+            return Err(IdentityError::Rejected);
+        }
+        let mut window = self.policy.invitation_window(now)?;
+        window.expires_at = now
+            .checked_add_signed(Duration::days(i64::from(days)))
+            .ok_or(IdentityError::Rejected)?;
         if window.start > now
             || window.end <= now
             || window.expires_at <= now
@@ -1058,7 +1141,7 @@ impl IdentityService {
             session.user_id,
             "identity.invitation.generate",
             key,
-            b"single",
+            &[days],
         );
         let service = self.clone();
         let session = session.clone();
@@ -1083,7 +1166,12 @@ impl IdentityService {
                     Box::pin(async move {
                         assert_flags(tx, &service.renderer, &[Flag::PublicRead]).await?;
                         repo::assert_unlocked(tx, &service.renderer, Flag::InvitationLock).await?;
-                        repo::require_session(tx, &service.renderer, &session, now, false).await?;
+                        let account =
+                            repo::require_session(tx, &service.renderer, &session, now, false)
+                                .await?;
+                        if !account.email_verified {
+                            return Err(TransactionError::InvalidInput);
+                        }
                         if !matches!(
                             trust::core::authorize_invitation(
                                 tx,
@@ -1216,6 +1304,7 @@ impl IdentityService {
             "identity.public.register"
                 | "identity.public.login"
                 | "identity.public.recovery"
+                | "identity.public.resend_verification"
                 | "identity.public.verify"
                 | "identity.public.reset"
                 | "identity.public.email_confirm"

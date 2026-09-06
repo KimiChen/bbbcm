@@ -1,5 +1,7 @@
-//! Minimal, versioned identity trust facts. No automatic promotion or invitation grant.
+//! Minimal, versioned identity trust facts. Invitation eligibility never promotes a trust level.
 use chrono::{DateTime, Utc};
+
+pub const INVITATION_POLICY_VERSION: i64 = 1;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TrustLevel {

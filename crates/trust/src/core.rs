@@ -1,7 +1,7 @@
 //! Restricted identity services. The caller owns the transaction, account authorization,
 //! complete lock plan and commit. There is no promotion or invitation-grant endpoint.
 use crate::{
-    contract::{InvitationAuthorization, TrustError, TrustSnapshot},
+    contract::{INVITATION_POLICY_VERSION, InvitationAuthorization, TrustError, TrustSnapshot},
     risk::{
         RISK_EVENT_VERSION, RiskEvent, RiskEventKind, RiskPolicy, RiskSignals, TrustedRiskContext,
     },
@@ -89,11 +89,14 @@ pub async fn mark_email_verified(
     if now < current.updated_at {
         return Err(TrustError::InvalidInput);
     }
-    if current.email_verified {
+    if current.email_verified
+        && current.invitation_allowed
+        && current.policy_version == INVITATION_POLICY_VERSION
+    {
         return Ok(current);
     }
-    // Qualification is still a pending product decision. Verification alone does
-    // not grant T0/T1, an invitation capability, points or any automatic promotion.
+    // DEC-051 makes verified mail sufficient for invitation eligibility. The
+    // existing level remains unchanged; this never grants T0/T1 or other privileges.
     crate::repo::confirm_email(tx, renderer, &current, now).await?;
     load_identity_snapshot(tx, renderer, user_id)
         .await?

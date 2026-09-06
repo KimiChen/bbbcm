@@ -180,6 +180,26 @@ impl RiskPolicy for UnconfiguredRiskPolicy {
     }
 }
 
+/// DEC-051 baseline. Password/invitation validity, active account and challenge
+/// consumption are checked by the owning identity service, not inferred from this result.
+pub struct ApprovedIdentityRiskPolicy;
+impl RiskPolicy for ApprovedIdentityRiskPolicy {
+    fn assess(&self, context: &TrustedRiskContext) -> Result<RiskDecision, TrustError> {
+        if context.kind == RiskEventKind::Invitation {
+            let Some(snapshot) = context.snapshot() else {
+                return RiskDecision::new(1, RiskAction::Deny, RiskReason::AccountUnavailable);
+            };
+            if !snapshot.email_verified() {
+                return RiskDecision::new(1, RiskAction::Deny, RiskReason::EmailUnverified);
+            }
+            if !snapshot.invitation_allowed() || snapshot.policy_version() == 0 {
+                return RiskDecision::new(1, RiskAction::Deny, RiskReason::InvitationNotGranted);
+            }
+        }
+        RiskDecision::new(1, RiskAction::Allow, RiskReason::ApprovedPolicy)
+    }
+}
+
 #[derive(Clone, Serialize)]
 pub struct RiskEvent {
     pub(crate) event_version: i64,

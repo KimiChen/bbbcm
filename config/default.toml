@@ -32,3 +32,12 @@ mode = "disabled"
 
 # 生产告警阈值未批准，不提供猜测默认值。率阈值须同时显式提供 min_samples。
 [mail_alerts]
+
+# DEC-051：普通身份默认规则已冻结，业务Flag仍默认关闭。
+[identity]
+password_minimum = 8
+# 可选离线语料必须同时给出 password_corpus_path / password_corpus_sha256。
+# 本机邮件装配在忽略的 config/local.toml 中设置 active_token_version、
+# mail_from（example.invalid）及 mail_base_url（回环HTTP origin）。
+# 密钥只经 BBBCM_IDENTITY_TOKEN_KEYS / BBBCM_IDENTITY_RISK_KEY 注入，禁止写入TOML。
+# 操作、版本保留与恢复见 docs/development/identity.md。

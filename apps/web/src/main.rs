@@ -7,6 +7,8 @@ mod contract;
 mod error;
 mod fixture_assets;
 mod fixtures;
+#[path = "../../identity_services.rs"]
+mod identity_services;
 mod identity_web;
 mod jobs;
 mod middleware;

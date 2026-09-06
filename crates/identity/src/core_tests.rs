@@ -195,7 +195,7 @@ impl Fixture {
             ],
         }
     }
-    async fn count(&self, schema: &str, table: &str) -> i64 {
+    pub(crate) async fn count(&self, schema: &str, table: &str) -> i64 {
         let mut tx = DbTransaction::begin_read(&self.pool).await.unwrap();
         let t = self
             .r
@@ -212,10 +212,10 @@ impl Fixture {
         tx.rollback().await.unwrap();
         n
     }
-    async fn token(&self, purpose: &str) -> (String, String) {
+    pub(crate) async fn token(&self, purpose: &str) -> (String, String) {
         let mut tx = DbTransaction::begin_read(&self.pool).await.unwrap();
         let t = repo::table(&tx.connection(), &self.r, "one_time_tokens").unwrap();
-        let row=tx.connection().fetch_optional(&format!("SELECT token_id, token_nonce, user_id, target_email_key, expires_at, issued_credential_version FROM {t} WHERE purpose = ? ORDER BY created_at DESC"),&[purpose.into()]).await.unwrap().unwrap();
+        let row=tx.connection().fetch_optional(&format!("SELECT token_id, token_nonce, user_id, target_email_key, expires_at, issued_credential_version FROM {t} WHERE purpose = ? ORDER BY created_at DESC, token_id DESC LIMIT 1"),&[purpose.into()]).await.unwrap().unwrap();
         let id = row.text("token_id").unwrap();
         let raw = self.issuer.derive(
             &id,
@@ -829,13 +829,19 @@ async fn invitation_authority_quota_revocation_privacy_and_operation_binding() {
             .await
             .is_err()
     );
-    // Explicit synthetic authorization; no application route can create this grant.
-    let mut tx = DbTransaction::begin(&f.pool).await.unwrap();
-    let snapshot =
-        f.r.table(tx.connection().backend(), "trust", "identity_snapshots")
-            .unwrap();
-    tx.connection().execute(&format!("UPDATE {snapshot} SET email_verified = ?, invitation_allowed = ?, policy_version = ?, level = 't1', reason_code = 'approved_policy' WHERE user_id = ?"),&[DbValue::Bool(true),DbValue::Bool(true),1.into(),session.user_id.into()]).await.unwrap();
-    tx.commit().await.unwrap();
+    let (_, verification) = f.token("verify_email").await;
+    f.service
+        .consume_verification(&f.context().await, &verification, at())
+        .await
+        .unwrap();
+    let mut tx = DbTransaction::begin_read(&f.pool).await.unwrap();
+    let snapshot = trust::core::load_identity_snapshot(&mut tx.connection(), &f.r, session.user_id)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(snapshot.level(), trust::contract::TrustLevel::Pending);
+    assert!(snapshot.invitation_allowed());
+    tx.rollback().await.unwrap();
     let first = f
         .service
         .generate_invitation(&session, grant.csrf.expose(), &new_operation_id(), at())

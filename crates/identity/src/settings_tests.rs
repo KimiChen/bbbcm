@@ -551,7 +551,7 @@ async fn email_change_is_confirmed_once_and_revokes_old_credentials_and_tokens()
             .unwrap()
             .unwrap();
     assert!(snapshot.email_verified());
-    assert!(!snapshot.invitation_allowed());
+    assert!(snapshot.invitation_allowed());
     assert_eq!(snapshot.level(), trust::contract::TrustLevel::Pending);
     for row in tx
         .connection()

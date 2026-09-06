@@ -7,6 +7,9 @@ use std::collections::BTreeMap;
 use std::path::Path;
 use thiserror::Error;
 
+mod identity;
+pub use identity::IdentityConfig;
+
 #[derive(Debug, Error)]
 pub enum ConfigError {
     #[error("读取{layer}失败（{kind:?}）")]
@@ -50,6 +53,8 @@ impl From<String> for SecretString {
 pub struct SecretOverrides {
     pub postgres_url: Option<SecretString>,
     pub redis_url: Option<SecretString>,
+    pub identity_token_keys: Option<SecretString>,
+    pub identity_risk_key: Option<SecretString>,
 }
 impl SecretOverrides {
     fn from_variables(variables: &BTreeMap<String, String>) -> Self {
@@ -59,6 +64,14 @@ impl SecretOverrides {
                 .cloned()
                 .map(Into::into),
             redis_url: variables.get("BBBCM_REDIS_URL").cloned().map(Into::into),
+            identity_token_keys: variables
+                .get("BBBCM_IDENTITY_TOKEN_KEYS")
+                .cloned()
+                .map(Into::into),
+            identity_risk_key: variables
+                .get("BBBCM_IDENTITY_RISK_KEY")
+                .cloned()
+                .map(Into::into),
         }
     }
 }
@@ -105,6 +118,7 @@ pub struct Config {
     pub worker: WorkerConfig,
     pub adapters: crate::integrations::AdapterConfig,
     pub mail_alerts: crate::mail::MailAlertConfig,
+    pub identity: IdentityConfig,
 }
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -228,6 +242,8 @@ impl Config {
         })?;
         config.database.postgres_url = secrets.postgres_url;
         config.redis.url = secrets.redis_url;
+        config.identity.token_keys = secrets.identity_token_keys;
+        config.identity.risk_key = secrets.identity_risk_key;
         config.validate()?;
         Ok(config)
     }
@@ -247,6 +263,8 @@ impl Config {
 
     /// 校验当前接入组件，不提前开发认证和外部 provider。
     pub fn validate(&self) -> Result<(), ConfigError> {
+        self.identity
+            .validate(self.server.environment, self.adapters.mode)?;
         if self.worker.embedded && self.database.backend != Backend::Sqlite {
             return Err(ConfigError::Invalid(
                 "内嵌 Worker 仅用于 SQLite 体验模式；完整模式必须使用独立 Worker 角色",
@@ -410,7 +428,9 @@ fn environment_document(variables: &BTreeMap<String, String>) -> Result<toml::Va
             "BBBCM_CONFIG"
             | "BBBCM_ASSET_DIST"
             | "BBBCM_DATABASE_POSTGRES_URL"
-            | "BBBCM_REDIS_URL" => continue,
+            | "BBBCM_REDIS_URL"
+            | "BBBCM_IDENTITY_TOKEN_KEYS"
+            | "BBBCM_IDENTITY_RISK_KEY" => continue,
             _ if key.starts_with("BBBCM_") => {
                 return Err(ConfigError::Invalid(
                     "未知 BBBCM 环境变量；请检查配置变量拼写",

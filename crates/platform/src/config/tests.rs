@@ -409,6 +409,7 @@ fn repository_templates_cover_four_environments_and_require_deployment_values() 
                 SecretOverrides {
                     postgres_url: postgres_secrets().postgres_url,
                     redis_url: Some("redis://localhost/0".to_string().into()),
+                    ..Default::default()
                 },
             )
             .unwrap();
@@ -445,4 +446,50 @@ fn production_postgres_requires_tls_without_plaintext_fallback() {
         Environment::Development,
     )
     .unwrap();
+}
+
+#[test]
+fn identity_secrets_inject_without_toml_or_error_echo() {
+    let f = Fixture::new();
+    let base = f.file("identity.toml", "[adapters]\nmode='local_test'\nlocal_root='.local/synthetic-spool'\n[identity]\nactive_token_version='test_v1'\nmail_from='noreply@example.invalid'\nmail_base_url='http://127.0.0.1:18099'\n");
+    let keys = format!("{{\"test_v1\":\"{}\"}}", "a".repeat(64));
+    let risk = "b".repeat(64);
+    let env = variables(&[
+        ("BBBCM_IDENTITY_TOKEN_KEYS", &keys),
+        ("BBBCM_IDENTITY_RISK_KEY", &risk),
+    ]);
+    let config =
+        Config::load_layers(&base, None, &env, SecretOverrides::from_variables(&env)).unwrap();
+    assert!(
+        config
+            .identity
+            .token_keyring()
+            .unwrap()
+            .contains_key("test_v1")
+    );
+    assert!(!format!("{config:?}").contains(&risk));
+    for sender in [
+        "a b@example.invalid",
+        "x@@example.invalid",
+        ".x@example.invalid",
+        "x..y@example.invalid",
+        "x.@example.invalid",
+    ] {
+        let mut invalid = config.clone();
+        invalid.identity.mail_from = Some(sender.into());
+        assert!(invalid.validate().is_err());
+    }
+    for field in ["token_keys", "risk_key"] {
+        let error = parse(&format!("[identity]\n{field}='PRIVATE_SENTINEL'\n")).unwrap_err();
+        assert!(!format!("{error:?} {error}").contains("PRIVATE_SENTINEL"));
+    }
+    let invalid_env = variables(&[("BBBCM_IDENTITY_TOKEN_KEYS", "PRIVATE_SENTINEL")]);
+    let error = Config::load_layers(
+        &base,
+        None,
+        &invalid_env,
+        SecretOverrides::from_variables(&invalid_env),
+    )
+    .unwrap_err();
+    assert!(!format!("{error:?} {error}").contains("PRIVATE_SENTINEL"));
 }

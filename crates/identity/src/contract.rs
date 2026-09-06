@@ -26,6 +26,8 @@ pub enum IdentityError {
     RateLimited,
     #[error("服务暂不可用")]
     Unavailable,
+    #[error("需要完成本地测试挑战")]
+    ChallengeRequired { challenge_id: String },
     #[error("提交结果待确认，请使用原请求查询")]
     CommitUnknown { operation_id: String },
 }
@@ -110,6 +112,9 @@ pub struct RequestContext {
     pub csrf: Secret,
     pub idempotency_key: String,
     pub(crate) risk_signals: trust::risk::RiskSignals,
+    pub(crate) challenge_required: bool,
+    pub(crate) challenge_submission: Option<crate::challenge::ChallengeSubmission>,
+    pub(crate) hard_rate_limited: bool,
 }
 impl RequestContext {
     pub fn new(preauth: Secret, csrf: Secret, idempotency_key: String) -> Self {
@@ -118,11 +123,31 @@ impl RequestContext {
             csrf,
             idempotency_key,
             risk_signals: Default::default(),
+            challenge_required: false,
+            challenge_submission: None,
+            hard_rate_limited: false,
         }
     }
     /// Only the trusted request adapter supplies keyed, purpose-separated digests.
     pub fn with_risk_signals(mut self, signals: trust::risk::RiskSignals) -> Self {
         self.risk_signals = signals;
+        self
+    }
+    /// The HTTP adapter supplies the independently evaluated soft rate policy.
+    /// A submitted proof is still bound and consumed by core in the command transaction.
+    pub fn with_challenge(
+        mut self,
+        required: bool,
+        submission: Option<crate::challenge::ChallengeSubmission>,
+    ) -> Self {
+        self.challenge_required = required;
+        self.challenge_submission = submission;
+        self
+    }
+    /// A trusted transport result only. Core still issues the same public challenge
+    /// and then terminates without business writes when a hard budget is exhausted.
+    pub fn with_hard_rate_limited(mut self, limited: bool) -> Self {
+        self.hard_rate_limited = limited;
         self
     }
 }

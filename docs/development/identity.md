@@ -1,119 +1,99 @@
-# 本机身份开发与恢复
+# 普通身份流程：本机操作与恢复
 
-本手册是 [计划入口](../../plan/README.md) 下的操作说明，范围与需求状态统一见 [99 §5.7](../../plan/99-traceability.md#57-b01b02b04-身份开发登记2026-09-05dec-050)。产品取值和批准记录以 `plan/01`、`02`、`06` 为准；本页不建立第二份计划，不授予 Verified 或阶段门禁。
+范围对应 `99` §5.8、DEC-050/051。正式产品/技术规则以 `plan/01`、`02`、`06` 为准；本页不授予 Verified、阶段门禁或发布批准。
 
-## 当前可以运行什么
+## 当前装配与隔离边界
 
-当前交付可运行隔离数据库中的开发测试。正常启动 Web 并不能体验完整注册、登录和账号设置：
+Web 正常装配 `ApprovedIdentityPolicy`、Argon2id/常见弱密码筛查、`CurrentPolicyReader`、风险规则 v1 和 A05 四维预算。显式注入本地邮件配置与外部 Secret 后，Web、内嵌及独立 Worker 使用相同版本化令牌合同，Worker 注入 `IdentityMailSource`。没有完整身份邮件/Secret配置时，普通身份服务不装配、source保持不可用；其他领域开启PublicRead也不会开启缺配置的身份写入，不生成默认密钥。
 
-- `apps/web/src/identity_web.rs` 装配 `UnapprovedIdentityPolicy`，用户名、邮箱、简介、预认证期限、新邮箱期限和邀请窗口等待决输入返回未批准；没有用于开启这些策略的配置键或 CLI。
-- `IdentityService` 没有装配 `TokenIssuer`，风险规则为 `UnconfiguredRiskPolicy`；Web 的独立风险摘要密钥为 `None`。规则版本 `0` 表示未配置/不可用，不能表示允许、T1 或邀请授权。
-- 所有业务 Feature Flag 注册默认关闭。数据库缺项安全关闭；迁移不启用业务 Flag。未批准策略、缺失邮件密钥、未配置风险规则不会因为存在页面代码而被跳过。
-- `apps/worker_services.rs` 的正常 Worker 宿主仍注入 `UnwiredMailSource`。即使已有本地 provider，正常 Web/Worker 组合也尚不能生成并消费身份邮件。这一待接线边界不能用测试成功替代。
+所有业务 Flag 注册默认关闭，数据库缺项也关闭；本轮不提供 Flag 写口、配置绕过、管理员/首账号引导或授信命令。只有测试代码在隔离临时数据库内构造受控启用状态、普通邀请账号及三份明确标注的合成政策。正常启动后看到关闭页是预期行为，不应将夹具 SQL 复制到日常数据库来开启业务。政策正式文本、发布及审批仍待后续。
 
-测试夹具使用实际临时 SQLite、合成政策版本、普通账号及明确标识的本地 provider。夹具内受控启用 Flag、构造合成信任事实仅服务于测试，不是运维操作入口。仓库没有本轮可用的 Flag 写入、授信、管理员创建或首账号提权入口；CLI 中相关占位命令不构成实现或授权。
+新账号信任快照为 `pending`。邮箱验证在同一事务更新验证事实和邀请资格：active 且已验证即可生成邀请，不自动授予 T0/T1；已有等级保持。邀请默认三天、可选整数1–7天；每日累计创建5个、有效未用最多5个，UTC零点分日。撤销、消费、过期释放未用库存；撤销不退当日累计创建次数。
 
-资料投影包含已有账号数据、简介、加入时间及本地预设头像；信任状态取受信快照。内容列表、贡献统计、领域角色数据和完整集合页未接入；上传及 WebP/AVIF 转码留 C03。首次阅读、回复、贡献和管理看板也不由本轮身份事件接线提供。
+账号规范、简介上限、用户名30天冷却/90天历史防抢注在服务端执行。个人主页只投影真实账号字段、信任状态和冻结的预设头像；内容列表、贡献统计、其他领域角色与完整集合页未接入，不填合成数字。上传/转码留C03，账号注销/删除传播等不在范围内。
 
-## 数据库检查与迁移
+## 数据库与本机配置
 
-先按 [数据库手册](database.md) 核对实际加载的配置及本机数据库路径，保留既有数据。在仓库根目录只读检查：
+按 [数据库手册](database.md) 确认加载配置及实际本机数据库，保留已有数据：
 
 ```bash
 cargo run --locked --package bbbcm-cli -- db status
 cargo run --locked --package bbbcm-cli -- flag list
-```
-
-仅在已确认的本机 SQLite 数据库应用现有迁移：
-
-```bash
 cargo run --locked --package bbbcm-cli -- db migrate --backend sqlite
-cargo run --locked --package bbbcm-cli -- db status
 ```
 
-`0007_identity.sql` 在 PostgreSQL/SQLite 两轨配对新增账号、凭证、普通会话、一次性令牌、邀请、政策同意、用户名占用及历史、预认证主体、邮件请求及收件人映射；同时增加信任快照、邀请使用事实、风险事件和政策版本读取表。所有对象经受信注册与 `SchemaRenderer` 渲染。PostgreSQL 同迁移配置最小表/列/序列 ACL；Worker 不获得用户资料、密码或会话读取权限。SQLite 不模拟数据库角色。
+`0007_identity.sql` 保持原样；新增配对 `0008_identity_challenges.sql` 只登记挑战哈希、随机nonce、预认证主体/动作/请求绑定、密钥版本、期限和单次状态。PG只给app必要读写权限，Worker不读取挑战、用户、凭证或会话；SQLite不模拟数据库角色。MySQL继续占位。迁移不写账号、政策正文、授信或Flag开启数据。
 
-迁移没有种子账号、政策正文、用户授权或 Flag 开启状态。既有 `db seed` 仅保留版块及规则占位，不满足三份注册政策。MySQL 仍为空轨占位；本轮不运行真实 PostgreSQL 迁移。修改已应用迁移、改 checksum、清空数据库或手工补授信都不是恢复步骤。迁移提交结果不明时先重跑只读 `db status`，遵循 [基础引擎手册](engine.md)。
+安全默认及模板可版本化；本机覆盖写入被忽略的 `config/local.toml`。以下仅说明 development/test 的显式装配字段，不启用业务Flag：
 
-## 代码装配合同
+```toml
+[adapters]
+mode = "local_test"
+local_root = ".local/identity-spool"
 
-这些是可复核的受信构造接口，不是运行时配置绕过方式。待决事项批准并更新事实源后，才可实现对应正式装配；当前示例来源应查看测试文件，不复制夹具 SQL 到日常数据库。
+[identity]
+password_minimum = 8
+active_token_version = "local_v1"
+mail_from = "noreply@example.invalid"
+mail_base_url = "http://127.0.0.1:8081"
+# 可选离线泄露语料，两项必须同时设置：
+# password_corpus_path = ".local/offline-corpus.json"
+# password_corpus_sha256 = "填入完整文件的64位小写SHA256"
+```
 
-| 合同 | 责任与当前边界 |
+Secret只经环境/外部注入，禁止放进TOML、命令参数、日志、截图或提交：
+
+| Secret | 内容与约束 |
 |---|---|
-| `IdentityPolicy` | 注入用户名/邮箱规范化、反冒充及简介检查、预认证期限、新邮箱期限、邀请窗口及额度；当前正常装配为 `UnapprovedIdentityPolicy`。 |
-| `PasswordEngine` / `PasswordScreen` | Argon2id；已批密码长度为 8–256 字符，最小长度可配置。当前泄露筛查为显式 `DisabledPasswordScreen`，不调用外部服务；验证码及泄露密码的最终行为仍受 DEC-011/CR-014 约束。 |
-| `platform_db::policy::PolicyReader` | 接受当前事务连接，读取并核对条款、隐私、社区规则三个当前版本 ID。应用注入 `CurrentPolicyReader`，避免 identity 对 moderation 产生反向领域依赖。合成版本仅 development/test 可用；没有发布、审批或法律文本编写接口。 |
-| `IdentityService::with_token_issuer` | 显式注入实验性令牌派生密钥及版本；正常装配没有密钥，也没有 Secret 加载入口。可靠重试设计的产品批准仍待完成。 |
-| `RiskPolicy` / `RiskSignalKey` | 规则与独立摘要密钥由受信装配提供；版本化结果说明允许、拒绝、挑战或不可用。HTTP 不能声明角色、等级或邀请权；风险摘要使用带用途分隔的 HMAC，网络段摘要待批准前为空。 |
-| `with_registration_analytics_exclusion` | 从受信来源确定注册账号的分析排除位，默认排除未配置本地运行。三个身份事件在当前事务读回该事实，不接受表单自报；后续管理员、机器人和活动事实仍需相应领域接线。 |
-| `IdentityMailSource::new_local` | 接受数据库、受信渲染器、按版本保留的 issuer 列表、合成发件地址及严格回环 HTTP 基址。测试注入现有 `MailSink`、`DbMailStore` 和 `LocalMailProvider`，经现有 Scheduler 执行。 |
+| `BBBCM_IDENTITY_TOKEN_KEYS` | JSON对象，键为不重复版本名，值为独立随机32字节的小写hex；包含active及仍需重建的旧版本。最多16版本、输入8192字节，非法/重复版本拒绝启动。 |
+| `BBBCM_IDENTITY_RISK_KEY` | 独立随机32字节的小写hex；不可与任一邮件派生密钥相同。邮件装配启用时必填。 |
 
-跨领域写只经接受当前事务连接的受限 core 服务。邀请消费、账号与凭证创建、三个政策同意、初始信任事实、幂等响应以及必要 Outbox 共同提交。追加邮件、分析或风险记录前完成需要的业务锁；服务不另开事务提交其他领域事实。
+密钥值不在本手册展示。由既有Secret管理方式注入两个宿主，重启保持相同版本的值；不能每次启动生成替代值。`active_token_version` 必须存在，发件地址限 `example.invalid`，邮件链接限含端口的回环HTTP origin。staging/production拒绝本地模拟装配。配置错误仅输出封闭原因，不回显Secret输入。
 
-新账号的信任快照为 `pending`、未验证、无邀请权。邮箱确认只更新验证事实；资格待决时仍不升级为 T0/T1，不授予邀请权。已批统计可信用户口径中的“账号年龄不设阈值”不能用于这些授权判断。
+本地代码使用64位hex文本作为HMAC key字节串；Web/Worker统一经 `apps/identity_services.rs` 构造，不能在某个宿主单独改成hex解码后的字节。若将来改变编码需新合同/新版本，不能改变旧版本含义。
 
-## 邮件、令牌与重试
+独立Worker沿用 [引擎手册](engine.md) 与数据库角色配置；SQLite独立Worker须关闭内嵌宿主，禁止双宿主争用。同一份非秘密身份配置与Secret版本集必须注入Web和Worker；Web不借Worker凭据。
 
-验证令牌有效期 24 小时，找回密码令牌 1 小时；消费须检查目的、账号归属、当前凭证版本、过期时间及单次状态。新邮箱确认期限与重发规则待批准。当前受控实现的新邮箱请求会替换该账号先前未完成的新邮箱令牌；该行为也不能被解释为已经批准了通用验证邮件重发规则。
+## 令牌、邮件、重发与密钥恢复
 
-当前实验设计用外部密钥版本、随机 nonce、令牌引用、账号、目的、目标邮箱规范键、到期时间及凭证版本派生 bearer。数据库保存校验哈希和重建上下文；不保存原始 bearer 或可解密 bearer。Outbox 仅有不可变消息引用，不携带邮箱、正文或原始令牌。此设计是在验证“只存令牌哈希”与可靠异步邮件之间的实现假说，尚未取得正式装配批准。
+预认证主体固定2小时；表单之间复用独立HttpOnly预认证及CSRF Cookie，GET不会替换仍有效证明。邮箱验证及新邮箱确认24小时，恢复1小时，普通会话30天绝对/14天空闲，重新认证5分钟。新幂等请求原子作废同账号同目的旧token，写入新token、消息引用与Outbox；同key重放不重复换token/发邮件。`/resend-verification` 接受统一公开结果；已验证、未知、无效账号不泄露差异。
 
-只有本地投递时才在内存重建正文。邮件给出不含 query token 的回环页面地址，提示用户粘贴令牌。原始令牌会出现在 Git 忽略的私有 `.eml` 测试产物内，不应复制到日志、工单、截图或入库证据。邮件复用 A00 本地品牌资产，provider 输出 `X-BBBcm-Delivery: local-test-only`；`LocalRecorded` 只表示写出本地文件，不表示真实发送或送达。
+HMAC派生将密钥版本、随机nonce、令牌引用、账号、目的、目标邮箱规范键、期限和签发凭证版本绑定。数据库仅保存校验哈希和非秘密重建上下文；Outbox只含消息引用。邮箱一次性令牌原值仅在签发/消费内存和明确标注的私有本地邮件中出现，不进入Outbox、明文任务表或日志。
 
-重试按已有 Outbox `event_id`、消息引用和持久投递记录恢复：
+邮件通过现有 `MailSink`、`DbMailStore`、Scheduler和持久抑制规则写出 `.local/identity-spool/mail/*.eml`。文件标注 `X-BBBcm-Delivery: local-test-only`，含A00本地品牌；邮件给回环页面地址并提示粘贴令牌，不把token置于URL query。`LocalRecorded`仅表示本地输出，没有真实发送或送达。
 
-1. Source 按不可变上下文重建同一正文；令牌已经消费、凭证已经更新也不改变旧消息，以便核对既有投递记录。令牌失效由消费事务负责；迟到邮件不能重新获得有效性。
-2. `DbMailStore` 检查持久抑制及投递记录。规范化邮箱映射到稳定 `recipient_ref`，同一邮箱不会因展示拼写变化绕过抑制。投诉/硬退信等按 A06 既有规则处理；营销退订不能据此屏蔽安全邮件。
-3. provider 暂时不可用时，由既有 Scheduler 保留失败状态并重试；重启重建相同服务后继续同一事件。抑制是持久终止结果，不通过更换 message/event ID、删除抑制行或伪造反馈恢复投递。
+1. source始终按不可变上下文重建原正文。消费、过期、重发作废或凭证版本变化不修改旧正文；令牌是否仍有效由消费事务判断。
+2. 持久消息/投递记录抑制重复输出；同一规范邮箱复用稳定 `recipient_ref`，投诉/硬退信等规则不被别名展示绕过。营销退订不阻止安全邮件。
+3. provider/source暂不可用时保留原event/message ID，由既有Worker重试。重启后重建同一source继续处理；缺失旧key时返回不可用，恢复原版本后重试。不要删除receipt、抑制记录或换事件ID来恢复。
+4. 正常轮换先给所有宿主注入新版本并保留旧版本，再切active签新token。旧版挑战也按保留版本重建本地proof。未知提交或正在重试的消息不能靠移除旧key消除。
+5. 疑似泄露时先停签、按受信事故流程失效关联未消费令牌，保留脱敏操作引用。本轮没有管理失效/销毁命令，不手工修改正常库来假装完成响应。
+6. 仅当消息已不可能加载/重放，且备份恢复也不再需要该版本时，才可退役对应旧key。本轮不设置生产保留天数或自动清理；1/24小时token TTL不能推导为消息/key删除时点。永久丢失/重试耗尽按 [适配器手册](adapters.md) 处理并保留失败事实。
 
-只要旧消息仍可能按版本加载或重放，就不能移除对应旧密钥。缺少旧版本密钥会使 source 返回不可用；保留同一上下文、恢复受信密钥后重试。当前没有批准密钥保留期、令牌/消息清理期或清理命令，不能从令牌 1/24 小时有效期推导为安全删除消息或密钥的期限。密钥丢失、永久 source 损坏和重试耗尽应保留失败事实，按 [适配器手册](adapters.md) 与引擎合同处理。
+密码重置/变更和新邮箱确认撤销全部旧会话及相应旧凭证令牌，密码与邮箱变更通知共同进入Outbox。登录异常检测与独立触发通知尚未实现，现有login_security模板本身不构成交付。
 
-本轮已接密码与邮箱变更安全通知。异常登录通知或风险挑战的触发条件仍待批准；存在 `login_security` 模板并不表示该触发流程已经交付。
+## 限流、挑战与离线密码筛查
 
-## 会话、未知提交与本机恢复
+参数版本以DEC-051为准，`RateProtection::approved_v1`复用A05令牌桶：次数为初始容量/长期平均预算，每token补充间隔为“周期÷容量”，不是严格固定窗口。账号、IP、设备、网络四维共同约束；网络IPv4 /24、IPv6 /64。账号别名统一主体；公开失败/限流保持一致的实际Argon2工作量。Redis关闭明确 `NoProtection`，已开启但依赖不可用按高风险合同失败关闭，不退回内存限流。
 
-普通会话只保存 token/CSRF 哈希，绝对期限 30 天、空闲期限 14 天；重新认证窗口 5 分钟。资料与设备写入重读当前账号和会话，校验 owner、CSRF 及适用版本。改密码、重置密码或确认新邮箱撤销全部旧会话并使旧凭证版本的令牌失效；设备撤销不暴露其他账号的会话。
+软挑战使用独立设备/IP桶，两者同时耗尽才触发。挑战绑定预认证、动作、幂等键和实际请求指纹，5分钟、单次；证明与目标命令共同消费。原请求回执可重放，证明不能换动作/主体/密码/邀请码使用。注册/登录挑战同事务登记RiskEvent v1可解释结果，不为恢复伪造新事件类型。
 
-业务提交结果未知时返回 HTTP 202 和 `operation_id`，页面保留原操作查询表单。使用同一浏览器中的原证明及表单，通过 `POST /auth/operations` 查询原 actor、scope、幂等键与 operation ID；不要换键重做可能已经完成的业务操作。
+本轮唯一provider是 `LocalChallengeProvider`，仅模拟流程，无真实防机器人效果。proof在私有 `processed/<challenge_id>.json`，页面只显示引用并要求输入本地proof；密码和邀请码重新填写，其他非秘密字段及原幂等键保留。没有provider或provider不可用时失败关闭，不接受客户端自报“已通过”。这些产物不得放进静态目录或提交。
 
-- 公开流程使用原预认证主体及 CSRF 证明。普通账号流程使用原 session bearer 的哈希及 CSRF 证明；即使退出或密码变更已经撤销会话，该受限查询仍可在原绝对期限内读取原操作摘要。它不会创建 `SessionIdentity`，也不能授权业务写入。
-- `Completed` 只确认已存结果。登录凭据及邀请码只展示一次，不从幂等响应恢复秘密；若凭据未收到，按结果页重新进入相应流程。
-- `Pending` / `NotObserved` 不等于已回滚，继续查询原操作。响应过期、原证明丢失或已过期时不能假定失败再执行；当前没有管理员救援入口，应保留脱敏操作引用供后续核查。
-- 页面与响应使用 no-store、no-referrer；日志仅记录生成的请求关联、封闭路由类别、状态与耗时，不记录 URI、query、请求体、Cookie、邮箱或令牌。
+默认 `CommonPasswordScreen` 使用版本化常见弱密码列表，不声称是完整泄露数据库。可选离线JSON需包含 `schema_version:1`、非空 `corpus_version`、`algorithm:"sha256"` 和 `sha256_digests` 数组；Web身份服务启动时核对完整文件SHA256，拒绝缺失、损坏、非普通文件或超过64MiB输入。配置了语料就不能失败退回仅常见密码筛查。不发起外部查询；真实语料来源、更新和正式验证码provider仍留DEC-011/CR-014，合成语料不代表真实语料已获批或生产检查已接入；adapter状态按99/README裁决。
 
-Redis 关闭时四维限流明确为 `NoProtection`；Redis 已开启但不可用时按 A05 高风险故障合同失败关闭，不回退到内存保护。账号/IP/设备/网络四维参数未批准时不创建生产默认预算；风险摘要密钥与邮件派生密钥相互独立。
+风险只保存用途隔离HMAC信号与封闭动作/原因/规则版本，不保存原始IP、User-Agent、邮箱或邀请码。注册、验证、邀请使用分析事件同业务事务提交，默认将本地来源排除于正式指标；HTTP不能自报排除事实。首次阅读/回复/贡献、组合时序检测及看板留后续。
 
-清理仅针对已确认的本机合成测试目录。先停止相关 Web/Worker、关闭连接，再处理指定测试数据库及其 WAL/SHM、对应私有 spool；不要删除正在等待重试的来源、receipt 或抑制记录来“修复”业务状态。测试夹具通常自行删除临时目录；若进程中断遗留产物，核对独立临时目录归属后清理。`data/`、`.local/`、本机配置、数据库、邮件和秘密继续忽略，不提供生产清空或自动保留策略。
+## 未知提交、敏感日志与验证
 
-## 开发验证入口
+HTTP202携带原operation_id时，用同一浏览器原证明通过 `POST /auth/operations` 查询原actor/scope/幂等键，不换key盲重试。公开流程用预认证+CSRF；会话已因退出/改密撤销后，仍仅允许在原绝对期限内查询自己原操作摘要，不恢复普通认证。`Pending/NotObserved`不等于回滚；证明丢失或过期没有本轮管理员救援入口。
 
-在仓库根目录执行；测试自行建立临时 SQLite，不依赖正常运行库已有账号或 Flag 值：
+页面no-store/no-referrer，邀请页noindex无OG。日志记录封闭路由、生成的关联、状态和耗时，不记录URI/query/表单/Cookie/Secret。只清理已停止宿主、关闭连接且确认归属的本机合成测试目录；不清空非本地库。数据库、WAL/SHM、邮件、challenge proof、Secret和本机配置继续忽略。
 
 ```bash
 cargo test --locked -p identity --lib
 cargo test --locked -p trust -p moderation --lib
-cargo test --locked -p platform --lib sql_lint
-cargo test --locked -p platform --lib observability::grouped
-cargo test --locked -p platform-db --lib migrations
-cargo test --locked -p bbbcm-cli --test database_cli
+cargo test --locked -p bbbcm-web runtime_tests
 ./scripts/dev-check.sh
-git diff --check
 ```
 
-`identity` 的 core/settings/HTTP 测试覆盖注册事务、单次令牌、会话与 owner、合成邀请授权及额度、用户名保留、邮件和分析排除。`scheduler_failure_retry_and_recreated_worker_resume_persistent_identity_mail` 已经使用实际临时 SQLite 和现有 Scheduler，先模拟 provider 失败，再重建 Worker 服务写出本地邮件，核对持久状态及再次重启不重复输出；这不是正常 Worker 宿主已接通身份 source 的证据。持久抑制测试实际拒绝本地输出，并重建存储后复验。完整命令结果与本轮候选证据仍以 99 §5.7 为准。
-
-这些命令不证明真实 PostgreSQL/Redis、生产 IAM、真实供应商、真实发送/反馈、网络提交未知、多 Worker 并发、完整安全/性能或正式视觉矩阵通过。相应验证留统一硬化 E01/E02/E04，不授予 Verified。
-
-## 待批准与后续接线
-
-以下事项集中回到事实源决策流程；尚未确认的值不写成默认参数：
-
-- T0/T1 实际资格、邮箱验证与信任等级的关系、邀请生成资格、是否及如何升级；邀请有效期、每日额度日界线、撤销/过期后的额度释放及按等级调整。
-- 四维限流预算与时间窗口、网络前缀、风险挑战触发及验证方式；验证码、泄露密码筛查的供应商、故障行为和完整 DEC-011/CR-014 子句。
-- 用户名与邮箱规范化、字符合法性、大小写/别名处理、反冒充保留名及相似名规则、简介限制；已批用户名 30 天冷却和 90 天历史防抢注继续沿用。
-- 预认证证明期限、新邮箱确认期限、验证/恢复邮件的重发与过期恢复行为；派生令牌假说、密钥保管/轮换及旧版本恢复边界，以及尚未批准的数据保留期。
-- 正式三份政策文本、发布和审批，正常 Web/Worker 的身份 source 及 Secret 装配；不借最小 MOD-010 读取切片提前实现后台发布。
-- DEC-049 字符折算及自然周起点仍待确认，不阻塞本轮注册、验证和邀请使用三个事件的共同提交。账号年龄的统计口径不改变身份或邀请权限。
-
-MFA、管理会话、首账号提权、完整后台、内容发布、账号导出/注销与删除传播、积分、真实 provider 和头像上传均不由本手册提供操作入口。包状态及逐需求缺口只在 99 更新。
+测试使用真实临时SQLite、实际批准的policy和应用工厂验证注册、会话、邀请、重发、邮件输出、缺旧key失败/恢复、Worker重启、离线语料失败。独立复核、结果和遗留缺口见99 §5.8及其开发证据。不据此宣称真实PG/Redis、完整安全/并发/性能、生产IAM、供应商或正式视觉矩阵通过。

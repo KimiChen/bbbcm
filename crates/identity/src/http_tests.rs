@@ -2,7 +2,7 @@
 //! A projection renderer tests transport and view contracts independently of the A00 HTML.
 use crate::{
     contract::IdentityError,
-    core_tests::{Fixture, at},
+    core_tests::Fixture,
     http::{IdentityWebState, router},
     rate::{RatePolicy, RateProtection},
     web_view::{Page, PageRenderer},
@@ -42,6 +42,25 @@ use std::{
 use tower::ServiceExt;
 
 struct ProjectionRenderer;
+async fn http_fixture() -> Fixture {
+    let f = Fixture::new().await;
+    // HTTP owns its wall clock. Refresh only this isolated synthetic invitation so
+    // route tests remain valid after the fixed core-test date has passed.
+    let mut tx = DbTransaction::begin(&f.pool).await.unwrap();
+    let table = crate::repo::table(&tx.connection(), &f.r, "invitations").unwrap();
+    tx.connection()
+        .execute(
+            &format!("UPDATE {table} SET created_at = ?, expires_at = ?"),
+            &[
+                DbValue::Time(Utc::now()),
+                DbValue::Time(Utc::now() + Duration::days(2)),
+            ],
+        )
+        .await
+        .unwrap();
+    tx.commit().await.unwrap();
+    f
+}
 impl PageRenderer for ProjectionRenderer {
     fn render(&self, page: &Page) -> Result<String, IdentityError> {
         Ok(json!({
@@ -116,6 +135,52 @@ fn web_state(f: &Fixture) -> IdentityWebState {
             invitation: None,
         }),
     }
+}
+
+fn approved_state(f: &Fixture) -> IdentityWebState {
+    let mut state = web_state(f);
+    let mut service = state.service.as_deref().unwrap().clone();
+    service.policy = Arc::new(crate::policy::ApprovedIdentityPolicy);
+    service = service.with_risk_policy(Arc::new(trust::risk::ApprovedIdentityRiskPolicy));
+    state.service = Some(Arc::new(service));
+    state.rate = Some(RateProtection::approved_v1(
+        false,
+        Arc::new(DisabledRateLimiter),
+    ));
+    state
+}
+
+async fn latest_token(f: &Fixture, purpose: &str) -> (String, String) {
+    let mut tx = DbTransaction::begin_read(&f.pool).await.unwrap();
+    let table = crate::repo::table(&tx.connection(), &f.r, "one_time_tokens").unwrap();
+    let row = tx.connection().fetch_optional(&format!("SELECT token_id, token_nonce, user_id, target_email_key, expires_at, issued_credential_version FROM {table} WHERE purpose = ? AND consumed = 0 ORDER BY created_at DESC, token_id DESC"), &[purpose.into()]).await.unwrap().unwrap();
+    let id = row.text("token_id").unwrap();
+    let raw = f.issuer.derive(
+        &id,
+        &row.text("token_nonce").unwrap(),
+        row.i64("user_id").unwrap(),
+        purpose,
+        &row.text("target_email_key").unwrap(),
+        row.time("expires_at").unwrap(),
+        row.i64("issued_credential_version").unwrap(),
+    );
+    tx.rollback().await.unwrap();
+    (id, raw.expose().into())
+}
+
+async fn count(f: &Fixture, table: &str) -> i64 {
+    let mut tx = DbTransaction::begin_read(&f.pool).await.unwrap();
+    let table = crate::repo::table(&tx.connection(), &f.r, table).unwrap();
+    let count = tx
+        .connection()
+        .fetch_optional(&format!("SELECT COUNT(*) AS n FROM {table}"), &[])
+        .await
+        .unwrap()
+        .unwrap()
+        .i64("n")
+        .unwrap();
+    tx.rollback().await.unwrap();
+    count
 }
 
 #[derive(Default, Clone)]
@@ -245,7 +310,14 @@ async fn flag(f: &Fixture, flag: Flag, enabled: bool) {
 async fn registered(f: &Fixture) {
     f.enable().await;
     f.service
-        .register(&f.context().await, f.registration(), at())
+        .register(
+            &{
+                let grant = f.service.create_preauth(Utc::now()).await.unwrap();
+                crate::contract::RequestContext::new(grant.token, grant.csrf, new_operation_id())
+            },
+            f.registration(),
+            Utc::now(),
+        )
         .await
         .unwrap();
 }
@@ -269,7 +341,7 @@ async fn login(browser: &mut Browser, app: &Router) -> Reply {
 
 #[tokio::test]
 async fn default_flags_close_all_identity_routes_without_side_effects() {
-    let f = Fixture::new().await;
+    let f = http_fixture().await;
     let app = app(&f);
     let mut browser = Browser::default();
     for path in [
@@ -278,6 +350,7 @@ async fn default_flags_close_all_identity_routes_without_side_effects() {
         "/forgot-password",
         "/reset-password",
         "/verify-email",
+        "/resend-verification",
         "/confirm-email",
         "/settings/profile",
         "/settings/sessions",
@@ -311,7 +384,7 @@ async fn default_flags_close_all_identity_routes_without_side_effects() {
 
 #[tokio::test]
 async fn login_csrf_origin_cookie_attributes_and_owner_form_boundary() {
-    let f = Fixture::new().await;
+    let f = http_fixture().await;
     registered(&f).await;
     let app = app(&f);
     let mut browser = Browser::default();
@@ -393,7 +466,7 @@ async fn login_csrf_origin_cookie_attributes_and_owner_form_boundary() {
 
 #[tokio::test]
 async fn registration_policy_links_work_under_the_same_controlled_flag_state() {
-    let f = Fixture::new().await;
+    let f = http_fixture().await;
     flag(&f, Flag::Registration, true).await;
     flag(&f, Flag::EmailVerification, true).await;
     let app = app(&f);
@@ -429,7 +502,7 @@ async fn registration_policy_links_work_under_the_same_controlled_flag_state() {
 
 #[tokio::test]
 async fn expired_revoked_sessions_and_cross_owner_device_actions_are_rejected() {
-    let f = Fixture::new().await;
+    let f = http_fixture().await;
     registered(&f).await;
     let app = app(&f);
     let mut a = Browser::default();
@@ -516,7 +589,7 @@ async fn expired_revoked_sessions_and_cross_owner_device_actions_are_rejected() 
 
 #[tokio::test]
 async fn login_and_recovery_responses_do_not_enumerate_accounts() {
-    let f = Fixture::new().await;
+    let f = http_fixture().await;
     registered(&f).await;
     let app = app(&f);
     let mut signatures = Vec::new();
@@ -577,10 +650,12 @@ impl RateLimiter for RecordingLimiter {
     fn check<'a>(
         &'a self,
         key: &'a RateLimitKey,
-        _: RateLimitPolicy,
+        policy: RateLimitPolicy,
     ) -> BoxFuture<'a, Result<RateLimitDecision, CacheError>> {
         self.keys.lock().unwrap().push(key.clone());
-        let allowed = !self.limited.load(Ordering::SeqCst);
+        // This fixture exercises the hard limiter path; soft pairs remain available.
+        let allowed = !self.limited.load(Ordering::SeqCst)
+            || policy != RateLimitPolicy::new(5, StdDuration::from_secs(10)).unwrap();
         Box::pin(async move {
             Ok(RateLimitDecision {
                 allowed,
@@ -617,7 +692,7 @@ fn rate_app(f: &Fixture, limiter: Arc<RecordingLimiter>) -> Router {
 
 #[tokio::test]
 async fn limited_login_and_recovery_hide_account_mapping_and_do_one_real_argon_verification() {
-    let f = Fixture::new().await;
+    let f = http_fixture().await;
     registered(&f).await;
     let limiter = Arc::new(RecordingLimiter {
         limited: AtomicBool::new(true),
@@ -646,7 +721,7 @@ async fn limited_login_and_recovery_hide_account_mapping_and_do_one_real_argon_v
             )
             .await;
         assert_eq!(f.service.passwords.verification_count(), before + 1);
-        assert_eq!(limiter.take_keys().len(), 4);
+        assert_eq!(limiter.take_keys().len(), 6);
         assert_eq!(result.status, StatusCode::BAD_REQUEST);
         assert!(!result.headers.contains_key(header::RETRY_AFTER));
         assert!(!browser.cookies.contains_key("bcm_session"));
@@ -680,7 +755,7 @@ async fn limited_login_and_recovery_hide_account_mapping_and_do_one_real_argon_v
             )
             .await;
         assert_eq!(f.service.passwords.verification_count(), before + 1);
-        assert_eq!(limiter.take_keys().len(), 4);
+        assert_eq!(limiter.take_keys().len(), 6);
         assert_eq!(result.status, StatusCode::OK);
         assert!(!result.headers.contains_key(header::RETRY_AFTER));
         signatures.push((
@@ -698,7 +773,7 @@ async fn limited_login_and_recovery_hide_account_mapping_and_do_one_real_argon_v
 
 #[tokio::test]
 async fn registration_rate_subject_uses_email_and_ignores_extra_identifier() {
-    let f = Fixture::new().await;
+    let f = http_fixture().await;
     registered(&f).await;
     let limiter = Arc::new(RecordingLimiter {
         limited: AtomicBool::new(true),
@@ -726,7 +801,7 @@ async fn registration_rate_subject_uses_email_and_ignores_extra_identifier() {
         assert_eq!(result.status, StatusCode::OK);
         assert_eq!(f.service.passwords.verification_count(), before + 1);
         let keys = limiter.take_keys();
-        assert_eq!(keys.len(), 4);
+        assert_eq!(keys.len(), 6);
         recorded.push(keys);
     }
     assert_eq!(recorded[0], recorded[1]);
@@ -747,7 +822,7 @@ async fn registration_rate_subject_uses_email_and_ignores_extra_identifier() {
         .await;
     assert_eq!(result.status, StatusCode::OK);
     let changed = limiter.take_keys();
-    assert_eq!(changed.len(), 4);
+    assert_eq!(changed.len(), 6);
     assert_ne!(recorded[0][0], changed[0]);
     assert_eq!(recorded[0][1..], changed[1..]);
     let page = browser.get(&app, "/register").await;
@@ -769,7 +844,7 @@ async fn registration_rate_subject_uses_email_and_ignores_extra_identifier() {
         StatusCode::OK
     );
     let invalid_mailbox = limiter.take_keys();
-    assert_eq!(invalid_mailbox.len(), 4);
+    assert_eq!(invalid_mailbox.len(), 6);
     assert_ne!(recorded[0][0], invalid_mailbox[0]);
     assert_eq!(recorded[0][1..], invalid_mailbox[1..]);
 }
@@ -825,7 +900,7 @@ async fn synthetic_other_browser(f: &Fixture) -> (Browser, i64) {
 
 #[tokio::test]
 async fn revoked_bearer_queries_only_its_bound_logout_and_password_operations() {
-    let f = Fixture::new().await;
+    let f = http_fixture().await;
     registered(&f).await;
     let app = app(&f);
     let mut browser = Browser::default();
@@ -975,7 +1050,7 @@ async fn revoked_bearer_queries_only_its_bound_logout_and_password_operations() 
 
 #[tokio::test]
 async fn invitation_alias_revocation_action_and_existing_profile_projections_are_wired() {
-    let f = Fixture::new().await;
+    let f = http_fixture().await;
     registered(&f).await;
     let app = app(&f);
     let mut browser = Browser::default();
@@ -986,23 +1061,20 @@ async fn invitation_alias_revocation_action_and_existing_profile_projections_are
         .await
         .unwrap()
         .unwrap();
-    // Explicit synthetic capability fixture only: no HTTP or production grant path is exercised.
-    let mut tx = DbTransaction::begin(&f.pool).await.unwrap();
-    let snapshot =
-        f.r.table(tx.connection().backend(), "trust", "identity_snapshots")
-            .unwrap();
-    tx.connection().execute(&format!("UPDATE {snapshot} SET level = ?, email_verified = ?, invitation_allowed = ?, policy_version = ?, reason_code = ? WHERE user_id = ?"), &["t1".into(), DbValue::Bool(true), DbValue::Bool(true), 1_i64.into(), "approved_policy".into(), identity.user_id().into()]).await.unwrap();
-    let users =
-        f.r.table(tx.connection().backend(), "identity", "users")
-            .unwrap();
-    tx.connection()
-        .execute(
-            &format!("UPDATE {users} SET email_verified = ? WHERE id = ?"),
-            &[DbValue::Bool(true), identity.user_id().into()],
-        )
-        .await
-        .unwrap();
-    tx.commit().await.unwrap();
+    // Exercise the real verification transition; inviting does not depend on granting T1.
+    let (_, raw) = latest_token(&f, "verify_email").await;
+    let verification = browser.get(&app, "/verify-email").await;
+    assert_eq!(
+        browser
+            .post(
+                &app,
+                "/verify-email",
+                &form(&verification.page, &[("token", &raw)])
+            )
+            .await
+            .status,
+        StatusCode::OK
+    );
     let invite_page = browser.get(&app, "/me/invites").await;
     assert_eq!(invite_page.status, StatusCode::OK);
     assert_eq!(invite_page.page["action"], "/me/invites");
@@ -1049,7 +1121,7 @@ async fn invitation_alias_revocation_action_and_existing_profile_projections_are
             .as_array()
             .unwrap()
             .iter()
-            .any(|row| row["label"] == "信任等级" && row["value"] == "t1")
+            .any(|row| row["label"] == "信任等级" && row["value"] == "待确认")
     );
     let own = f.service.profile(&identity, Utc::now()).await.unwrap();
     let public = Browser::default()
@@ -1063,6 +1135,904 @@ async fn invitation_alias_revocation_action_and_existing_profile_projections_are
             .as_array()
             .unwrap()
             .iter()
-            .any(|row| row["label"] == "信任等级" && row["value"] == "t1")
+            .any(|row| row["label"] == "信任等级" && row["value"] == "待确认")
     );
+}
+
+#[tokio::test]
+async fn approved_preauth_reuses_two_hour_principal_without_sliding_or_cross_form_invalidation() {
+    let f = http_fixture().await;
+    registered(&f).await;
+    let app = router(approved_state(&f));
+    let mut browser = Browser::default();
+    let first = browser.get(&app, "/login").await;
+    let token = browser.cookies["bcm_preauth"].clone();
+    let csrf = browser.cookies["bcm_preauth_csrf"].clone();
+    assert_eq!(first.page["csrf"], csrf);
+    for cookie in first.headers.get_all(header::SET_COOKIE) {
+        let cookie = cookie.to_str().unwrap();
+        if cookie.starts_with("bcm_preauth") {
+            assert!(
+                cookie.contains("Max-Age=7200")
+                    && cookie.contains("HttpOnly")
+                    && cookie.contains("SameSite=Lax")
+            );
+        }
+    }
+    for path in [
+        "/register",
+        "/forgot-password",
+        "/resend-verification",
+        "/verify-email",
+    ] {
+        let page = browser.get(&app, path).await;
+        assert_eq!(page.status, StatusCode::OK);
+        assert_eq!(page.page["csrf"], csrf);
+        assert_eq!(browser.cookies["bcm_preauth"], token);
+        assert!(!page.headers.contains_key(header::SET_COOKIE));
+    }
+    let mut tx = DbTransaction::begin(&f.pool).await.unwrap();
+    let table = crate::repo::table(&tx.connection(), &f.r, "request_principals").unwrap();
+    let row = tx
+        .connection()
+        .fetch_optional(
+            &format!("SELECT created_at, expires_at FROM {table} WHERE token_hash = ?"),
+            &[crate::core::secret_hash(&token).into()],
+        )
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        row.time("expires_at").unwrap() - row.time("created_at").unwrap(),
+        Duration::hours(2)
+    );
+    tx.rollback().await.unwrap();
+    let first_form = form(
+        &first.page,
+        &[
+            ("identifier", "ordinary_member"),
+            ("password", "Synthetic password 123"),
+        ],
+    );
+    assert_eq!(
+        browser.post(&app, "/login", &first_form).await.status,
+        StatusCode::OK
+    );
+    let mut tx = DbTransaction::begin(&f.pool).await.unwrap();
+    tx.connection()
+        .execute(
+            &format!("UPDATE {table} SET expires_at = ? WHERE token_hash = ?"),
+            &[
+                DbValue::Time(Utc::now() - Duration::seconds(1)),
+                crate::core::secret_hash(&token).into(),
+            ],
+        )
+        .await
+        .unwrap();
+    tx.commit().await.unwrap();
+    assert_eq!(
+        browser.post(&app, "/login", &first_form).await.status,
+        StatusCode::FORBIDDEN
+    );
+    let replacement = browser.get(&app, "/login").await;
+    assert_eq!(replacement.status, StatusCode::OK);
+    assert_ne!(browser.cookies["bcm_preauth"], token);
+    assert_ne!(browser.cookies["bcm_preauth_csrf"], csrf);
+}
+
+#[tokio::test]
+async fn approved_registration_normalization_settings_and_invitation_expiry_are_real_routes() {
+    let f = http_fixture().await;
+    f.enable().await;
+    let state = approved_state(&f);
+    let service = state.service.clone().unwrap();
+    let app = router(state);
+    let mut browser = Browser::default();
+    let input = f.registration();
+    for username in ["Adm1n", "Orchard_42"] {
+        let page = browser.get(&app, "/register").await;
+        assert_eq!(
+            browser
+                .post(
+                    &app,
+                    "/register",
+                    &form(
+                        &page.page,
+                        &[
+                            ("invitation", input.invitation.expose()),
+                            ("username", username),
+                            ("email", "  Orchard.Name+Tag@EXAMPLE.INVALID  "),
+                            ("password", input.password.expose()),
+                            ("consent", "yes"),
+                        ]
+                    )
+                )
+                .await
+                .status,
+            if username == "Adm1n" {
+                StatusCode::BAD_REQUEST
+            } else {
+                StatusCode::OK
+            }
+        );
+        assert_eq!(
+            count(&f, "users").await,
+            if username == "Adm1n" { 1 } else { 2 }
+        );
+    }
+    let page = browser.get(&app, "/login").await;
+    assert_eq!(
+        browser
+            .post(
+                &app,
+                "/login",
+                &form(
+                    &page.page,
+                    &[
+                        ("identifier", "orchard.name+tag@example.invalid"),
+                        ("password", input.password.expose())
+                    ]
+                )
+            )
+            .await
+            .status,
+        StatusCode::OK
+    );
+    let identity = service
+        .authenticate(&browser.cookies["bcm_session"], Utc::now())
+        .await
+        .unwrap()
+        .unwrap();
+    let profile = service.profile(&identity, Utc::now()).await.unwrap();
+    assert_eq!(profile.public.username, "Orchard_42");
+    assert_eq!(profile.email, "Orchard.Name+Tag@example.invalid");
+    let page = browser.get(&app, "/me/invites").await;
+    assert_eq!(
+        browser
+            .post(&app, "/me/invites", &form(&page.page, &[("days", "3")]))
+            .await
+            .status,
+        StatusCode::BAD_REQUEST
+    );
+    let (_, token) = latest_token(&f, "verify_email").await;
+    let page = browser.get(&app, "/verify-email").await;
+    assert_eq!(
+        browser
+            .post(
+                &app,
+                "/verify-email",
+                &form(&page.page, &[("token", &token)])
+            )
+            .await
+            .status,
+        StatusCode::OK
+    );
+    assert_eq!(
+        service
+            .profile(&identity, Utc::now())
+            .await
+            .unwrap()
+            .public
+            .trust_level,
+        Some("pending")
+    );
+    for invalid in ["0", "8", "1.5", "-1", ""] {
+        let page = browser.get(&app, "/me/invites").await;
+        assert_eq!(
+            browser
+                .post(&app, "/me/invites", &form(&page.page, &[("days", invalid)]))
+                .await
+                .status,
+            StatusCode::BAD_REQUEST
+        );
+    }
+    for days in [None, Some("7")] {
+        let page = browser.get(&app, "/me/invites").await;
+        assert!(
+            page.page["fields"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|v| v["name"] == "days" && v["value"] == "3")
+        );
+        let extra = days.map(|v| vec![("days", v)]).unwrap_or_default();
+        assert_eq!(
+            browser
+                .post(&app, "/me/invites", &form(&page.page, &extra))
+                .await
+                .status,
+            StatusCode::OK
+        );
+    }
+    let mut tx = DbTransaction::begin_read(&f.pool).await.unwrap();
+    let table = crate::repo::table(&tx.connection(), &f.r, "invitations").unwrap();
+    let rows = tx
+        .connection()
+        .fetch_all(
+            &format!("SELECT created_at, expires_at FROM {table} WHERE creator_id = ? ORDER BY id"),
+            &[identity.user_id().into()],
+        )
+        .await
+        .unwrap();
+    assert_eq!(rows.len(), 2);
+    for (row, days) in rows.iter().zip([3, 7]) {
+        assert_eq!(
+            row.time("expires_at").unwrap() - row.time("created_at").unwrap(),
+            Duration::days(days)
+        );
+    }
+    tx.rollback().await.unwrap();
+    let page = browser.get(&app, "/settings/profile").await;
+    let bio = "果".repeat(500);
+    assert_eq!(
+        browser
+            .post(
+                &app,
+                "/settings/profile",
+                &form(&page.page, &[("bio", &bio)])
+            )
+            .await
+            .status,
+        StatusCode::OK
+    );
+    let page = browser.get(&app, "/settings/profile").await;
+    assert_eq!(
+        browser
+            .post(
+                &app,
+                "/settings/profile",
+                &form(&page.page, &[("bio", &"果".repeat(501))])
+            )
+            .await
+            .status,
+        StatusCode::BAD_REQUEST
+    );
+}
+
+#[tokio::test]
+async fn approved_resend_and_recovery_reissue_invalidate_old_tokens_but_same_key_does_not() {
+    let f = http_fixture().await;
+    registered(&f).await;
+    let app = router(approved_state(&f));
+    let mut browser = Browser::default();
+    let (_, original) = latest_token(&f, "verify_email").await;
+    let page = browser.get(&app, "/resend-verification").await;
+    let request = form(&page.page, &[("identifier", "member@example.invalid")]);
+    let first = browser.post(&app, "/resend-verification", &request).await;
+    assert_eq!(first.status, StatusCode::OK);
+    let mail_count = count(&f, "mail_requests").await;
+    let (token_id, new) = latest_token(&f, "verify_email").await;
+    assert_ne!(original, new);
+    assert_eq!(
+        browser
+            .post(&app, "/resend-verification", &request)
+            .await
+            .status,
+        StatusCode::OK
+    );
+    assert_eq!(count(&f, "mail_requests").await, mail_count);
+    assert_eq!(latest_token(&f, "verify_email").await.0, token_id);
+    let page = browser.get(&app, "/resend-verification").await;
+    let absent = browser
+        .post(
+            &app,
+            "/resend-verification",
+            &form(&page.page, &[("identifier", "absent_member")]),
+        )
+        .await;
+    assert_eq!(
+        (absent.status, &absent.page["flash"]),
+        (first.status, &first.page["flash"])
+    );
+    assert_eq!(count(&f, "mail_requests").await, mail_count);
+    for (token, status) in [
+        (&original, StatusCode::BAD_REQUEST),
+        (&new, StatusCode::OK),
+        (&new, StatusCode::BAD_REQUEST),
+    ] {
+        let page = browser.get(&app, "/verify-email").await;
+        assert_eq!(
+            browser
+                .post(
+                    &app,
+                    "/verify-email",
+                    &form(&page.page, &[("token", token)])
+                )
+                .await
+                .status,
+            status
+        );
+    }
+    assert_eq!(login(&mut browser, &app).await.status, StatusCode::OK);
+    let mut old_session = browser.clone();
+    let mut recovery = Vec::new();
+    for _ in 0..2 {
+        let page = browser.get(&app, "/forgot-password").await;
+        let request = form(&page.page, &[("identifier", "ordinary_member")]);
+        assert_eq!(
+            browser
+                .post(&app, "/forgot-password", &request)
+                .await
+                .status,
+            StatusCode::OK
+        );
+        let token = latest_token(&f, "reset_password").await;
+        let mail_count = count(&f, "mail_requests").await;
+        assert_eq!(
+            browser
+                .post(&app, "/forgot-password", &request)
+                .await
+                .status,
+            StatusCode::OK
+        );
+        assert_eq!(count(&f, "mail_requests").await, mail_count);
+        assert_eq!(latest_token(&f, "reset_password").await.0, token.0);
+        recovery.push(token.1);
+    }
+    assert_ne!(recovery[0], recovery[1]);
+    for (token, status) in [
+        (&recovery[0], StatusCode::BAD_REQUEST),
+        (&recovery[1], StatusCode::OK),
+        (&recovery[1], StatusCode::BAD_REQUEST),
+    ] {
+        let page = browser.get(&app, "/reset-password").await;
+        assert_eq!(
+            browser
+                .post(
+                    &app,
+                    "/reset-password",
+                    &form(
+                        &page.page,
+                        &[("token", token), ("password", "New synthetic password 42")]
+                    )
+                )
+                .await
+                .status,
+            status
+        );
+    }
+    assert_eq!(
+        old_session.get(&app, "/settings/profile").await.status,
+        StatusCode::UNAUTHORIZED
+    );
+    let page = browser.get(&app, "/login").await;
+    assert_eq!(
+        browser
+            .post(
+                &app,
+                "/login",
+                &form(
+                    &page.page,
+                    &[
+                        ("identifier", "ordinary_member"),
+                        ("password", "New synthetic password 42")
+                    ]
+                )
+            )
+            .await
+            .status,
+        StatusCode::OK
+    );
+}
+
+#[tokio::test]
+async fn exhausted_soft_pairs_hide_private_hard_account_buckets_and_never_execute_limited_commands()
+{
+    use platform::{
+        cache::TokenBucketLimiter, config::Environment, integrations::local::LocalRoot,
+    };
+    let f = http_fixture().await;
+    registered(&f).await;
+    for (path, action, hard_capacity, soft_capacity) in [
+        ("/login", "login", 10, 20),
+        ("/forgot-password", "recovery", 3, 5),
+        ("/resend-verification", "recovery", 3, 5),
+    ] {
+        let local = LocalRoot::new(
+            &f.dir
+                .join(format!("hard-soft-{}", path.trim_start_matches('/'))),
+            Environment::Test,
+        )
+        .unwrap();
+        let mut state = approved_state(&f);
+        let service = state
+            .service
+            .as_deref()
+            .unwrap()
+            .clone()
+            .with_challenge_provider(Arc::new(crate::challenge::LocalChallengeProvider::new(
+                local.clone(),
+                f.issuer.clone(),
+            )));
+        let account = service
+            .rate_subject("ordinary_member", None, None)
+            .await
+            .unwrap();
+        state.service = Some(Arc::new(service));
+        let rate = RateProtection::approved_v1(true, Arc::new(TokenBucketLimiter::new()));
+        state.rate = Some(rate.clone());
+        let app = router(state);
+        let mut browser = Browser::default();
+        browser.get(&app, path).await;
+        // Exhaust only the existing account's hard bucket, on a different device/IP/network.
+        for _ in 0..hard_capacity {
+            rate.check(
+                action,
+                &account,
+                "192.0.3.17".parse().unwrap(),
+                "seed-device",
+            )
+            .await
+            .unwrap();
+        }
+        for _ in 0..soft_capacity {
+            assert!(
+                !rate
+                    .check_soft(
+                        action,
+                        "192.0.2.15".parse().unwrap(),
+                        &browser.cookies["bcm_device"]
+                    )
+                    .await
+                    .unwrap()
+            );
+        }
+        let mails = count(&f, "mail_requests").await;
+        let sessions = count(&f, "sessions").await;
+        let mut signatures = Vec::new();
+        for identifier in ["ordinary_member", "member@example.invalid", "absent_member"] {
+            let page = browser.get(&app, path).await;
+            let mut values = vec![("identifier", identifier)];
+            if path == "/login" {
+                values.push(("password", "Synthetic password 123"));
+            }
+            let challenge = browser.post(&app, path, &form(&page.page, &values)).await;
+            assert_eq!(
+                challenge.status,
+                StatusCode::PRECONDITION_REQUIRED,
+                "{path} {identifier}"
+            );
+            signatures.push((
+                challenge.status,
+                challenge.page["title"].clone(),
+                challenge.page["flash"].clone(),
+                challenge.page["error"].clone(),
+            ));
+            let id = challenge.page["fields"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|f| f["name"] == "challenge_id")
+                .unwrap()["value"]
+                .as_str()
+                .unwrap();
+            let artifact: Value =
+                serde_json::from_slice(&local.read("processed", id, "json", 16_384).await.unwrap())
+                    .unwrap();
+            values.push(("challenge_proof", artifact["proof"].as_str().unwrap()));
+            let completed = browser
+                .post(&app, path, &form(&challenge.page, &values))
+                .await;
+            assert_eq!(
+                completed.status,
+                if path == "/login" {
+                    StatusCode::BAD_REQUEST
+                } else {
+                    StatusCode::OK
+                }
+            );
+            assert!(!browser.cookies.contains_key("bcm_session"));
+        }
+        assert!(signatures.windows(2).all(|v| v[0] == v[1]));
+        assert_eq!(count(&f, "mail_requests").await, mails);
+        assert_eq!(count(&f, "sessions").await, sessions);
+    }
+}
+
+#[tokio::test]
+async fn expired_unconsumed_challenge_proof_has_same_response_with_or_without_private_hard_limit() {
+    use platform::{
+        cache::TokenBucketLimiter, config::Environment, integrations::local::LocalRoot,
+    };
+    let f = http_fixture().await;
+    registered(&f).await;
+    for path in ["/forgot-password", "/resend-verification"] {
+        let local = LocalRoot::new(
+            &f.dir
+                .join(format!("expired-proof-{}", path.trim_start_matches('/'))),
+            Environment::Test,
+        )
+        .unwrap();
+        let mut state = approved_state(&f);
+        let service = state
+            .service
+            .as_deref()
+            .unwrap()
+            .clone()
+            .with_challenge_provider(Arc::new(crate::challenge::LocalChallengeProvider::new(
+                local.clone(),
+                f.issuer.clone(),
+            )));
+        let account = service
+            .rate_subject("ordinary_member", None, None)
+            .await
+            .unwrap();
+        state.service = Some(Arc::new(service));
+        let rate = RateProtection::approved_v1(true, Arc::new(TokenBucketLimiter::new()));
+        state.rate = Some(rate.clone());
+        let app = router(state);
+        let mut browser = Browser::default();
+        browser.get(&app, path).await;
+        for _ in 0..3 {
+            rate.check(
+                "recovery",
+                &account,
+                "192.0.3.17".parse().unwrap(),
+                "seed-device",
+            )
+            .await
+            .unwrap();
+        }
+        for _ in 0..5 {
+            assert!(
+                !rate
+                    .check_soft(
+                        "recovery",
+                        "192.0.2.15".parse().unwrap(),
+                        &browser.cookies["bcm_device"]
+                    )
+                    .await
+                    .unwrap()
+            );
+        }
+        let before = count(&f, "mail_requests").await;
+        let mut signatures = Vec::new();
+        for identifier in ["ordinary_member", "absent_member"] {
+            let page = browser.get(&app, path).await;
+            let challenge = browser
+                .post(&app, path, &form(&page.page, &[("identifier", identifier)]))
+                .await;
+            assert_eq!(challenge.status, StatusCode::PRECONDITION_REQUIRED);
+            let id = challenge.page["fields"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|f| f["name"] == "challenge_id")
+                .unwrap()["value"]
+                .as_str()
+                .unwrap();
+            let artifact: Value =
+                serde_json::from_slice(&local.read("processed", id, "json", 16_384).await.unwrap())
+                    .unwrap();
+            let mut tx = DbTransaction::begin(&f.pool).await.unwrap();
+            let table = crate::repo::table(&tx.connection(), &f.r, "challenges").unwrap();
+            tx.connection()
+                .execute(
+                    &format!("UPDATE {table} SET expires_at = ? WHERE challenge_id = ?"),
+                    &[DbValue::Time(Utc::now() - Duration::seconds(1)), id.into()],
+                )
+                .await
+                .unwrap();
+            tx.commit().await.unwrap();
+            let expired = browser
+                .post(
+                    &app,
+                    path,
+                    &form(
+                        &challenge.page,
+                        &[
+                            ("identifier", identifier),
+                            ("challenge_proof", artifact["proof"].as_str().unwrap()),
+                        ],
+                    ),
+                )
+                .await;
+            assert_eq!(expired.status, StatusCode::BAD_REQUEST);
+            signatures.push((
+                expired.status,
+                expired.page["error"].clone(),
+                expired.page["flash"].clone(),
+            ));
+        }
+        assert_eq!(signatures[0], signatures[1]);
+        assert_eq!(count(&f, "mail_requests").await, before);
+    }
+}
+
+#[tokio::test]
+async fn registration_challenge_requires_reentering_invitation_password_and_same_policy_versions() {
+    use platform::{
+        cache::TokenBucketLimiter, config::Environment, integrations::local::LocalRoot,
+    };
+    let f = http_fixture().await;
+    f.enable().await;
+    let local = LocalRoot::new(
+        &f.dir.join("registration-local-provider"),
+        Environment::Test,
+    )
+    .unwrap();
+    let mut state = approved_state(&f);
+    let service = state
+        .service
+        .as_deref()
+        .unwrap()
+        .clone()
+        .with_challenge_provider(Arc::new(crate::challenge::LocalChallengeProvider::new(
+            local.clone(),
+            f.issuer.clone(),
+        )));
+    state.service = Some(Arc::new(service));
+    let rate = RateProtection::approved_v1(true, Arc::new(TokenBucketLimiter::new()));
+    state.rate = Some(rate.clone());
+    let app = router(state);
+    let mut browser = Browser::default();
+    let page = browser.get(&app, "/register").await;
+    for _ in 0..5 {
+        assert!(
+            !rate
+                .check_soft(
+                    "registration",
+                    "192.0.2.15".parse().unwrap(),
+                    &browser.cookies["bcm_device"]
+                )
+                .await
+                .unwrap()
+        );
+    }
+    let input = f.registration();
+    let values = [
+        ("username", input.username.as_str()),
+        ("email", input.email.as_str()),
+        ("invitation", input.invitation.expose()),
+        ("password", input.password.expose()),
+        ("consent", "yes"),
+    ];
+    let challenge = browser
+        .post(&app, "/register", &form(&page.page, &values))
+        .await;
+    assert_eq!(challenge.status, StatusCode::PRECONDITION_REQUIRED);
+    assert_eq!(challenge.page["key"], page.page["key"]);
+    assert_eq!(count(&f, "users").await, 1);
+    assert_eq!(count(&f, "mail_requests").await, 0);
+    let serialized = challenge.page.to_string();
+    assert!(!serialized.contains(input.invitation.expose()));
+    assert!(!serialized.contains(input.password.expose()));
+    assert_eq!(challenge.page["policy_consent"], true);
+    for secret in ["invitation", "password", "challenge_proof"] {
+        assert!(
+            challenge.page["fields"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|v| v["name"] == secret && v["value"] == "")
+        );
+    }
+    let id = challenge.page["fields"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|f| f["name"] == "challenge_id")
+        .unwrap()["value"]
+        .as_str()
+        .unwrap();
+    let artifact: Value =
+        serde_json::from_slice(&local.read("processed", id, "json", 16_384).await.unwrap())
+            .unwrap();
+    let mut values = values.to_vec();
+    values.push(("challenge_proof", artifact["proof"].as_str().unwrap()));
+    let request = form(&challenge.page, &values);
+    assert_eq!(
+        browser.post(&app, "/register", &request).await.status,
+        StatusCode::OK
+    );
+    assert_eq!(count(&f, "users").await, 2);
+    assert_eq!(count(&f, "mail_requests").await, 1);
+    assert_eq!(
+        browser.post(&app, "/register", &request).await.status,
+        StatusCode::OK
+    );
+    assert_eq!(count(&f, "users").await, 2);
+    assert_eq!(count(&f, "mail_requests").await, 1);
+}
+
+#[tokio::test]
+async fn approved_soft_challenge_http_binds_original_request_and_local_proof_without_secret_reflection()
+ {
+    use platform::{
+        cache::TokenBucketLimiter, config::Environment, integrations::local::LocalRoot,
+    };
+    let f = http_fixture().await;
+    registered(&f).await;
+    let local = LocalRoot::new(&f.dir.join("http-local-provider"), Environment::Test).unwrap();
+    let mut state = approved_state(&f);
+    let service = state
+        .service
+        .as_deref()
+        .unwrap()
+        .clone()
+        .with_challenge_provider(Arc::new(crate::challenge::LocalChallengeProvider::new(
+            local.clone(),
+            f.issuer.clone(),
+        )));
+    state.service = Some(Arc::new(service));
+    let rate = RateProtection::approved_v1(true, Arc::new(TokenBucketLimiter::new()));
+    state.rate = Some(rate.clone());
+    let app = router(state);
+    let mut browser = Browser::default();
+    let page = browser.get(&app, "/login").await;
+    let device = browser.cookies["bcm_device"].clone();
+    // Populate the same approved independent soft buckets; hard budgets stay available.
+    // This models requests spread across account identifiers and a busy IP.
+    for _ in 0..20 {
+        assert!(
+            !rate
+                .check_soft("login", "192.0.2.15".parse().unwrap(), &device)
+                .await
+                .unwrap()
+        );
+    }
+    let original = form(
+        &page.page,
+        &[
+            ("identifier", "ordinary_member"),
+            ("password", "Synthetic password 123"),
+        ],
+    );
+    let challenge = browser.post(&app, "/login", &original).await;
+    assert_eq!(challenge.status, StatusCode::PRECONDITION_REQUIRED);
+    assert_eq!(challenge.page["key"], page.page["key"]);
+    assert!(
+        challenge.page["title"]
+            .as_str()
+            .unwrap()
+            .contains("LOCAL TEST")
+    );
+    assert!(
+        !challenge
+            .page
+            .to_string()
+            .contains("Synthetic password 123")
+    );
+    assert!(!browser.cookies.contains_key("bcm_session"));
+    let id = challenge.page["fields"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|f| f["name"] == "challenge_id")
+        .unwrap()["value"]
+        .as_str()
+        .unwrap();
+    let artifact: Value =
+        serde_json::from_slice(&local.read("processed", id, "json", 16_384).await.unwrap())
+            .unwrap();
+    assert!(
+        artifact["provider"]
+            .as_str()
+            .unwrap()
+            .contains("LOCAL TEST")
+    );
+    let proof = artifact["proof"].as_str().unwrap();
+    assert!(!challenge.page.to_string().contains(proof));
+    let submission = form(
+        &challenge.page,
+        &[
+            ("identifier", "ordinary_member"),
+            ("password", "Synthetic password 123"),
+            ("challenge_proof", proof),
+        ],
+    );
+    for (field, value) in [
+        ("password", "Changed synthetic password"),
+        ("idempotency_key", "changed_key"),
+        ("challenge_proof", "wrong_proof"),
+    ] {
+        let mut tampered = submission.clone();
+        tampered
+            .iter_mut()
+            .find(|(name, _)| name == field)
+            .unwrap()
+            .1 = value.into();
+        assert_eq!(
+            browser.post(&app, "/login", &tampered).await.status,
+            StatusCode::BAD_REQUEST
+        );
+    }
+    let mut other = Browser::default();
+    let other_page = other.get(&app, "/login").await;
+    let mut cross_principal = submission.clone();
+    cross_principal
+        .iter_mut()
+        .find(|(name, _)| name == "csrf")
+        .unwrap()
+        .1 = other_page.page["csrf"].as_str().unwrap().into();
+    assert_eq!(
+        other.post(&app, "/login", &cross_principal).await.status,
+        StatusCode::BAD_REQUEST
+    );
+    let successful = browser.post(&app, "/login", &submission).await;
+    assert_eq!(successful.status, StatusCode::OK);
+    assert!(browser.cookies.contains_key("bcm_session"));
+    let session_count = count(&f, "sessions").await;
+    // A committed original receipt stays queryable/replayable after its proof expires.
+    let mut tx = DbTransaction::begin(&f.pool).await.unwrap();
+    let table = crate::repo::table(&tx.connection(), &f.r, "challenges").unwrap();
+    tx.connection()
+        .execute(
+            &format!("UPDATE {table} SET expires_at = ? WHERE challenge_id = ?"),
+            &[DbValue::Time(Utc::now() - Duration::seconds(1)), id.into()],
+        )
+        .await
+        .unwrap();
+    tx.commit().await.unwrap();
+    assert_eq!(
+        browser.post(&app, "/login", &submission).await.status,
+        StatusCode::OK
+    );
+    assert_eq!(count(&f, "sessions").await, session_count);
+    let mut tx = DbTransaction::begin_read(&f.pool).await.unwrap();
+    let table = crate::repo::table(&tx.connection(), &f.r, "challenges").unwrap();
+    let row = tx
+        .connection()
+        .fetch_optional(
+            &format!(
+                "SELECT consumed, proof_hash, request_hash FROM {table} WHERE challenge_id = ?"
+            ),
+            &[id.into()],
+        )
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(row.boolean("consumed").unwrap());
+    assert_ne!(row.text("proof_hash").unwrap(), proof);
+    assert!(
+        !row.text("request_hash")
+            .unwrap()
+            .contains("Synthetic password")
+    );
+    tx.rollback().await.unwrap();
+}
+
+#[tokio::test]
+async fn challenged_recovery_fails_closed_without_local_provider_and_disabled_redis_is_unprotected()
+{
+    use platform::cache::TokenBucketLimiter;
+    let f = http_fixture().await;
+    registered(&f).await;
+    let mut state = approved_state(&f);
+    let rate = RateProtection::approved_v1(true, Arc::new(TokenBucketLimiter::new()));
+    state.rate = Some(rate.clone());
+    let app = router(state);
+    let mut browser = Browser::default();
+    let page = browser.get(&app, "/forgot-password").await;
+    for _ in 0..5 {
+        assert!(
+            !rate
+                .check_soft(
+                    "recovery",
+                    "192.0.2.15".parse().unwrap(),
+                    &browser.cookies["bcm_device"]
+                )
+                .await
+                .unwrap()
+        );
+    }
+    let request = form(&page.page, &[("identifier", "ordinary_member")]);
+    let before = count(&f, "mail_requests").await;
+    assert_eq!(
+        browser
+            .post(&app, "/forgot-password", &request)
+            .await
+            .status,
+        StatusCode::SERVICE_UNAVAILABLE
+    );
+    assert_eq!(count(&f, "mail_requests").await, before);
+    let unprotected = router(approved_state(&f));
+    assert_eq!(
+        browser
+            .post(&unprotected, "/forgot-password", &request)
+            .await
+            .status,
+        StatusCode::OK
+    );
+    assert_eq!(count(&f, "mail_requests").await, before + 1);
 }

@@ -65,6 +65,7 @@
 /login 404
 /register 404
 /verify-email 404
+/resend-verification 404
 /forgot-password 404
 /reset-password 404
 /confirm-email 404
