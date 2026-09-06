@@ -110,14 +110,17 @@
 | `WP-MVP-A03` | Implemented（开发期，2026-09-05） | 已修复有效轨为空豁免；交付PG/SQLite真实迁移、15逻辑schema映射与3张必要初始表、专用单连接/前缀锁/元数据/漂移拒绝/失败回滚/FK恢复、受信表注册、PG组角色bootstrap与显式/默认ACL、实际migrate/status/seed、4版块规则占位和共享SQL lint。迁移20项及种子/ACL/CLI回归、真实SQLite与HTTP冒烟通过；角色与IAM区分，mysql8只占位，真实PG ACL/并发等留硬化。版本、设计和证据见第5.4节。 |
 | `WP-MVP-A04` | Implemented（开发期，2026-09-05） | 事务/幂等/未知提交、Outbox调度/受控重放、追加审计/敏感读取、双宿主恢复与Webhook版本模型完成；独立复核及真实SQLite最小集通过，见第5.5节。无真实provider或授权路由，不授Verified。 |
 | `WP-MVP-A05` | Implemented（开发期） | Redis异步合同、故障/轮询、有限观测、真实健康与C0状态公告；开发期验证和独立复核通过，代码/测试/证据见第5.6节。依赖按DEC-047细化，真实服务与完整门禁留硬化。 |
-| `WP-MVP-A06` | In progress | 分析持久流水线、本地适配器/邮件已交付；5.8完成真实身份事件与正常Worker source/Secret接线，其余领域、首次行为/真实指标及看板仍缺。 |
-| `WP-MVP-B01` | In progress | DEC-051资格/规范化/邀请窗口、原子注册/验证/同意/SSR及正常宿主已接通；AUTH-003内容调用、INVITE-006按信任调额仍缺，逐项见5.8。 |
+| `WP-MVP-A06` | In progress | 分析持久流水线与身份/主题/回复原始事件、正常Worker source/Secret接线已接；5.9含内容幂等/排除/重启验证，其余领域、首次行为/有效统计及看板仍缺。 |
+| `WP-MVP-B01` | In progress | DEC-051身份流程与正常宿主已接；AUTH-003内容事务调用见5.9，INVITE-006按信任调额仍缺，不将内容切片视作整包完成。 |
 | `WP-MVP-B02` | Implemented（开发期） | AUTH-004..007按DEC-051及README §6完成认证/恢复/会话/通知、四维限流、密码筛查与本地挑战adapter；真实provider保持后续、生产关闭，证据与精确边界见5.8。 |
 | `WP-MVP-B03` | Not started | MFA、管理会话和AUTH-014首账号提权未纳入本轮。 |
-| `WP-MVP-B04` | In progress | USER-004/005/007与USER-001真实基础资料已交付；上传/C03、关系/集合页、偏好、导出及注销/删除传播仍缺，见5.8。 |
+| `WP-MVP-B04` | In progress | USER-004/005/007、真实基础资料与5.9公开/本人主题回复列表接线；作者隐私待决，上传、其他集合/关系、偏好、导出及注销/删除传播仍缺。 |
 | `WP-MVP-B05` | Not started | 新用户引导和首次贡献未接入。 |
-| `WP-MVP-B06` | In progress | 身份快照、已验证邀请资格与风险v1已接；不自动授T0/T1。授级、内容调用、其他领域/时序规则及渐进处置仍缺，见5.8。 |
-| `WP-MVP-C01/C02/C03/C05` | In progress（实施前登记） | DEC-052已授权本轮切片；精确设计与待决DEC-053见5.9，尚无实现完成证据。 |
+| `WP-MVP-B06` | In progress | 身份与内容同事务信任/限制/风险接线、参数注入及四维故障合同已实现；DEC-053内容政策、授级、挑战、重复文本与其他领域/完整处置仍缺。 |
+| `WP-MVP-C01` | In progress | 真实四视图/导航/SSR/签名分页；作者隐私、统计、搜索及正式视觉仍缺，见5.9。 |
+| `WP-MVP-C02` | In progress | 真实内容/楼层/修订/本人维护/事务与权限合同；正式发布政策、完整管理转换及统计仍缺，见5.9。 |
+| `WP-MVP-C03` | In progress | 安全Markdown和预览已接；完整编辑器、草稿、上传及媒体全链仍缺，见5.9。 |
+| `WP-MVP-C05` | In progress | 只借入同事务权威search_documents；搜索引擎/页面、SEO、Feed/sitemap等仍缺，见5.9。 |
 | `WP-MVP-C04` | Not started | 互动、通知与跨设备阅读位置后续。 |
 | `WP-MVP-D01..D04` | Not started | - |
 | `WP-MVP-E01/E02/E04/E05` | Not started | - |
@@ -339,7 +342,7 @@
 | 测试/完成 | 真实批准policy而非SyntheticPolicy测试规范边界、角色冒充、邀请3/7天/撤销库存/UTC额度、不自动授信；重发旧失效/单次与幂等、跨表单/Unknown查询；四维/挑战单次与故障、离线密码语料失败；实际应用装配SQLite全链路、Outbox/邮件抑制/重启/keyring恢复；适用回归、真实临时SQLite、./scripts/dev-check.sh、diff和逐文件暂存复核后中文提交。 |
 | 剩余门禁 | 正式政策文本/发布审批、T级授予流程、内容调用、真实provider/语料来源、完整A02/A06/B04/B06及E01/E02/E04保持后续；本轮参数不再反复询问。B01/B02仍逐项审核后才能Implemented，无Verified/发布门禁。 |
 
-#### 5.8.1 本轮交付与逐需求裁决
+#### 5.8.1 DEC-051交付与逐需求裁决（历史，后续内容状态以5.9.1为准）
 
 依赖决策`236ba57`、受控身份切片`24360bf`保持；本轮默认规则先以`18808a7`单独提交，令牌桶语义澄清另以`44cb95b`提交，再实施代码。负责人仍为用户产品/最终批准、Codex实现/验证/提交；认证、HTTP及策略代理互相复核，root复核共享装配。开发证据见[DEC-051身份续接](../docs/evidence/mvp/identity/dev-20260905-defaults/summary.md)，本机配置和恢复见[identity.md](../docs/development/identity.md)。第5.7节是历史切片，不再代表当前待决。
 
@@ -390,7 +393,7 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 | 身份/资料/风险/分析 | AUTH-003写事务重读邮箱验证、active账号、有效会话/撤销/版本/限制；TRUST-001及RISK-001/002/003/005/006/007/008内容子范围，等级不自动产生。USER-001公开主题/回复列表、USER-002我的主题/回复真实分页并按访问者过滤；角色/贡献/收藏/通知等保留。MOD-009仅发布严格额度切片。DATA-001/003/006和A06真实TopicPublished/ReplyPublished事件，首次/有效贡献/浏览决策未定不产生。 |
 | 依赖/交付 | DEC-052技术切片+A00/A01/A03/A04/A05；先合同/迁移/repo/core，再公共SSR/编辑器和普通身份受信adapter，最后风险/分析/Outbox/缓存/观测；本机操作、合成夹具、恢复说明与开发证据。内容参数依DEC-053，未决使用显式未配置合同，测试政策不得冒称批准值。 |
 | 数据/迁移/ACL | 仅新PG/SQLite配对迁移0009起，受信表注册及最小ACL；forums扩展、tags/aliases、topics/posts/post_revisions、topic_tags、排序历史、严格发布消费事实、search_documents及必要风险事件类型扩展。首帖与回复同posts，主题专用next_floor计数，(topic_id,floor_no)唯一、FK RESTRICT。修订INSERT/SELECT、runtime无修改删除权；不改0001–0008、不建MySQL/IAM/授级/管理UI/保留清理入口。 |
-| 接口/权限 | GET /、/new、/pinned、/featured、/forums/{id}、/tags/{id}、/topics/{id}及/posts/{id}永久定位；/topics/new、主题/回复POST、owner编辑/删除、预览及受限幂等结果查询；既有/u/{id}资料及其主题/回复集合、/me/topics、/me/replies。HTTP只解析/CSRF/服务调用；公开读与表单均Flag门控，旧URL/旧表单重读当前权限。未验证仅公开读；待审在本轮普通前台仅owner可见（审核员路径后续），遮蔽/隐藏/删除不在公共投影；会员权限及版块/作者/主题最严格交集覆盖列表、详情、引用、资料和搜索文档。 |
+| 接口/权限 | GET /、/new、/pinned、/featured、/forums/{slug}、/tags/{slug}、/topics/{id}及/posts/{id}永久定位；/topics/new、主题/回复POST、owner编辑/删除、预览及受限幂等结果查询；既有/u/{public_ref}资料及其主题/回复集合、/me/topics、/me/replies。HTTP只解析/CSRF/服务调用；公开读与表单均Flag门控，旧URL/旧表单重读当前权限。未验证仅公开读；待审在本轮普通前台仅owner可见（审核员路径后续），遮蔽/隐藏/删除不在公共投影；会员权限及版块/作者/主题最严格交集覆盖列表、详情、引用、资料和搜索文档。 |
 | 锁序/事务 | 幂等→identity账号/会话→trust快照/限制→community提交序列根→版块→主题/帖子，同表按数值ID；所有可变锁完成后追加risk/analytics/Outbox。content受信trait由apps adapter调用identity core及合法trust core，均借当前连接，不访问他域repo。内容、初始/编辑修订、稳定楼层、必要计数/配额、权威搜索文档、幂等结果和Outbox共同提交；版本CAS、唯一约束、回滚和未知提交受限查询沿用A04。 |
 | 游标/缓存 | 签名keyset绑定视图/版块/标签/owner/访问主体及固定水位。回复按floor升序、固定已提交水位，新增回复留下一轮；列表按水位时不可变排序历史，避免旧主题被新回复移动造成漏项。提交序列根锁序列化内容变更，防PG自增ID提交重排，历史不自行清理。每次分页仍执行当前可见性，权限收紧即时移除，安全移除不算漏项。缓存命中前主库重读可见性/版本；沿A05公开版本key/30秒TTL及可靠失效Outbox、传播≤60秒，不缓存私密响应。 |
 | Flag/故障 | 所有14项业务Flag全关；隔离数据库才受控开public_read/topic_creation/reply_creation等，没有set/配置绕过或AUTH-014之外特权入口。Redis关闭明确NoProtection；启用不可用内容高风险写失败关闭，公开读回库。Strict daily quota属主库业务事实，与可丢失令牌桶分开。未批策略失败关闭。 |
@@ -402,6 +405,49 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 当前产品待答复见DEC-053，已集中询问；最近浏览、移帖与DEC-049相关统计按上述后续边界处理。实现与开发证据将在本节补齐，不以登记、目录或骨架作为完成证据。
 
 2026-09-06独立复核补充依赖：01 §13要求版块/作者/主题最严格权限，PRIV-001/002作者默认值与权威设置未确定。已追加询问并登记DEC-053；正常装配未知作者权限时不返回对应内容/资料投影，测试显式合成Public，不能将该合同称作者隐私功能已完成。公共空态、当前身份权限重读、受信注入合同、安全渲染与数据库事务继续。
+
+#### 5.9.1 实际交付与逐需求裁决
+
+实现版本以本节关联的中文内容实现提交为准；决策提交为 `cda11ca`、作者隐私补充登记 `b8b131c`。代码在 `crates/content/`、`apps/web/src/content_*`、identity/trust/moderation受限core、PG/SQLite0009/0010与7份新增content模板；原A00模板/资产不修改。本机操作、合成夹具与恢复说明见 [`docs/development/content.md`](../docs/development/content.md)。
+
+| 需求 | 本轮状态 | 已交付与明确剩余范围 |
+|---|---|---|
+| NAV-001 | In progress | 草莓论坛品牌、核心版块、真实账号菜单及主题模式；搜索和语言入口、正式视觉矩阵仍缺。 |
+| NAV-002 | In progress | 四视图真实查询与SSR；正常作者隐私待决，涉及不同作者隐私的最新回复排序口径仍需补批准后的矩阵，不能由隐藏回复推导公开统计。 |
+| NAV-003 | In progress | 真实标题/作者/版块/时间和已有组件；浏览数、有效回复数及最后回复口径未批准时显示缺项，不输出0冒充观测。 |
+| NAV-004 | In progress | 真实登录状态与最新主题侧栏；热门、最近浏览、站点统计未接，不保留演示数。 |
+| NAV-005 | In progress | 首页/版块/标签与本人内容使用绑定主体/筛选/固定已提交水位的签名游标；搜索后续。 |
+| NAV-007 | Implemented | light/dark/system服务端链接与继承A00主题样式，SSR转义/主题测试；正式视觉与浏览器矩阵留E04。 |
+| NAV-008 | In progress | 同一响应式外壳的真实发布/账号入口；搜索及完整移动端矩阵后续。 |
+| NAV-006/009、TOPIC-009/010 | Not started（本切片） | 未读、私有最近浏览、亮回复与跨设备阅读位置留C04，不写未批保存期限。 |
+| TOPIC-001/002/003 | In progress | 主题/首帖/回复、本人编辑、永久链接、不可变初始/编辑修订和最后编辑；内容正常政策/作者默认尚未批，故不整条完成。 |
+| TOPIC-004 | In progress | 显式窗口、owner/CAS、删除墓碑与修订事务；首帖删除策略必须单独配置，HideTopic只为合成fixture，不默认批准；管理操作后续。 |
+| TOPIC-005 | Implemented | 50回复/页、永久floor唯一与next_floor分配、删不重排、签名楼层定位；SQLite覆盖53回复及遍历中插入，PG并发留硬化。 |
+| TOPIC-006 | In progress | 引用目标与编辑器、当前目标权限和链接降级；不复制目标正文，未接引用通知。 |
+| TOPIC-007、CAT-013 | In progress | 置顶/全局置顶/精华/锁定/隐藏/删除读取合同，本人删除受限；不开放管理写入口、恢复/移动/UI。 |
+| TOPIC-008 | In progress | 事务内结构计数/最后回复事实可验证，正式展示策略尚未配置；浏览、有效回复、首次去重/排除口径留DEC-053。 |
+| CAT-010 | In progress | 多级版块说明/图标/排序/可见性模型与公开读取，已发布独立版规经moderation core同连接注入；管理配置能力后续。 |
+| CAT-011 | In progress | 标签、别名、合并目标与受限标签模型/读取/发布校验；管理维护/合并操作后续。 |
+| CAT-012 | In progress | 正交字段与本人状态转换闭集；本人编辑不得改审核/发布/讨论/归档轴，删除只设墓碑，其他管理转换未开放；完整管理迁移表后续。 |
+| CAT-014/DEC-017 | Blocked | 移帖跳转策略未决，普通永久链接不构成完成。 |
+| CAT-015 | In progress | 本轮列表/详情/引用/资料/权威搜索统一当前可见性；作者未知时关闭，Feed/sitemap/分享摘要和完整隐私变更传播后续。 |
+| EDIT-011 | Implemented | 原始HTML转文字、CommonMark解析及Ammonia严格白名单、危险URL/事件属性/嵌入清理、安全类型与Debug脱敏，10项Markdown测试。 |
+| EDIT-001 | In progress | 标题、强调、删除线、引用、列表/任务项、表格、代码块及安全链接；图片不加载，完整工具栏/编辑器增强后续。 |
+| EDIT-002/003/004 | In progress | 安全代码语言标记、站内主题/帖子/楼层链接、引用与同服务端预览；语法高亮、提及/自动链接、完整编辑器增强后续，未开放抓取/嵌入。 |
+| AUTH-003 | Implemented | 实际内容事务锁后重读验证邮箱、账号状态、会话撤销/凭证版本、CSRF及适用限制；普通注册未验证/已验证pending、锁定/撤销拒绝测试。验证不授T0/T1。 |
+| USER-001/002 | In progress | 已有资料与公开/我的主题回复真实集合接线，按当前访问者过滤；作者隐私待决关闭相应投影，贡献/角色/关系/其他集合未接。 |
+| TRUST-001、MOD-009 | In progress | 当前信任快照及严格主库消费事实/每日与首24h额度合同；不自动授级，资格/日界线/计额/正式T1等仍DEC-053。 |
+| RISK-001/002/003/005/006/007/008 | In progress | 真实内容成功事件与规则版本、可信账号/peer/设备/网络HMAC、actor/action/version二次绑定、四维限流与故障合同、日志脱敏；正常策略未配置，前置拒绝未全量落事件、重复文本/挑战/渐进处置/生命周期与正式阈值未交付。 |
+| DATA-001/003/006（A06借入） | In progress | TopicPublished资源为topic.id，ReplyPublished为post.id；同事务Outbox/分析fact、持久去重、账号与合成测试排除及Worker恢复；首次阅读/回复/有效贡献/浏览和完整角色/机器人/活动依据未接，不生成冒名事件。 |
+| C05借入search_documents | Implemented（仅同步投影切片） | 内容/可见性/审核/删除/版本与投影共同提交；SQLite不保存检索正文，PG保留源，搜索引擎/页/高亮/Feed/SEO均后续。 |
+
+全部业务Flag默认关闭，仅隔离测试库启用；B02维持既有Implemented并回归，B01保留INVITE-006等缺口。C01/C02/C03/C05、B04/B06/A06继续In progress，任何项目均不授Verified、Released或阶段退出门禁。0009/0010无授级/管理/Flag写口，普通Web没有新特权入口。
+
+开发验证证据：[`validation.json`](../docs/evidence/mvp/content/dev-20260906/validation.json)。`./scripts/dev-check.sh` r5全部通过：281项测试通过、0失败、1项既有真实Redis opt-in测试忽略；真实临时SQLite迁移0001–0010，89条HTTP冒烟，格式化、Clippy全目标`-D warnings`、SQL守卫与diff检查通过。内容26项（core12/Markdown10/HTTP4）、Web32项（内容真实身份/SSR/风险相关10项）、identity48项（新增受信内容接口2项）。A00原件冻结检查通过，PG/SQLite0001–0008逐字节与a934e06一致；只有0009/0010新增。源码SHA-256及已脱敏失败/复验日志一起登记。
+
+独立复核由架构/内容、SSR/风险与Markdown代理交叉进行；已修复旧请求CSRF/限制绕过、引用目标隐去造成来源/投影不一致、作者批量上限、Debug正文、日界线溢出、归档轴误耦合和数据库重试分类。统一验证r1/r2/r3分别暴露旧迁移数量断言、旧骨架首页断言及升级迁移断言，已更新新增行为且保留旧校验/数据保护，r4通过。暂存独立复核又发现SQLite两处globally_pinned约束误引用pinned，已修复并在既有状态测试增加非法整数拒绝断言；r5再次完整通过。真实Unknown丢ACK故障仍复用A04已有验证；本轮实测原操作actor/key查询，不冒称执行真实网络丢ACK。风险四维使用内存/故障适配器验证关闭/开启故障合同，无真实Redis防护效果结论。
+
+真实PG/Redis、安全/并发/性能、正式E2E及视觉矩阵未执行，统一硬化仍待办。首次阅读/回复、浏览和有效贡献不生成完成事件；完整作者隐私、最新回复按不同作者可见性的排序口径、风险前置拒绝事件和其他分析排除依据仍缺。DEC-053未获答复，不以合成政策开放正常发布；保留C01/C02/C03/C05、B04/B06/A06整包In progress、B01未处理缺口及全部门禁状态。
 
 ## 6. 门禁状态
 

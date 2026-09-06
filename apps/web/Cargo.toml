@@ -9,6 +9,7 @@ publish.workspace = true
 [dependencies]
 askama.workspace = true
 chrono.workspace = true
+hmac.workspace = true
 axum.workspace = true
 content.workspace = true
 identity.workspace = true

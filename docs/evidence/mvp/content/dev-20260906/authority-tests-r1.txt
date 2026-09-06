@@ -1,0 +1,163 @@
+   Compiling platform v0.1.0 (<repository>/crates/platform)
+   Compiling trust v0.1.0 (<repository>/crates/trust)
+   Compiling moderation v0.1.0 (<repository>/crates/moderation)
+   Compiling identity v0.1.0 (<repository>/crates/identity)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 6.69s
+     Running unittests src/lib.rs (target/debug/deps/identity-d4b15f9ba6a9ad03)
+
+running 48 tests
+test content_access_tests::content_menu_reads_never_extend_idle_session_lifetime ... ok
+test core_tests::immutable_mail_source_local_output_suppression_and_restart_replay ... ok
+test approved_tests::approved_invites_verify_without_promoting_and_enforce_expiry_quota_and_replays ... ok
+test content_access_tests::content_access_rechecks_mail_csrf_status_revocation_and_preserves_pending ... ok
+test challenge_tests::challenge_consumption_rolls_back_with_registration_failure ... ok
+test challenge_tests::challenge_failed_local_publication_restart_rotation_and_risk_dedup ... ok
+test core_tests::scheduler_failure_retry_and_recreated_worker_resume_persistent_identity_mail ... ok
+test core_tests::invitation_authority_quota_revocation_privacy_and_operation_binding ... ok
+test core_tests::risk_unavailable_is_persisted_and_successful_registration_links_private_analytics_actor ... ok
+test challenge_tests::hard_budget_keeps_challenge_shape_but_never_consumes_proof_or_writes_business ... ok
+test core_tests::passwords_have_fixed_argon2_path_and_secret_debug_redaction ... ok
+test http_tests::approved_preauth_reuses_two_hour_principal_without_sliding_or_cross_form_invalidation ... ok
+test http_tests::default_flags_close_all_identity_routes_without_side_effects ... ok
+test http_tests::approved_registration_normalization_settings_and_invitation_expiry_are_real_routes ... ok
+test http_tests::challenged_recovery_fails_closed_without_local_provider_and_disabled_redis_is_unprotected ... ok
+test challenge_tests::challenge_private_output_binding_single_use_expiry_and_receipt_replay ... ok
+test core_tests::registration_atomic_replay_rollback_single_use_expiry_and_default_closed ... ok
+test http_tests::expired_revoked_sessions_and_cross_owner_device_actions_are_rejected ... ok
+test http_tests::invitation_alias_revocation_action_and_existing_profile_projections_are_wired ... ok
+test http_tests::approved_soft_challenge_http_binds_original_request_and_local_proof_without_secret_reflection ... ok
+test core_tests::token_single_use_reset_revokes_sessions_and_anonymous_errors_match ... ok
+test http_tests::registration_policy_links_work_under_the_same_controlled_flag_state ... ok
+test http_tests::login_csrf_origin_cookie_attributes_and_owner_form_boundary ... ok
+test http_tests::registration_challenge_requires_reentering_invitation_password_and_same_policy_versions ... ok
+test password_screen::tests::common_and_versioned_offline_corpus_fail_closed ... ok
+test policy::tests::approved_bio_and_lifetimes_have_exact_boundaries ... ok
+test policy::tests::approved_mail_preserves_delivery_case_and_never_merges_provider_aliases ... ok
+test policy::tests::approved_names_fold_case_and_reject_impersonation_and_unicode ... ok
+test rate::tests::approved_budgets_use_period_divided_by_capacity_and_soft_pairs_are_independent ... ok
+test rate::tests::four_checks_disabled_absence_and_enabled_failure ... ok
+test http_tests::login_and_recovery_responses_do_not_enumerate_accounts ... ok
+test rate::tests::risk_signals_are_keyed_separated_and_do_not_retain_raw_inputs ... ok
+test http_tests::approved_resend_and_recovery_reissue_invalidate_old_tokens_but_same_key_does_not ... ok
+test rate::tests::known_account_aliases_share_authoritative_bucket ... ok
+test http_tests::expired_unconsumed_challenge_proof_has_same_response_with_or_without_private_hard_limit ... ok
+test settings_tests::device_owner_reauthentication_revoke_and_expiry ... ok
+test http_tests::limited_login_and_recovery_hide_account_mapping_and_do_one_real_argon_verification ... ok
+test settings_tests::email_change_is_confirmed_once_and_revokes_old_credentials_and_tokens ... ok
+test settings_tests::email_duplicate_request_has_uniform_response_and_token_expiry_or_collision_rolls_back ... ok
+test http_tests::revoked_bearer_queries_only_its_bound_logout_and_password_operations ... ok
+test settings_tests::username_cooldown_unique_history_and_policy_impersonation ... ok
+test settings_tests::profile_csrf_owner_versions_replay_and_default_closed ... ok
+test http_tests::registration_rate_subject_uses_email_and_ignores_extra_identifier ... ok
+test settings_tests::mail_outbox_failure_rolls_back_email_request_password_and_revocations ... ok
+test settings_tests::password_change_invalidates_sessions_recovery_and_stores_no_cleartext_digest ... ok
+test http_tests::exhausted_soft_pairs_hide_private_hard_account_buckets_and_never_execute_limited_commands ... ok
+test token_reissue_tests::new_recovery_request_invalidates_previous_purpose_only_and_replay_adds_nothing ... ok
+test token_reissue_tests::verification_resend_replaces_old_token_and_preserves_same_key_and_uniform_response ... ok
+
+test result: ok. 48 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.94s
+
+     Running unittests src/lib.rs (target/debug/deps/moderation-dc6f25ceb7abd74a)
+
+running 2 tests
+test core::tests::current_consent_requires_all_three_kinds_and_exact_current_ids ... ok
+test core::tests::synthetic_versions_never_satisfy_production_and_retired_versions_are_ignored ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running unittests src/lib.rs (target/debug/deps/platform-729a1a505bd8d302)
+
+running 77 tests
+test analytics::tests::dictionary_and_storage_boundary_have_no_arbitrary_text ... ok
+test cache::tests::controlled_keys_reject_namespace_injection_private_and_unversioned_content ... ok
+test cache::tests::invalidation_sink_retries_failures_and_rejects_unrelated_events ... ok
+test cache::tests::synthetic_high_risk_fails_closed_public_reads_return_real_origin_and_disabled_is_explicit ... ok
+test commit_signal::tests::unknown_commit_does_not_signal_and_failed_hint_does_not_undo_commit ... ok
+test cache::tests::assembly_distinguishes_disabled_and_enabled_but_unavailable_without_secret_errors ... ok
+test config::identity::tests::keys_are_injected_redacted_distinct_and_versioned ... ok
+test config::tests::all_four_environments_and_production_boundaries ... ok
+test config::tests::content_cursor_secret_is_optional_injected_separate_and_redacted ... ok
+test config::tests::defaults_are_safe_experience_mode ... ok
+test config::tests::environment_mappings_are_strict_and_allow_asset_isolation ... ok
+test config::tests::explicit_file_missing_fails_optional_local_missing_succeeds ... ok
+test config::tests::identity_secrets_inject_without_toml_or_error_echo ... ok
+test config::tests::invalid_layer_is_not_hidden_by_later_overrides ... ok
+test config::tests::backend_connections_prefix_path_and_bind_validation ... ok
+test config::tests::precedence_defaults_file_local_environment_and_secret ... ok
+test config::tests::local_adapters_and_unapproved_alert_thresholds_remain_explicit ... ok
+test cache::tests::async_wakeup_timeout_notify_and_cancellation ... ok
+test config::tests::production_postgres_requires_tls_without_plaintext_fallback ... ok
+test config::tests::sqlite_worker_mode_is_mutually_exclusive ... ok
+test cache::tests::memory_cache_ttl_lru_all_version_invalidation_and_input_bounds ... ok
+test config::tests::secret_debug_and_parse_errors_never_disclose_values ... ok
+test db::tests::block_comment_question_mark_is_not_a_placeholder ... ok
+test config::tests::urls_require_real_connection_parameters_without_disclosing_them ... ok
+test db::tests::double_quoted_identifier_is_rejected ... ok
+test db::tests::encoded_times_sort_lexicographically ... ok
+test db::tests::escaped_quote_does_not_leak_out_of_string ... ok
+test db::tests::explicit_dollar_placeholder_is_rejected ... ok
+test db::tests::line_comment_question_mark_is_not_a_placeholder ... ok
+test db::tests::mysql8_is_reserved_but_not_implemented ... ok
+test db::tests::nested_block_comment_is_tracked ... ok
+test db::tests::postgres_renders_numbered_placeholders ... ok
+test db::tests::quoted_placeholders_are_literal ... ok
+test db::tests::time_encoding_is_fixed_width_and_roundtrips ... ok
+test db::tests::sqlite_keeps_question_marks ... ok
+test db::tests::unterminated_string_is_rejected ... ok
+test error::tests::client_errors_keep_their_message ... ok
+test error::tests::internal_detail_never_reaches_the_client ... ok
+test cache::tests::leases_reject_expiry_and_old_owner_after_reacquire ... ok
+test flags::tests::all_flags_default_off ... ok
+test error::tests::status_codes_cover_the_contract ... ok
+test flags::tests::flag_keys_are_unique ... ok
+test identifiers::tests::refuses_unregistered_identifiers_and_invalid_prefixes ... ok
+test identifiers::tests::template_replaces_only_registered_objects ... ok
+test identifiers::tests::registered_objects_render_under_both_prefixes ... ok
+test config::tests::repository_templates_cover_four_environments_and_require_deployment_values ... ok
+test integrations::local::tests::image_decodes_resizes_reencodes_and_rejects_bad_mime_budget ... ok
+test mail::local::tests::mail_classification_headers_brand_and_sensitive_debug ... ok
+test cache::redis::tests::wakeup_deadline_includes_connection_setup ... ok
+test mail::local::tests::no_guessed_alert_thresholds ... ok
+test observability::grouped::tests::closed_dimensions_separate_routes_statuses_and_units ... ok
+test observability::grouped::tests::identity_routes_are_closed_and_dynamic_identifiers_never_escape ... ok
+test observability::tests::missing_measurements_are_not_zero_and_labels_are_closed ... ok
+test outbox::tests::payload_admits_references_and_refuses_sensitive_fields ... ok
+test outbox::tests::webhook_has_version_and_fixed_time_without_live_delivery ... ok
+test sql_lint::tests::global_rules_cover_migrations_without_rejecting_acl ... ok
+test sql_lint::tests::all_forbidden_syntax_and_semantic_differences_fail ... ok
+test sql_lint::tests::malformed_sql_is_rejected ... ok
+test integrations::local::tests::disabled_unavailable_and_symlink_boundaries_do_not_succeed ... ok
+test sql_lint::tests::source_extracts_literals_and_ignores_comments_and_messages ... ok
+test sql_lint::tests::source_rejects_split_or_dynamic_sql_fail_closed ... ok
+test sql_lint::tests::portable_queries_ctes_windows_and_subqueries_pass ... ok
+test status::tests::redis_failure_degrades_without_blocking_readiness ... ok
+test config::tests::unknown_keys_types_environments_and_secret_files_are_rejected ... ok
+test transaction::tests::lock_plan_uses_registry_order_and_numeric_ids ... ok
+test transaction::tests::operation_ids_are_canonical_uuid_v7 ... ok
+test cache::tests::test_limiter_replenishes_is_bounded_and_does_not_reset_on_policy_change ... ok
+test transaction::tests::retry_is_bounded_backend_specific_and_requires_safe_rollback ... ok
+test types::tests::deserialization_rejects_non_canonical ... ok
+test types::tests::display_is_decimal ... ok
+test types::tests::rejects_non_positive ... ok
+test types::tests::serialization_roundtrips_as_string ... ok
+test sql_lint::tests::workspace_repository_sql_obeys_portable_subset ... FAILED
+test sql_lint::tests::workspace_migrations_obey_global_bans ... ok
+test integrations::local::tests::objects_are_private_bounded_durable_and_idempotent ... ok
+test integrations::local::tests::scanner_and_telemetry_have_actual_inspectable_results ... ok
+test cache::redis::tests::timed_out_operation_does_not_block_on_connection_cleanup ... ok
+
+failures:
+
+---- sql_lint::tests::workspace_repository_sql_obeys_portable_subset stdout ----
+
+thread 'sql_lint::tests::workspace_repository_sql_obeys_portable_subset' (2714921) panicked at crates/platform/src/sql_lint.rs:930:62:
+<repository>/crates/platform/../../crates/content/src/repo.rs: SQL lint: SQL 模板占位只允许表位置；值必须 bind，禁止动态SQL片段（字节 16172）
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    sql_lint::tests::workspace_repository_sql_obeys_portable_subset
+
+test result: FAILED. 76 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.01s
+
+error: test failed, to rerun pass `-p platform --lib`

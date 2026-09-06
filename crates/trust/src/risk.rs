@@ -12,6 +12,10 @@ pub enum RiskEventKind {
     Registration,
     Login,
     Invitation,
+    Topic,
+    Reply,
+    Edit,
+    Delete,
 }
 impl RiskEventKind {
     pub fn as_str(self) -> &'static str {
@@ -19,6 +23,10 @@ impl RiskEventKind {
             Self::Registration => "registration",
             Self::Login => "login",
             Self::Invitation => "invitation",
+            Self::Topic => "topic",
+            Self::Reply => "reply",
+            Self::Edit => "edit",
+            Self::Delete => "delete",
         }
     }
 }
@@ -185,6 +193,14 @@ impl RiskPolicy for UnconfiguredRiskPolicy {
 pub struct ApprovedIdentityRiskPolicy;
 impl RiskPolicy for ApprovedIdentityRiskPolicy {
     fn assess(&self, context: &TrustedRiskContext) -> Result<RiskDecision, TrustError> {
+        // DEC-051 only approves identity rules. Newly added content kinds must never
+        // inherit an identity allow decision merely because they share the event type.
+        if !matches!(
+            context.kind,
+            RiskEventKind::Registration | RiskEventKind::Login | RiskEventKind::Invitation
+        ) {
+            return RiskDecision::new(0, RiskAction::Unavailable, RiskReason::PolicyNotConfigured);
+        }
         if context.kind == RiskEventKind::Invitation {
             let Some(snapshot) = context.snapshot() else {
                 return RiskDecision::new(1, RiskAction::Deny, RiskReason::AccountUnavailable);

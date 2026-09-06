@@ -149,7 +149,8 @@ pub(crate) async fn require_session(
     }
     Ok(account)
 }
-pub(crate) async fn authenticate(
+/// Read-only authentication for a caller-owned transaction; never extends a session.
+pub(crate) async fn read_session(
     tx: &mut TransactionConnection<'_>,
     r: &SchemaRenderer,
     hash: &str,
@@ -171,6 +172,19 @@ pub(crate) async fn authenticate(
         Err(TransactionError::InvalidInput) => return Ok(None),
         Err(e) => return Err(e),
     }
+    Ok(Some(session))
+}
+
+pub(crate) async fn authenticate(
+    tx: &mut TransactionConnection<'_>,
+    r: &SchemaRenderer,
+    hash: &str,
+    now: DateTime<Utc>,
+) -> Result<Option<SessionIdentity>, TransactionError> {
+    let Some(session) = read_session(tx, r, hash, now).await? else {
+        return Ok(None);
+    };
+    let t = table(tx, r, "sessions")?;
     let changed = tx
         .execute(
             &format!(
@@ -551,4 +565,53 @@ pub(crate) async fn token_owner(
 ) -> Result<Option<TokenRecord>, TransactionError> {
     let t = table(tx, r, "one_time_tokens")?;
     tx.fetch_optional(&format!("SELECT token_id, user_id, target_email, target_email_key, expires_at, issued_credential_version FROM {t} WHERE token_hash = ? AND purpose = ?"),&[text(hash),text(purpose)]).await?.map(|row|Ok(TokenRecord{token_id:row.text("token_id")?,user_id:row.i64("user_id")?,target_email:row.text("target_email")?,target_email_key:row.text("target_email_key")?,expires_at:row.time("expires_at")?,issued_credential_version:row.i64("issued_credential_version")?})).transpose()
+}
+
+/// Minimal stored analytics authority; only a core projection may release it.
+pub(crate) async fn analytics_identity(
+    tx: &mut TransactionConnection<'_>,
+    r: &SchemaRenderer,
+    user_id: i64,
+) -> Result<(String, bool), TransactionError> {
+    let users = table(tx, r, "users")?;
+    let row = tx
+        .fetch_optional(
+            &format!("SELECT analytics_pseudonym, analytics_excluded FROM {users} WHERE id = ?"),
+            &[user_id.into()],
+        )
+        .await?
+        .ok_or(TransactionError::InvalidInput)?;
+    Ok((
+        row.text("analytics_pseudonym")?,
+        row.boolean("analytics_excluded")?,
+    ))
+}
+pub(crate) async fn content_author(
+    tx: &mut TransactionConnection<'_>,
+    r: &SchemaRenderer,
+    id: i64,
+) -> Result<Option<crate::core::ContentAuthor>, TransactionError> {
+    let users = table(tx, r, "users")?;
+    tx.fetch_optional(
+        &format!("SELECT public_id, username, status FROM {users} WHERE id = ?"),
+        &[id.into()],
+    )
+    .await?
+    .map(|row| {
+        let active = row.text("status")? == "active";
+        Ok(crate::core::ContentAuthor {
+            user_id: id,
+            public_ref: if active {
+                row.text("public_id")?
+            } else {
+                String::new()
+            },
+            username: if active {
+                row.text("username")?
+            } else {
+                "不可用账号".into()
+            },
+        })
+    })
+    .transpose()
 }

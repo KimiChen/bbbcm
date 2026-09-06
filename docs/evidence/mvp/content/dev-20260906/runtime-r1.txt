@@ -1,0 +1,46 @@
+   Compiling content v0.1.0 (<repository>/crates/content)
+warning: unused variable: `rendered`
+   --> crates/content/src/core.rs:618:13
+    |
+618 |         let rendered = markdown::render(source);
+    |             ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_rendered`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `content` (lib) generated 1 warning (run `cargo fix --lib -p content` to apply 1 suggestion)
+   Compiling bbbcm-web v0.1.0 (<repository>/apps/web)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 6.31s
+     Running unittests src/main.rs (target/debug/deps/bbbcm_web-98e78dd583075dcc)
+
+running 3 tests
+test content_runtime_tests::normal_policy_is_closed_and_current_restrictions_reject_without_partial_content ... FAILED
+test content_runtime_tests::real_content_ssr_form_submission_preview_and_member_filter_need_no_javascript ... FAILED
+test content_runtime_tests::ordinary_account_real_content_transaction_projection_replay_and_worker_recovery ... FAILED
+
+failures:
+
+---- content_runtime_tests::normal_policy_is_closed_and_current_restrictions_reject_without_partial_content stdout ----
+
+thread 'content_runtime_tests::normal_policy_is_closed_and_current_restrictions_reject_without_partial_content' (2721614) panicked at apps/web/src/content_runtime_tests.rs:38:61:
+called `Result::unwrap()` on an `Err` value: UnknownTable
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- content_runtime_tests::real_content_ssr_form_submission_preview_and_member_filter_need_no_javascript stdout ----
+
+thread 'content_runtime_tests::real_content_ssr_form_submission_preview_and_member_filter_need_no_javascript' (2721616) panicked at apps/web/src/content_runtime_tests.rs:38:61:
+called `Result::unwrap()` on an `Err` value: UnknownTable
+
+---- content_runtime_tests::ordinary_account_real_content_transaction_projection_replay_and_worker_recovery stdout ----
+
+thread 'content_runtime_tests::ordinary_account_real_content_transaction_projection_replay_and_worker_recovery' (2721615) panicked at apps/web/src/content_runtime_tests.rs:38:61:
+called `Result::unwrap()` on an `Err` value: UnknownTable
+
+
+failures:
+    content_runtime_tests::normal_policy_is_closed_and_current_restrictions_reject_without_partial_content
+    content_runtime_tests::ordinary_account_real_content_transaction_projection_replay_and_worker_recovery
+    content_runtime_tests::real_content_ssr_form_submission_preview_and_member_filter_need_no_javascript
+
+test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 24 filtered out; finished in 0.97s
+
+error: test failed, to rerun pass `-p bbbcm-web --bin bbbcm-web`

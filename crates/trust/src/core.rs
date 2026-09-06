@@ -175,3 +175,68 @@ pub async fn record_identity_event(
 
 #[cfg(test)]
 mod tests;
+
+/// Called under the identity user root lock, before any community lock.
+/// No grant, default level or invitation-derived publishing permission is created.
+pub async fn lock_content_snapshot(
+    tx: &mut TransactionConnection<'_>,
+    renderer: &SchemaRenderer,
+    user_id: i64,
+) -> Result<TrustSnapshot, TrustError> {
+    let snapshot = load_identity_snapshot(tx, renderer, user_id)
+        .await?
+        .ok_or(TrustError::NotFound)?;
+    tx.lock(
+        renderer,
+        &LockTarget::new("trust", "identity_snapshots", snapshot.id)
+            .ok_or(TrustError::Unavailable)?,
+    )
+    .await?;
+    load_identity_snapshot(tx, renderer, user_id)
+        .await?
+        .ok_or(TrustError::NotFound)
+}
+
+/// Append a server-evaluated content decision after all mutable locks are held.
+/// The owning command owns policy evaluation and commit; this is not a public grant API.
+#[allow(clippy::too_many_arguments)]
+pub async fn record_content_decision(
+    tx: &mut TransactionConnection<'_>,
+    renderer: &SchemaRenderer,
+    event_id: &str,
+    user_id: i64,
+    kind: RiskEventKind,
+    signals: RiskSignals,
+    decision: crate::risk::RiskDecision,
+    now: DateTime<Utc>,
+) -> Result<RiskEvent, TrustError> {
+    valid_id(user_id)?;
+    if !platform::transaction::validate_operation_id(event_id)
+        || !matches!(
+            kind,
+            RiskEventKind::Topic
+                | RiskEventKind::Reply
+                | RiskEventKind::Edit
+                | RiskEventKind::Delete
+        )
+    {
+        return Err(TrustError::InvalidInput);
+    }
+    let snapshot = load_identity_snapshot(tx, renderer, user_id)
+        .await?
+        .ok_or(TrustError::NotFound)?;
+    if decision.allowed() && !snapshot.email_verified() {
+        return Err(TrustError::InvalidInput);
+    }
+    let event = RiskEvent {
+        event_version: RISK_EVENT_VERSION,
+        event_id: event_id.into(),
+        actor_id: Some(user_id),
+        kind,
+        occurred_at: canonical(now)?,
+        signals,
+        decision,
+    };
+    crate::repo::append_risk(tx, renderer, &event).await?;
+    Ok(event)
+}

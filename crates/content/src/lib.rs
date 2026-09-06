@@ -3,6 +3,9 @@
 
 pub mod contract;
 pub mod core;
+pub mod cursor;
 pub mod http;
 pub mod markdown;
+pub mod policy;
 pub mod repo;
+pub mod web_view;

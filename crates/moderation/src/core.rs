@@ -50,3 +50,37 @@ impl PolicyReader for CurrentPolicyReader {
 
 #[cfg(test)]
 mod tests;
+
+/// Read current restrictions while the caller holds the identity.users root lock.
+/// Future restriction writes must take that same root; this slice has no mutation,
+/// granting, management UI or application INSERT privilege.
+pub async fn content_restricted(
+    tx: &mut TransactionConnection<'_>,
+    renderer: &SchemaRenderer,
+    user_id: i64,
+    capability: crate::contract::ContentCapability,
+    now: chrono::DateTime<chrono::Utc>,
+) -> Result<bool, platform_db::transaction::TransactionError> {
+    if user_id <= 0 {
+        return Err(platform_db::transaction::TransactionError::InvalidInput);
+    }
+    crate::repo::content_restricted(tx, renderer, user_id, capability, now).await
+}
+
+/// Current published forum rules only. No publication or moderation command.
+pub async fn content_forum_rules(
+    tx: &mut platform_db::transaction::TransactionConnection<'_>,
+    renderer: &platform::identifiers::SchemaRenderer,
+    ids: &[i64],
+) -> Result<Vec<(i64, String)>, platform_db::transaction::TransactionError> {
+    if ids.iter().any(|id| *id <= 0) {
+        return Err(platform_db::transaction::TransactionError::InvalidInput);
+    }
+    let mut result = Vec::new();
+    for id in ids {
+        if let Some(body) = crate::repo::published_forum_rule(tx, renderer, *id).await? {
+            result.push((*id, body));
+        }
+    }
+    Ok(result)
+}

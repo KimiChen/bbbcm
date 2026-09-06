@@ -17,11 +17,12 @@
 {% block content %}
 <div class="auth-shell">
 <nav class="tab-bar auth-tabs" aria-label="账号页面">
-{% if page.account_page %}<a class="tab" href="/settings/profile">资料</a><a class="tab" href="/settings/email">邮箱</a><a class="tab" href="/settings/username">用户名</a><a class="tab" href="/settings/password">密码</a><a class="tab" href="/settings/sessions">设备</a><a class="tab" href="/me/invites">邀请</a><a class="tab" href="/logout">退出</a>
+{% if page.account_page %}<a class="tab" href="/settings/profile">资料</a><a class="tab" href="/me/topics">我的主题</a><a class="tab" href="/me/posts">我的回复</a><a class="tab" href="/settings/email">邮箱</a><a class="tab" href="/settings/username">用户名</a><a class="tab" href="/settings/password">密码</a><a class="tab" href="/settings/sessions">设备</a><a class="tab" href="/me/invites">邀请</a><a class="tab" href="/logout">退出</a>
 {% else %}<a class="tab" href="/login">登录</a><a class="tab" href="/register">注册</a><a class="tab" href="/forgot-password">找回密码</a><a class="tab" href="/resend-verification">重发验证邮件</a>{% endif %}
 </nav>
 <div class="form-panel auth-panel">
 <h1 class="auth-heading">{{ page.title }}</h1>
+{% if let Some(root) = page.public_content_root %}<nav class="tab-bar" aria-label="公开内容"><a class="tab" href="{{ root }}/topics">主题</a><a class="tab" href="{{ root }}/posts">回复</a></nav>{% endif %}
 {% if page.preset_avatar %}<span class="user-avatar-big profile-synthetic-avatar" role="img" aria-label="预设头像">草</span>{% endif %}
 {% for row in page.rows %}
 <section class="doc-section"><h2>{{ row.label }}</h2><p>{{ row.value }}</p>

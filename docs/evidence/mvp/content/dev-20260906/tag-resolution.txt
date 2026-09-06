@@ -1,0 +1,10 @@
+   Compiling platform v0.1.0 (<repository>/crates/platform)
+   Compiling platform-db v0.1.0 (<repository>/crates/platform-db)
+   Compiling content v0.1.0 (<repository>/crates/content)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.61s
+     Running unittests src/lib.rs (target/debug/deps/content-0e9fa3c207ca1439)
+
+running 1 test
+test core::tests::tag_aliases_and_merge_chains_resolve_current_canonical_visibility ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 25 filtered out; finished in 0.06s

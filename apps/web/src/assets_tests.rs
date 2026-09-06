@@ -289,9 +289,10 @@ async fn ssr_uses_real_manifest_helper_and_production_isolation_is_preserved() {
                     "{path}"
                 );
             }
-            let home =
-                String::from_utf8(body(request(&app, "GET", "/").await).await.to_vec()).unwrap();
-            assert!(home.contains("骨架首页"));
+            let response = request(&app, "GET", "/").await;
+            assert_eq!(response.status(), StatusCode::NOT_FOUND);
+            let home = String::from_utf8(body(response).await.to_vec()).unwrap();
+            assert!(!home.contains("骨架首页"));
             assert!(!home.contains("a00-synthetic"));
         }
     }

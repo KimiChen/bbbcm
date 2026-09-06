@@ -18,12 +18,12 @@ use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 use tokio_util::sync::CancellationToken;
 
-struct Fixture {
-    dir: PathBuf,
-    config: Config,
-    pool: Pool,
-    renderer: SchemaRenderer,
-    service: IdentityService,
+pub(crate) struct Fixture {
+    pub(crate) dir: PathBuf,
+    pub(crate) config: Config,
+    pub(crate) pool: Pool,
+    pub(crate) renderer: SchemaRenderer,
+    pub(crate) service: IdentityService,
 }
 impl Drop for Fixture {
     fn drop(&mut self) {
@@ -31,7 +31,7 @@ impl Drop for Fixture {
     }
 }
 impl Fixture {
-    async fn new() -> Self {
+    pub(crate) async fn new() -> Self {
         let dir = std::env::temp_dir().join(format!("bbbcm-runtime-{}", new_operation_id()));
         std::fs::create_dir_all(&dir).unwrap();
         let dir = std::fs::canonicalize(dir).unwrap();
@@ -67,7 +67,7 @@ impl Fixture {
         f.seed().await;
         f
     }
-    async fn seed(&self) {
+    pub(crate) async fn seed(&self) {
         let mut tx = DbTransaction::begin(&self.pool).await.unwrap();
         let mut c = tx.connection();
         let policy = self
@@ -90,7 +90,7 @@ impl Fixture {
         c.execute(&format!("INSERT INTO {invites} (invite_ref, creator_id, code_hash, source, state, created_at, expires_at, consumed_at, consumer_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"), &[new_operation_id().into(), user_id.into(), format!("{:x}", Sha256::digest(b"synthetic-invitation-only")).into(), "user".into(), "available".into(), DbValue::Time(Utc::now()), DbValue::Time(Utc::now()+Duration::days(3)), DbValue::Time(Utc::now()), 0.into()]).await.unwrap();
         tx.commit().await.unwrap();
     }
-    async fn enable(&self) {
+    pub(crate) async fn enable(&self) {
         let mut tx = DbTransaction::begin(&self.pool).await.unwrap();
         let mut c = tx.connection();
         let t = self
@@ -107,11 +107,11 @@ impl Fixture {
         }
         tx.commit().await.unwrap();
     }
-    async fn context(&self) -> RequestContext {
+    pub(crate) async fn context(&self) -> RequestContext {
         let grant = self.service.create_preauth(Utc::now()).await.unwrap();
         RequestContext::new(grant.token, grant.csrf, new_operation_id())
     }
-    async fn registration(&self) -> RegistrationInput {
+    pub(crate) async fn registration(&self) -> RegistrationInput {
         let policies = self.service.current_policies().await.unwrap();
         RegistrationInput {
             username: "Orchard_member".into(),
@@ -125,7 +125,7 @@ impl Fixture {
             ],
         }
     }
-    async fn login(&self, password: &str) -> (SessionGrant, SessionIdentity) {
+    pub(crate) async fn login(&self, password: &str) -> (SessionGrant, SessionIdentity) {
         let result = self
             .service
             .login(
@@ -148,7 +148,7 @@ impl Fixture {
             .unwrap();
         (grant, identity)
     }
-    async fn message(&self, kind: &str) -> (String, String) {
+    pub(crate) async fn message(&self, kind: &str) -> (String, String) {
         let mut tx = DbTransaction::begin_read(&self.pool).await.unwrap();
         let mut c = tx.connection();
         let t = self
@@ -174,7 +174,7 @@ impl Fixture {
         let message = source.load(&id).await.unwrap();
         (id, message.text)
     }
-    async fn drain(&self, config: &Config) {
+    pub(crate) async fn drain(&self, config: &Config) {
         let runtime = platform::cache::RedisRuntime::from_config(config).unwrap();
         let scheduler =
             crate::worker_services::scheduler(config, self.pool.clone(), &runtime).unwrap();
@@ -193,7 +193,7 @@ impl Fixture {
             .collect()
     }
 }
-fn token(text: &str) -> String {
+pub(crate) fn token(text: &str) -> String {
     text.lines()
         .find(|line| line.len() == 64 && line.bytes().all(|c| c.is_ascii_hexdigit()))
         .expect("local message has one bearer")

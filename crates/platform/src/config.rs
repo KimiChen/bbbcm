@@ -55,6 +55,7 @@ pub struct SecretOverrides {
     pub redis_url: Option<SecretString>,
     pub identity_token_keys: Option<SecretString>,
     pub identity_risk_key: Option<SecretString>,
+    pub content_cursor_key: Option<SecretString>,
 }
 impl SecretOverrides {
     fn from_variables(variables: &BTreeMap<String, String>) -> Self {
@@ -66,6 +67,10 @@ impl SecretOverrides {
             redis_url: variables.get("BBBCM_REDIS_URL").cloned().map(Into::into),
             identity_token_keys: variables
                 .get("BBBCM_IDENTITY_TOKEN_KEYS")
+                .cloned()
+                .map(Into::into),
+            content_cursor_key: variables
+                .get("BBBCM_CONTENT_CURSOR_KEY")
                 .cloned()
                 .map(Into::into),
             identity_risk_key: variables
@@ -119,7 +124,15 @@ pub struct Config {
     pub adapters: crate::integrations::AdapterConfig,
     pub mail_alerts: crate::mail::MailAlertConfig,
     pub identity: IdentityConfig,
+    pub content: ContentConfig,
 }
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct ContentConfig {
+    #[serde(skip)]
+    pub cursor_key: Option<SecretString>,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct ServerConfig {
@@ -244,6 +257,7 @@ impl Config {
         config.redis.url = secrets.redis_url;
         config.identity.token_keys = secrets.identity_token_keys;
         config.identity.risk_key = secrets.identity_risk_key;
+        config.content.cursor_key = secrets.content_cursor_key;
         config.validate()?;
         Ok(config)
     }
@@ -263,6 +277,33 @@ impl Config {
 
     /// 校验当前接入组件，不提前开发认证和外部 provider。
     pub fn validate(&self) -> Result<(), ConfigError> {
+        if let Some(key) = &self.content.cursor_key {
+            if key.len() != 64
+                || !key
+                    .bytes()
+                    .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+            {
+                return Err(ConfigError::Invalid(
+                    "content cursor key must be 32 random bytes in lowercase hex",
+                ));
+            }
+            if self
+                .identity
+                .risk_key
+                .as_ref()
+                .is_some_and(|risk| **risk == **key)
+                || self
+                    .identity
+                    .token_keyring()?
+                    .values()
+                    .any(|mail| **mail == **key)
+            {
+                return Err(ConfigError::Invalid(
+                    "content cursor key must be independent of identity secrets",
+                ));
+            }
+        }
+
         self.identity
             .validate(self.server.environment, self.adapters.mode)?;
         if self.worker.embedded && self.database.backend != Backend::Sqlite {
@@ -430,7 +471,8 @@ fn environment_document(variables: &BTreeMap<String, String>) -> Result<toml::Va
             | "BBBCM_DATABASE_POSTGRES_URL"
             | "BBBCM_REDIS_URL"
             | "BBBCM_IDENTITY_TOKEN_KEYS"
-            | "BBBCM_IDENTITY_RISK_KEY" => continue,
+            | "BBBCM_IDENTITY_RISK_KEY"
+            | "BBBCM_CONTENT_CURSOR_KEY" => continue,
             _ if key.starts_with("BBBCM_") => {
                 return Err(ConfigError::Invalid(
                     "未知 BBBCM 环境变量；请检查配置变量拼写",

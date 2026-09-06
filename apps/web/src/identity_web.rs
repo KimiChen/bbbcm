@@ -196,4 +196,4 @@ mod tests {
 
 #[cfg(test)]
 #[path = "identity_web/runtime_tests.rs"]
-mod runtime_tests;
+pub(crate) mod runtime_tests;

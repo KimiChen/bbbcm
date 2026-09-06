@@ -1,0 +1,11 @@
+   Compiling content v0.1.0 (<repository>/crates/content)
+   Compiling bbbcm-web v0.1.0 (<repository>/apps/web)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.94s
+     Running unittests src/main.rs (target/debug/deps/bbbcm_web-98e78dd583075dcc)
+
+running 3 tests
+test content_runtime_tests::normal_policy_is_closed_and_current_restrictions_reject_without_partial_content ... ok
+test content_runtime_tests::real_content_ssr_form_submission_preview_and_member_filter_need_no_javascript ... ok
+test content_runtime_tests::ordinary_account_real_content_transaction_projection_replay_and_worker_recovery ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 29 filtered out; finished in 1.11s

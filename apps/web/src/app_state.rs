@@ -3,6 +3,7 @@
 use platform::config::Config;
 
 pub struct AppState {
+    pub content: content::http::ContentWebState,
     pub identity: identity::http::IdentityWebState,
     pub config: Config,
     pub assets: crate::assets::Assets,
@@ -13,6 +14,7 @@ pub struct AppState {
 impl AppState {
     pub fn new(config: Config, assets: crate::assets::Assets) -> Self {
         Self {
+            content: crate::content_web::closed(&config, &assets),
             identity: crate::identity_web::closed(&config, &assets),
             status: std::sync::Arc::new(platform_db::status_repo::DbStatusSource::new(
                 config.database.clone(),

@@ -1,1 +1,1602 @@
-//! 应用服务与状态机：主题/回复发布、楼层分配、可见性与修订。随 WP-MVP-C02 接入。
+//! Authoritative content services: identity injection, current visibility and one commit.
+use crate::{
+    contract::*,
+    cursor::{Cursor, CursorKey},
+    markdown,
+    policy::{ContentPolicy, ContentRules},
+    repo,
+};
+use chrono::{DateTime, Duration, Utc};
+use platform::{
+    flags::{Flag, FlagSnapshot},
+    identifiers::SchemaRenderer,
+    outbox::{OutboxEvent, Outcome, SafePayload},
+    transaction::{
+        CommandIdentity, CommitOutcome, LockPlan, OperationQuery, OperationStatus, StoredResponse,
+        new_operation_id, request_hash,
+    },
+};
+use platform_db::{
+    Pool,
+    command::execute_command,
+    transaction::{DbTransaction, TransactionConnection, TransactionError},
+};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    sync::{Arc, Mutex},
+};
+const PAGE_SIZE: usize = 50;
+#[derive(Clone)]
+pub struct ContentService {
+    pool: Pool,
+    renderer: SchemaRenderer,
+    authority: Arc<dyn ContentAuthority>,
+    policy: Arc<dyn ContentPolicy>,
+    cursor: CursorKey,
+    cache: Option<Arc<dyn platform::cache::CacheStore>>,
+}
+#[derive(Clone, serde::Serialize)]
+enum Mutation {
+    Topic(NewTopic),
+    Reply(NewReply),
+    Edit(EditPost),
+    Delete(DeletePost),
+}
+impl Mutation {
+    fn action(&self) -> Action {
+        match self {
+            Self::Topic(_) => Action::CreateTopic,
+            Self::Reply(_) => Action::CreateReply,
+            Self::Edit(_) => Action::EditPost,
+            Self::Delete(_) => Action::DeletePost,
+        }
+    }
+}
+struct ReadContext {
+    viewer: Viewer,
+    forums: Vec<Forum>,
+    tags: Vec<Tag>,
+    now: DateTime<Utc>,
+}
+fn canonical(now: DateTime<Utc>) -> Result<DateTime<Utc>, ContentError> {
+    if now < DateTime::UNIX_EPOCH {
+        return Err(ContentError::InvalidInput);
+    }
+    platform::db::decode_time(&platform::db::encode_time(now))
+        .map_err(|_| ContentError::InvalidInput)
+}
+fn positive(id: i64) -> Result<(), ContentError> {
+    if id > 0 {
+        Ok(())
+    } else {
+        Err(ContentError::InvalidInput)
+    }
+}
+impl ContentService {
+    pub fn new(
+        pool: Pool,
+        renderer: SchemaRenderer,
+        authority: Arc<dyn ContentAuthority>,
+        policy: Arc<dyn ContentPolicy>,
+        cursor: CursorKey,
+    ) -> Self {
+        Self {
+            pool,
+            renderer,
+            authority,
+            policy,
+            cursor,
+            cache: None,
+        }
+    }
+    pub fn with_cache(mut self, cache: Arc<dyn platform::cache::CacheStore>) -> Self {
+        self.cache = Some(cache);
+        self
+    }
+    async fn flags(
+        &self,
+        tx: &mut TransactionConnection<'_>,
+        action: Option<Action>,
+    ) -> Result<(), ContentError> {
+        let t = self
+            .renderer
+            .table(tx.backend(), "platform", "feature_flags")
+            .map_err(|_| ContentError::Unavailable)?;
+        let rows = tx
+            .fetch_all(
+                &format!("SELECT flag_key, enabled, version FROM {t} ORDER BY flag_key"),
+                &[],
+            )
+            .await?;
+        let facts = rows
+            .iter()
+            .map(|r| {
+                Ok((
+                    r.text("flag_key")?,
+                    r.boolean("enabled")?,
+                    r.i64("version")?,
+                ))
+            })
+            .collect::<Result<Vec<_>, TransactionError>>()?;
+        let flags = FlagSnapshot::from_rows(facts).map_err(|_| ContentError::Unavailable)?;
+        let required = match action {
+            Some(Action::CreateTopic) => Some(Flag::TopicCreation),
+            Some(Action::CreateReply) => Some(Flag::ReplyCreation),
+            _ => None,
+        };
+        if !flags.get(Flag::PublicRead).enabled
+            || required.is_some_and(|f| !flags.get(f).enabled)
+            || action.is_some() && flags.get(Flag::ReadOnlyMode).enabled
+        {
+            return Err(ContentError::Forbidden);
+        }
+        Ok(())
+    }
+    async fn context(
+        &self,
+        tx: &mut TransactionConnection<'_>,
+        session: Option<&str>,
+        now: DateTime<Utc>,
+    ) -> Result<ReadContext, ContentError> {
+        self.flags(tx, None).await?;
+        let mut forums = repo::forums(tx, &self.renderer).await?;
+        let ids = forums.iter().map(|f| f.id).collect::<Vec<_>>();
+        for chunk in ids.chunks(256) {
+            for (id, rule) in self.authority.forum_rules(tx, chunk, now).await? {
+                if let Some(forum) = forums.iter_mut().find(|f| f.id == id) {
+                    forum.rule = rule;
+                }
+            }
+        }
+        Ok(ReadContext {
+            viewer: self.authority.read_viewer(tx, session, now).await?,
+            forums,
+            tags: repo::tags(tx, &self.renderer).await?,
+            now,
+        })
+    }
+    pub async fn viewer(
+        &self,
+        session: Option<&str>,
+        now: DateTime<Utc>,
+    ) -> Result<Viewer, ContentError> {
+        let mut tx = DbTransaction::begin_read(&self.pool).await?;
+        self.flags(&mut tx.connection(), None).await?;
+        let result = self
+            .authority
+            .read_viewer(&mut tx.connection(), session, canonical(now)?)
+            .await;
+        tx.rollback().await?;
+        result
+    }
+    pub async fn author(
+        &self,
+        user_id: i64,
+        now: DateTime<Utc>,
+    ) -> Result<Option<Author>, ContentError> {
+        positive(user_id)?;
+        let mut tx = DbTransaction::begin_read(&self.pool).await?;
+        self.flags(&mut tx.connection(), None).await?;
+        let result = self
+            .authority
+            .authors(&mut tx.connection(), &[user_id], canonical(now)?)
+            .await?
+            .into_iter()
+            .next();
+        tx.rollback().await?;
+        Ok(result)
+    }
+    pub async fn resolve_author(
+        &self,
+        public_id: &str,
+        now: DateTime<Utc>,
+    ) -> Result<Option<Author>, ContentError> {
+        let mut tx = DbTransaction::begin_read(&self.pool).await?;
+        self.flags(&mut tx.connection(), None).await?;
+        let result = self
+            .authority
+            .resolve_author(&mut tx.connection(), public_id, canonical(now)?)
+            .await?;
+        tx.rollback().await?;
+        Ok(result)
+    }
+    /// Read-only alias/merge resolution. Every hop is filtered using the current
+    /// trusted viewer; no management operation or implied grant is exposed.
+    pub async fn resolve_tag(
+        &self,
+        slug: &str,
+        session: Option<&str>,
+        now: DateTime<Utc>,
+    ) -> Result<Option<Tag>, ContentError> {
+        let mut tx = DbTransaction::begin_read(&self.pool).await?;
+        let mut c = tx.connection();
+        let ctx = self.context(&mut c, session, canonical(now)?).await?;
+        let Some(mut id) = repo::tag_id_for_slug(&mut c, &self.renderer, slug).await? else {
+            tx.rollback().await?;
+            return Ok(None);
+        };
+        let mut seen = BTreeSet::new();
+        let result = loop {
+            if !seen.insert(id) {
+                return Err(ContentError::Unavailable);
+            }
+            let tag = ctx
+                .tags
+                .iter()
+                .find(|tag| tag.id == id)
+                .ok_or(ContentError::Unavailable)?;
+            if tag.restricted && !ctx.viewer.member {
+                break None;
+            }
+            match tag.merged_into {
+                Some(next) => id = next,
+                None => break Some(tag.clone()),
+            }
+        };
+        tx.rollback().await?;
+        Ok(result)
+    }
+    async fn author_in(
+        &self,
+        tx: &mut TransactionConnection<'_>,
+        id: i64,
+        now: DateTime<Utc>,
+    ) -> Result<Author, ContentError> {
+        self.authority
+            .authors(tx, &[id], now)
+            .await?
+            .into_iter()
+            .find(|a| a.user_id == id)
+            .ok_or(ContentError::NotFound)
+    }
+    async fn topic_visible(
+        &self,
+        tx: &mut TransactionConnection<'_>,
+        ctx: &ReadContext,
+        topic: &repo::Topic,
+    ) -> Result<(Forum, Author, Visibility), ContentError> {
+        let forum = ctx
+            .forums
+            .iter()
+            .find(|f| f.id == topic.forum_id)
+            .ok_or(ContentError::NotFound)?
+            .clone();
+        let fv = forum_visibility(&ctx.forums, forum.id)?;
+        let author = self.author_in(tx, topic.author_id, ctx.now).await?;
+        let visibility = fv
+            .strictest(topic.state.visibility)
+            .strictest(author.default_visibility);
+        if !visibility.permits(&ctx.viewer) || !topic.state.can_read(&ctx.viewer, topic.author_id) {
+            return Err(ContentError::NotFound);
+        }
+        Ok((forum, author, visibility))
+    }
+    async fn basic_post_visible(
+        &self,
+        tx: &mut TransactionConnection<'_>,
+        ctx: &ReadContext,
+        post: &repo::Post,
+    ) -> Result<(repo::Topic, Author, Visibility), ContentError> {
+        let topic = repo::topic(tx, &self.renderer, post.topic_id)
+            .await?
+            .ok_or(ContentError::NotFound)?;
+        let (_, _, visibility) = self.topic_visible(tx, ctx, &topic).await?;
+        let author = self.author_in(tx, post.author_id, ctx.now).await?;
+        let visibility = visibility.strictest(author.default_visibility);
+        if !post.can_read(&ctx.viewer) || !visibility.permits(&ctx.viewer) {
+            return Err(ContentError::NotFound);
+        }
+        Ok((topic, author, visibility))
+    }
+    async fn post_view(
+        &self,
+        tx: &mut TransactionConnection<'_>,
+        ctx: &ReadContext,
+        post: &repo::Post,
+    ) -> Result<PostView, ContentError> {
+        let (topic, author, visibility) = self.basic_post_visible(tx, ctx, post).await?;
+        let rendered = self
+            .filtered_markup(tx, ctx, &post.body, Some(post.topic_id))
+            .await?;
+        let quote = if let Some(id) = post.quote_post_id {
+            match repo::post(tx, &self.renderer, id).await? {
+                Some(target) => match self.basic_post_visible(tx, ctx, &target).await {
+                    Ok(_) => Some(id),
+                    Err(ContentError::NotFound) => None,
+                    Err(e) => return Err(e),
+                },
+                None => None,
+            }
+        } else {
+            None
+        };
+        let html = if visibility == Visibility::Public
+            && post.publication == Publication::Published
+            && topic.state.publication == Publication::Published
+            && post.quote_post_id.is_none()
+            && markdown::render(&post.body)
+                .links()
+                .iter()
+                .all(|l| l.target().is_none())
+        {
+            if let Some(cache) = &self.cache {
+                let key = platform::cache::PublicCacheKey::new(
+                    platform::cache::CacheEntity::new("post", &post.id.to_string())
+                        .map_err(|_| ContentError::Unavailable)?,
+                    u64::try_from(post.version).map_err(|_| ContentError::Unavailable)?,
+                    platform::cache::CacheVisibility::Public,
+                )
+                .map_err(|_| ContentError::Unavailable)?;
+                platform::cache::read_public(cache.as_ref(), &key, || async {
+                    Ok::<_, ContentError>(rendered.html().to_string())
+                })
+                .await?
+                .value
+            } else {
+                rendered.html().to_string()
+            }
+        } else {
+            rendered.html().to_string()
+        };
+        Ok(PostView {
+            id: post.id,
+            topic_id: post.topic_id,
+            floor_no: post.floor_no,
+            author,
+            markdown: post.body.clone(),
+            html,
+            created_at: post.created_at,
+            edited_at: post.edited_at,
+            version: post.version,
+            quote_post_id: quote,
+            publication: post.publication,
+        })
+    }
+    async fn topic_view(
+        &self,
+        tx: &mut TransactionConnection<'_>,
+        ctx: &ReadContext,
+        topic: &repo::Topic,
+    ) -> Result<TopicView, ContentError> {
+        let (forum, author, _) = self.topic_visible(tx, ctx, topic).await?;
+        let first = repo::post_at_floor(tx, &self.renderer, topic.id, 1)
+            .await?
+            .ok_or(ContentError::NotFound)?;
+        self.basic_post_visible(tx, ctx, &first).await?;
+        let ids = repo::topic_tag_ids(tx, &self.renderer, topic.id).await?;
+        let tags = ctx
+            .tags
+            .iter()
+            .filter(|tag| ids.contains(&tag.id) && (!tag.restricted || ctx.viewer.member))
+            .cloned()
+            .collect();
+        let rules = self.policy.rules().ok();
+        let mut last_reply_author = None;
+        let mut last_reply_at = None;
+        let mut reply_count = None;
+        if rules
+            .as_ref()
+            .is_some_and(|r| r.show_structural_reply_count || r.show_last_public_reply)
+        {
+            let mut floor = 1;
+            let mut count = 0;
+            loop {
+                let rows = repo::posts(tx, &self.renderer, topic.id, i64::MAX, floor, 100).await?;
+                if rows.is_empty() {
+                    break;
+                }
+                for post in rows {
+                    floor = post.floor_no;
+                    if post.publication != Publication::Published {
+                        continue;
+                    }
+                    match self.post_view(tx, ctx, &post).await {
+                        Ok(view) => {
+                            count += 1;
+                            last_reply_at = Some(view.created_at);
+                            last_reply_author = Some(view.author);
+                        }
+                        Err(ContentError::NotFound) => {}
+                        Err(e) => return Err(e),
+                    }
+                }
+            }
+            if rules
+                .as_ref()
+                .is_some_and(|r| r.show_structural_reply_count)
+            {
+                reply_count = Some(count)
+            }
+            if !rules.as_ref().is_some_and(|r| r.show_last_public_reply) {
+                last_reply_at = None;
+                last_reply_author = None;
+            }
+        }
+        Ok(TopicView {
+            id: topic.id,
+            title: topic.title.clone(),
+            forum,
+            tags,
+            author,
+            state: topic.state.clone(),
+            created_at: topic.created_at,
+            edited_at: topic.edited_at,
+            version: topic.version,
+            pinned: topic.pinned,
+            globally_pinned: topic.globally_pinned,
+            featured: topic.featured,
+            reply_count,
+            view_count: None,
+            last_reply_author,
+            last_reply_at,
+        })
+    }
+    pub async fn list(
+        &self,
+        filter: &ListFilter,
+        cursor: Option<&str>,
+        session: Option<&str>,
+        now: DateTime<Utc>,
+    ) -> Result<ContentList, ContentError> {
+        for id in [filter.forum_id, filter.tag_id, filter.owner_id]
+            .into_iter()
+            .flatten()
+        {
+            positive(id)?;
+        }
+        let mut tx = DbTransaction::begin_read(&self.pool).await?;
+        let mut c = tx.connection();
+        let ctx = self.context(&mut c, session, canonical(now)?).await?;
+        if let Some(id) = filter.forum_id
+            && !forum_visibility(&ctx.forums, id)?.permits(&ctx.viewer)
+        {
+            return Err(ContentError::NotFound);
+        }
+        if let Some(id) = filter.tag_id
+            && !ctx
+                .tags
+                .iter()
+                .any(|t| t.id == id && (!t.restricted || ctx.viewer.member))
+        {
+            return Err(ContentError::NotFound);
+        }
+        let binding = list_binding(filter, &ctx.viewer)?;
+        let mut position = match cursor {
+            Some(text) => self.cursor.decode(text, &binding)?,
+            None => Cursor {
+                version: 1,
+                context: binding,
+                watermark: repo::watermark(&mut c, &self.renderer).await?,
+                sort: i64::MAX,
+                id: i64::MAX,
+            },
+        };
+        let mut topics = Vec::new();
+        let mut replies = Vec::new();
+        let mut next = None;
+        'scan: loop {
+            let rows = repo::candidates(
+                &mut c,
+                &self.renderer,
+                filter,
+                position.watermark,
+                position.sort,
+                position.id,
+                100,
+            )
+            .await?;
+            if rows.is_empty() {
+                break;
+            }
+            for (id, sort) in rows {
+                position.id = id;
+                position.sort = sort;
+                let found = if filter.kind == ListKind::Topics {
+                    if let Some(topic) = repo::topic(&mut c, &self.renderer, id).await? {
+                        match self.topic_view(&mut c, &ctx, &topic).await {
+                            Ok(topic) => {
+                                topics.push(topic);
+                                true
+                            }
+                            Err(ContentError::NotFound) => false,
+                            Err(e) => return Err(e),
+                        }
+                    } else {
+                        false
+                    }
+                } else if let Some(post) = repo::post(&mut c, &self.renderer, id).await? {
+                    match self.post_view(&mut c, &ctx, &post).await {
+                        Ok(post) => {
+                            replies.push(post);
+                            true
+                        }
+                        Err(ContentError::NotFound) => false,
+                        Err(e) => return Err(e),
+                    }
+                } else {
+                    false
+                };
+                if found && topics.len() + replies.len() == PAGE_SIZE {
+                    if !repo::candidates(
+                        &mut c,
+                        &self.renderer,
+                        filter,
+                        position.watermark,
+                        position.sort,
+                        position.id,
+                        1,
+                    )
+                    .await?
+                    .is_empty()
+                    {
+                        next = Some(self.cursor.encode(&position)?)
+                    }
+                    break 'scan;
+                }
+            }
+        }
+        let forums = ctx
+            .forums
+            .iter()
+            .filter(|f| forum_visibility(&ctx.forums, f.id).is_ok_and(|v| v.permits(&ctx.viewer)))
+            .cloned()
+            .collect();
+        let tags = ctx
+            .tags
+            .into_iter()
+            .filter(|t| t.merged_into.is_none() && (!t.restricted || ctx.viewer.member))
+            .collect();
+        let result = ContentList {
+            viewer: ctx.viewer,
+            topics,
+            replies,
+            forums,
+            tags,
+            next_cursor: next,
+        };
+        tx.rollback().await?;
+        Ok(result)
+    }
+    pub async fn topic(
+        &self,
+        id: i64,
+        cursor: Option<&str>,
+        session: Option<&str>,
+        now: DateTime<Utc>,
+    ) -> Result<TopicDetail, ContentError> {
+        positive(id)?;
+        let mut tx = DbTransaction::begin_read(&self.pool).await?;
+        let mut c = tx.connection();
+        let ctx = self.context(&mut c, session, canonical(now)?).await?;
+        let topic = repo::topic(&mut c, &self.renderer, id)
+            .await?
+            .ok_or(ContentError::NotFound)?;
+        let topic = self.topic_view(&mut c, &ctx, &topic).await?;
+        let first = repo::post_at_floor(&mut c, &self.renderer, id, 1)
+            .await?
+            .ok_or(ContentError::NotFound)?;
+        let first = self.post_view(&mut c, &ctx, &first).await?;
+        let binding = topic_binding(id, &ctx.viewer);
+        let mut position = match cursor {
+            Some(text) => self.cursor.decode(text, &binding)?,
+            None => Cursor {
+                version: 1,
+                context: binding,
+                watermark: repo::watermark(&mut c, &self.renderer).await?,
+                sort: 1,
+                id,
+            },
+        };
+        let mut replies = Vec::new();
+        let mut next = None;
+        'scan: loop {
+            let rows = repo::posts(
+                &mut c,
+                &self.renderer,
+                id,
+                position.watermark,
+                position.sort,
+                100,
+            )
+            .await?;
+            if rows.is_empty() {
+                break;
+            }
+            for post in rows {
+                position.sort = post.floor_no;
+                match self.post_view(&mut c, &ctx, &post).await {
+                    Ok(view) => replies.push(view),
+                    Err(ContentError::NotFound) => {}
+                    Err(e) => return Err(e),
+                }
+                if replies.len() == PAGE_SIZE {
+                    if !repo::posts(
+                        &mut c,
+                        &self.renderer,
+                        id,
+                        position.watermark,
+                        position.sort,
+                        1,
+                    )
+                    .await?
+                    .is_empty()
+                    {
+                        next = Some(self.cursor.encode(&position)?)
+                    }
+                    break 'scan;
+                }
+            }
+        }
+        let result = TopicDetail {
+            viewer: ctx.viewer,
+            topic,
+            first_post: first,
+            replies,
+            next_cursor: next,
+        };
+        tx.rollback().await?;
+        Ok(result)
+    }
+    pub async fn locate(
+        &self,
+        post_id: i64,
+        session: Option<&str>,
+        now: DateTime<Utc>,
+    ) -> Result<PostLocation, ContentError> {
+        positive(post_id)?;
+        let mut tx = DbTransaction::begin_read(&self.pool).await?;
+        let mut c = tx.connection();
+        let ctx = self.context(&mut c, session, canonical(now)?).await?;
+        let post = repo::post(&mut c, &self.renderer, post_id)
+            .await?
+            .ok_or(ContentError::NotFound)?;
+        self.post_view(&mut c, &ctx, &post).await?;
+        let cursor = if post.floor_no > 1 {
+            Some(self.cursor.encode(&Cursor {
+                version: 1,
+                context: topic_binding(post.topic_id, &ctx.viewer),
+                watermark: repo::watermark(&mut c, &self.renderer).await?,
+                sort: post.floor_no - 1,
+                id: post.topic_id,
+            })?)
+        } else {
+            None
+        };
+        let result = PostLocation {
+            topic_id: post.topic_id,
+            floor_no: post.floor_no,
+            cursor,
+        };
+        tx.rollback().await?;
+        Ok(result)
+    }
+    pub async fn preview(
+        &self,
+        credentials: &Credentials,
+        source: &str,
+        now: DateTime<Utc>,
+    ) -> Result<Preview, ContentError> {
+        if source.len() > 1_048_576 {
+            return Err(ContentError::InvalidInput);
+        }
+        let now = canonical(now)?;
+        let mut tx = DbTransaction::begin(&self.pool).await?;
+        let mut c = tx.connection();
+        self.flags(&mut c, None).await?;
+        let facts = self
+            .authority
+            .authorize(&mut c, credentials, Action::EditPost, now)
+            .await?;
+        if !facts.email_verified || !facts.allowed {
+            return Err(ContentError::Forbidden);
+        }
+        let ctx = self
+            .context(&mut c, Some(credentials.session_token.expose()), now)
+            .await?;
+        let rendered = self.filtered_markup(&mut c, &ctx, source, None).await?;
+        let result = Preview {
+            html: rendered.html().into(),
+            external_links: rendered.external_link_count(),
+        };
+        tx.rollback().await?;
+        Ok(result)
+    }
+    pub async fn create_topic(
+        &self,
+        c: &Credentials,
+        input: NewTopic,
+        now: DateTime<Utc>,
+    ) -> Result<MutationResult, ContentError> {
+        self.mutate(c, Mutation::Topic(input), now).await
+    }
+    pub async fn reply(
+        &self,
+        c: &Credentials,
+        input: NewReply,
+        now: DateTime<Utc>,
+    ) -> Result<MutationResult, ContentError> {
+        self.mutate(c, Mutation::Reply(input), now).await
+    }
+    pub async fn edit(
+        &self,
+        c: &Credentials,
+        input: EditPost,
+        now: DateTime<Utc>,
+    ) -> Result<MutationResult, ContentError> {
+        self.mutate(c, Mutation::Edit(input), now).await
+    }
+    pub async fn delete(
+        &self,
+        c: &Credentials,
+        input: DeletePost,
+        now: DateTime<Utc>,
+    ) -> Result<MutationResult, ContentError> {
+        self.mutate(c, Mutation::Delete(input), now).await
+    }
+    async fn mutate(
+        &self,
+        credentials: &Credentials,
+        input: Mutation,
+        now: DateTime<Utc>,
+    ) -> Result<MutationResult, ContentError> {
+        let now = canonical(now)?;
+        let mut preflight = DbTransaction::begin(&self.pool).await?;
+        self.flags(&mut preflight.connection(), Some(input.action()))
+            .await?;
+        let preflight_facts = self
+            .authority
+            .authorize(
+                &mut preflight.connection(),
+                credentials,
+                input.action(),
+                now,
+            )
+            .await?;
+        if !preflight_facts.allowed || !preflight_facts.email_verified {
+            return Err(ContentError::Forbidden);
+        }
+        let actor = preflight_facts.user_id;
+        preflight.rollback().await?;
+        let canonical = serde_json::to_vec(&input).map_err(|_| ContentError::InvalidInput)?;
+        let command = CommandIdentity {
+            scope: format!("content.{}", input.action().as_str()),
+            actor_id: actor,
+            idempotency_key: credentials.idempotency_key.clone(),
+            request_hash: request_hash(&canonical),
+            operation_id: new_operation_id(),
+        };
+        let service = self.clone();
+        let credentials = credentials.clone();
+        let command_copy = command.clone();
+        let error = Arc::new(Mutex::new(None));
+        let inner_error = error.clone();
+        let outcome = execute_command(
+            &self.pool,
+            &self.renderer,
+            &command,
+            &LockPlan::default(),
+            now,
+            move |tx| {
+                let service = service.clone();
+                let credentials = credentials.clone();
+                let input = input.clone();
+                let command = command_copy.clone();
+                let error = inner_error.clone();
+                Box::pin(async move {
+                    match service.write(tx, &credentials, &input, &command, now).await {
+                        Ok(response) => Ok(response),
+                        Err(ContentError::RetryableDatabase(class)) => {
+                            Err(TransactionError::Database(class))
+                        }
+                        Err(e) => {
+                            *error.lock().map_err(|_| TransactionError::CorruptData)? = Some(e);
+                            Err(TransactionError::InvalidInput)
+                        }
+                    }
+                })
+            },
+        )
+        .await;
+        let outcome = match outcome {
+            Ok(o) => o,
+            Err(e) => {
+                return Err(error
+                    .lock()
+                    .map_err(|_| ContentError::Unavailable)?
+                    .take()
+                    .unwrap_or_else(|| e.into()));
+            }
+        };
+        match outcome {
+            CommitOutcome::Unknown { operation_id } => {
+                Err(ContentError::CommitUnknown { operation_id })
+            }
+            CommitOutcome::RolledBack => Err(ContentError::Unavailable),
+            CommitOutcome::Committed(result) => {
+                if result.response.status_code != 200 {
+                    return Err(if result.response.status_code == 503 {
+                        ContentError::PolicyPending
+                    } else {
+                        ContentError::Forbidden
+                    });
+                }
+                let payload = SafePayload::from_json(&result.response.body)
+                    .map_err(|_| ContentError::Unavailable)?;
+                let id = payload
+                    .reference("resource_id")
+                    .and_then(|s| s.parse().ok())
+                    .ok_or(ContentError::Unavailable)?;
+                let version = payload
+                    .reference("version")
+                    .and_then(|s| s.parse().ok())
+                    .ok_or(ContentError::Unavailable)?;
+                let mut tx = DbTransaction::begin_read(&self.pool).await?;
+                let post = repo::post(&mut tx.connection(), &self.renderer, id)
+                    .await?
+                    .ok_or(ContentError::Unavailable)?;
+                tx.rollback().await?;
+                Ok(MutationResult {
+                    topic_id: post.topic_id,
+                    post_id: post.id,
+                    floor_no: post.floor_no,
+                    version,
+                    replayed: result.replayed,
+                })
+            }
+        }
+    }
+    async fn write(
+        &self,
+        tx: &mut TransactionConnection<'_>,
+        credentials: &Credentials,
+        input: &Mutation,
+        command: &CommandIdentity,
+        now: DateTime<Utc>,
+    ) -> Result<StoredResponse, ContentError> {
+        let action = input.action();
+        self.flags(tx, Some(action)).await?;
+        let facts = self
+            .authority
+            .authorize(tx, credentials, action, now)
+            .await?;
+        if facts.user_id != command.actor_id {
+            return Err(ContentError::Forbidden);
+        }
+        let rules = match self.policy.rules() {
+            Ok(r) => r,
+            Err(ContentError::PolicyPending) => {
+                self.authority
+                    .append_risk(
+                        tx,
+                        credentials,
+                        &facts,
+                        action,
+                        RiskDisposition::Unavailable,
+                        &command.operation_id,
+                        now,
+                    )
+                    .await?;
+                return stored_failure(503);
+            }
+            Err(e) => return Err(e),
+        };
+        if rules.authorize(&facts).is_err() {
+            self.authority
+                .append_risk(
+                    tx,
+                    credentials,
+                    &facts,
+                    action,
+                    RiskDisposition::Denied,
+                    &command.operation_id,
+                    now,
+                )
+                .await?;
+            return stored_failure(403);
+        }
+        if facts.created_at > now {
+            return Err(ContentError::Forbidden);
+        }
+        let seq = repo::lock_root(tx, &self.renderer).await?;
+        // Root serializes all community changes; catalogue and targets are reread after it.
+        let ctx = self
+            .context(tx, Some(credentials.session_token.expose()), now)
+            .await?;
+        let (topic, post, tag_ids, links) = match input {
+            Mutation::Topic(new) => {
+                positive(new.forum_id)?;
+                let tags = validate_tags(&ctx.tags, &new.tag_ids)?;
+                let rendered = markdown::render(&new.markdown);
+                rules.validate_text(
+                    Some(&new.title),
+                    &new.markdown,
+                    false,
+                    tags.len(),
+                    rendered.external_link_count(),
+                    facts.tier,
+                )?;
+                let fv = lock_forum(tx, &self.renderer, &ctx.forums, new.forum_id).await?;
+                if !fv.permits(&ctx.viewer) {
+                    return Err(ContentError::Forbidden);
+                }
+                let destination = fv
+                    .strictest(new.visibility)
+                    .strictest(facts.default_visibility);
+                let links = self
+                    .target_links(tx, &ctx, &rendered, None, destination, None)
+                    .await?;
+                self.quota(tx, &rules, &facts, action, now).await?;
+                let id = repo::insert_topic(tx, &self.renderer, new, &facts, seq, now).await?;
+                let post_id = repo::insert_post(
+                    tx,
+                    &self.renderer,
+                    id,
+                    &facts,
+                    1,
+                    &new.markdown,
+                    None,
+                    seq,
+                    now,
+                )
+                .await?;
+                repo::set_tags(tx, &self.renderer, id, &tags).await?;
+                let topic = repo::topic(tx, &self.renderer, id)
+                    .await?
+                    .ok_or(ContentError::Unavailable)?;
+                let post = repo::post(tx, &self.renderer, post_id)
+                    .await?
+                    .ok_or(ContentError::Unavailable)?;
+                (topic, post, tags, Some(links))
+            }
+            Mutation::Reply(new) => {
+                positive(new.topic_id)?;
+                let mut topic = repo::topic(tx, &self.renderer, new.topic_id)
+                    .await?
+                    .ok_or(ContentError::NotFound)?;
+                lock_forum(tx, &self.renderer, &ctx.forums, topic.forum_id).await?;
+                repo::lock(tx, &self.renderer, "topics", topic.id).await?;
+                topic = repo::topic(tx, &self.renderer, topic.id)
+                    .await?
+                    .ok_or(ContentError::NotFound)?;
+                let (_, _, destination) = self.topic_visible(tx, &ctx, &topic).await?;
+                if !topic.state.permits_write() {
+                    return Err(ContentError::Forbidden);
+                }
+                if topic.version != new.expected_topic_version {
+                    return Err(ContentError::Conflict);
+                }
+                let rendered = markdown::render(&new.markdown);
+                rules.validate_text(
+                    None,
+                    &new.markdown,
+                    true,
+                    0,
+                    rendered.external_link_count(),
+                    facts.tier,
+                )?;
+                let links = self
+                    .target_links(
+                        tx,
+                        &ctx,
+                        &rendered,
+                        new.quote_post_id,
+                        destination.strictest(facts.default_visibility),
+                        Some(topic.id),
+                    )
+                    .await?;
+                self.quota(tx, &rules, &facts, action, now).await?;
+                let floor = topic.next_floor;
+                topic.next_floor = topic
+                    .next_floor
+                    .checked_add(1)
+                    .ok_or(ContentError::Unavailable)?;
+                topic.current_seq = seq;
+                if facts.publication == Publication::Published {
+                    topic.raw_reply_count = topic
+                        .raw_reply_count
+                        .checked_add(1)
+                        .ok_or(ContentError::Unavailable)?;
+                    topic.last_reply_author_id = Some(facts.user_id);
+                    topic.last_reply_at = Some(now);
+                    topic.last_reply_seq = seq;
+                }
+                let id = repo::insert_post(
+                    tx,
+                    &self.renderer,
+                    topic.id,
+                    &facts,
+                    floor,
+                    &new.markdown,
+                    new.quote_post_id,
+                    seq,
+                    now,
+                )
+                .await?;
+                repo::save_topic(tx, &self.renderer, &topic).await?;
+                topic.version += 1;
+                let tags = repo::topic_tag_ids(tx, &self.renderer, topic.id).await?;
+                let post = repo::post(tx, &self.renderer, id)
+                    .await?
+                    .ok_or(ContentError::Unavailable)?;
+                (topic, post, tags, Some(links))
+            }
+            Mutation::Edit(edit) => {
+                positive(edit.post_id)?;
+                let post = repo::post(tx, &self.renderer, edit.post_id)
+                    .await?
+                    .ok_or(ContentError::NotFound)?;
+                let mut topic = repo::topic(tx, &self.renderer, post.topic_id)
+                    .await?
+                    .ok_or(ContentError::NotFound)?;
+                lock_forum(tx, &self.renderer, &ctx.forums, topic.forum_id).await?;
+                repo::lock(tx, &self.renderer, "topics", topic.id).await?;
+                repo::lock(tx, &self.renderer, "posts", post.id).await?;
+                let mut post = repo::post(tx, &self.renderer, post.id)
+                    .await?
+                    .ok_or(ContentError::NotFound)?;
+                self.basic_post_visible(tx, &ctx, &post).await?;
+                if post.author_id != facts.user_id
+                    || !topic.state.permits_write()
+                    || post.deleted_at.is_some()
+                    || post.moderation != Moderation::Normal
+                {
+                    return Err(ContentError::Forbidden);
+                }
+                if post.version != edit.expected_version {
+                    return Err(ContentError::Conflict);
+                }
+                check_window(post.created_at, now, rules.edit_window_seconds)?;
+                let mut tags = repo::topic_tag_ids(tx, &self.renderer, topic.id).await?;
+                if post.floor_no == 1 {
+                    if let Some(title) = &edit.title {
+                        topic.title = title.trim().into()
+                    }
+                    if let Some(visibility) = edit.visibility {
+                        topic.state = topic
+                            .state
+                            .apply_owner_change(OwnerStateChange::Visibility(visibility))?
+                    }
+                    if let Some(ids) = &edit.tag_ids {
+                        tags = validate_tags(&ctx.tags, ids)?;
+                    }
+                } else if edit.title.is_some()
+                    || edit.visibility.is_some()
+                    || edit.tag_ids.is_some()
+                {
+                    return Err(ContentError::Forbidden);
+                }
+                let rendered = markdown::render(&edit.markdown);
+                rules.validate_text(
+                    (post.floor_no == 1).then_some(topic.title.as_str()),
+                    &edit.markdown,
+                    post.floor_no > 1,
+                    tags.len(),
+                    rendered.external_link_count(),
+                    facts.tier,
+                )?;
+                let destination = forum_visibility(&ctx.forums, topic.forum_id)?
+                    .strictest(topic.state.visibility)
+                    .strictest(facts.default_visibility);
+                let links = self
+                    .target_links(
+                        tx,
+                        &ctx,
+                        &rendered,
+                        post.quote_post_id,
+                        destination,
+                        Some(topic.id),
+                    )
+                    .await?;
+                post.body = edit.markdown.clone();
+                post.edited_at = Some(now);
+                repo::save_post(tx, &self.renderer, &post).await?;
+                post.version += 1;
+                topic.current_seq = seq;
+                if post.floor_no == 1 {
+                    topic.edited_at = Some(now);
+                    repo::set_tags(tx, &self.renderer, topic.id, &tags).await?;
+                }
+                repo::save_topic(tx, &self.renderer, &topic).await?;
+                topic.version += 1;
+                (topic, post, tags, Some(links))
+            }
+            Mutation::Delete(delete) => {
+                positive(delete.post_id)?;
+                let post = repo::post(tx, &self.renderer, delete.post_id)
+                    .await?
+                    .ok_or(ContentError::NotFound)?;
+                let mut topic = repo::topic(tx, &self.renderer, post.topic_id)
+                    .await?
+                    .ok_or(ContentError::NotFound)?;
+                lock_forum(tx, &self.renderer, &ctx.forums, topic.forum_id).await?;
+                repo::lock(tx, &self.renderer, "topics", topic.id).await?;
+                repo::lock(tx, &self.renderer, "posts", post.id).await?;
+                let mut post = repo::post(tx, &self.renderer, post.id)
+                    .await?
+                    .ok_or(ContentError::NotFound)?;
+                self.basic_post_visible(tx, &ctx, &post).await?;
+                if post.author_id != facts.user_id || !topic.state.permits_write() {
+                    return Err(ContentError::Forbidden);
+                }
+                if post.version != delete.expected_version {
+                    return Err(ContentError::Conflict);
+                }
+                check_window(post.created_at, now, rules.delete_window_seconds)?;
+                post.deleted_at = Some(now);
+                repo::save_post(tx, &self.renderer, &post).await?;
+                post.version += 1;
+                topic.current_seq = seq;
+                if post.floor_no == 1 {
+                    if rules.first_post_deletion == crate::policy::FirstPostDeletion::PolicyPending
+                    {
+                        return Err(ContentError::PolicyPending);
+                    }
+                    topic.state = topic
+                        .state
+                        .apply_owner_change(OwnerStateChange::Delete { at: now })?
+                } else {
+                    let mut floor = 1;
+                    let mut count = 0;
+                    topic.last_reply_at = None;
+                    topic.last_reply_author_id = None;
+                    topic.last_reply_seq = topic.create_seq;
+                    loop {
+                        let rows =
+                            repo::posts(tx, &self.renderer, topic.id, i64::MAX, floor, 100).await?;
+                        if rows.is_empty() {
+                            break;
+                        }
+                        for reply in rows {
+                            floor = reply.floor_no;
+                            if reply.deleted_at.is_none()
+                                && reply.moderation == Moderation::Normal
+                                && reply.publication == Publication::Published
+                            {
+                                count += 1;
+                                topic.last_reply_at = Some(reply.created_at);
+                                topic.last_reply_author_id = Some(reply.author_id);
+                                topic.last_reply_seq = reply.create_seq;
+                            }
+                        }
+                    }
+                    topic.raw_reply_count = count;
+                }
+                repo::save_topic(tx, &self.renderer, &topic).await?;
+                topic.version += 1;
+                let tags = repo::topic_tag_ids(tx, &self.renderer, topic.id).await?;
+                (topic, post, tags, None)
+            }
+        };
+        // Every mutation retains a new immutable revision. Original revisions never change.
+        repo::revision(
+            tx,
+            &self.renderer,
+            &topic,
+            &post,
+            &tag_ids,
+            facts.user_id,
+            now,
+        )
+        .await?;
+        if let Some(links) = links {
+            repo::set_links(tx, &self.renderer, post.id, &links).await?;
+        }
+        if matches!(action, Action::CreateTopic | Action::CreateReply) {
+            repo::charge(
+                tx,
+                &self.renderer,
+                &command.operation_id,
+                facts.user_id,
+                action,
+                post.id,
+                facts.publication == Publication::Published || rules.count_pending,
+                rules.version,
+                now,
+            )
+            .await?;
+        }
+        repo::history(tx, &self.renderer, &topic).await?;
+        let mut author_ids = BTreeSet::from([topic.author_id]);
+        let mut floor = 0;
+        loop {
+            let batch = repo::posts(tx, &self.renderer, topic.id, i64::MAX, floor, 100).await?;
+            if batch.is_empty() {
+                break;
+            }
+            for row in batch {
+                floor = row.floor_no;
+                author_ids.insert(row.author_id);
+            }
+        }
+        let ids = author_ids.into_iter().collect::<Vec<_>>();
+        let mut authors = BTreeMap::new();
+        for ids in ids.chunks(256) {
+            authors.extend(
+                self.authority
+                    .authors(tx, ids, now)
+                    .await?
+                    .into_iter()
+                    .map(|a| (a.user_id, a.default_visibility)),
+            );
+        }
+        repo::refresh_projection(
+            tx,
+            &self.renderer,
+            &topic,
+            forum_visibility(&ctx.forums, topic.forum_id)?,
+            &authors,
+        )
+        .await?;
+        // No new mutable lock follows risk/analytics/Outbox append phase.
+        self.authority
+            .append_risk(
+                tx,
+                credentials,
+                &facts,
+                action,
+                RiskDisposition::Allowed,
+                &command.operation_id,
+                now,
+            )
+            .await?;
+        if facts.publication == Publication::Published
+            && matches!(action, Action::CreateTopic | Action::CreateReply)
+        {
+            let kind = if action == Action::CreateTopic {
+                platform::analytics::EventKind::TopicPublished
+            } else {
+                platform::analytics::EventKind::ReplyPublished
+            };
+            let fact = platform::analytics::AnalyticsFact::from_authority(
+                new_operation_id(),
+                kind,
+                now,
+                facts.analytics_pseudonym.clone(),
+                Some(if action == Action::CreateTopic {
+                    topic.id
+                } else {
+                    post.id
+                }),
+                platform::analytics::Dimensions {
+                    forum_id: Some(topic.forum_id),
+                    tag_ids: tag_ids.iter().copied().collect(),
+                    channel_id: None,
+                    device: platform::analytics::Device::Unknown,
+                },
+                facts.analytics_exclusions,
+            )
+            .map_err(|_| ContentError::Unavailable)?;
+            platform_db::analytics_repo::enqueue(
+                tx,
+                &self.renderer,
+                &fact,
+                now,
+                new_operation_id(),
+            )
+            .await
+            .map_err(|_| ContentError::Unavailable)?;
+        }
+        let event = OutboxEvent {
+            event_id: new_operation_id(),
+            aggregate_type: "topic".into(),
+            aggregate_id: topic.id.to_string(),
+            event_type: "cache.invalidate".into(),
+            version: 1,
+            occurred_at: now,
+            payload: SafePayload::empty()
+                .with_reference("resource_id", &topic.id.to_string())
+                .map_err(|_| ContentError::Unavailable)?,
+            trace_id: String::new(),
+        };
+        platform_db::outbox_repo::enqueue(tx, &self.renderer, &event, &["cache.invalidate"])
+            .await
+            .map_err(|_| ContentError::Unavailable)?;
+        let post_event = OutboxEvent {
+            event_id: new_operation_id(),
+            aggregate_type: "post".into(),
+            aggregate_id: post.id.to_string(),
+            event_type: "cache.invalidate".into(),
+            version: 1,
+            occurred_at: now,
+            payload: SafePayload::empty(),
+            trace_id: String::new(),
+        };
+        platform_db::outbox_repo::enqueue(tx, &self.renderer, &post_event, &["cache.invalidate"])
+            .await
+            .map_err(|_| ContentError::Unavailable)?;
+        stored_success(post.id, post.version)
+    }
+    async fn filtered_markup(
+        &self,
+        tx: &mut TransactionConnection<'_>,
+        ctx: &ReadContext,
+        source: &str,
+        current_topic: Option<i64>,
+    ) -> Result<markdown::SafeMarkdown, ContentError> {
+        let rendered = markdown::render(source);
+        let mut allowed = BTreeSet::new();
+        for target in rendered
+            .links()
+            .iter()
+            .filter_map(|l| l.target())
+            .collect::<BTreeSet<_>>()
+        {
+            let post = match target {
+                markdown::LocalLinkTarget::Post { post_id } => {
+                    repo::post(tx, &self.renderer, post_id).await?
+                }
+                markdown::LocalLinkTarget::Topic { topic_id, floor } => {
+                    repo::post_at_floor(tx, &self.renderer, topic_id, floor.unwrap_or(1)).await?
+                }
+                markdown::LocalLinkTarget::CurrentTopicFloor { floor } => match current_topic {
+                    Some(topic_id) => {
+                        repo::post_at_floor(tx, &self.renderer, topic_id, floor).await?
+                    }
+                    None => None,
+                },
+            };
+            if let Some(post) = post {
+                match self.basic_post_visible(tx, ctx, &post).await {
+                    Ok(_) => {
+                        allowed.insert(target);
+                    }
+                    Err(ContentError::NotFound) => {}
+                    Err(e) => return Err(e),
+                }
+            }
+        }
+        Ok(markdown::render_filtered(source, |target| {
+            allowed.contains(&target)
+        }))
+    }
+    async fn target_links(
+        &self,
+        tx: &mut TransactionConnection<'_>,
+        ctx: &ReadContext,
+        rendered: &markdown::SafeMarkdown,
+        quote: Option<i64>,
+        destination: Visibility,
+        current_topic: Option<i64>,
+    ) -> Result<Vec<i64>, ContentError> {
+        let mut targets = BTreeSet::new();
+        if let Some(quote) = quote {
+            positive(quote)?;
+            targets.insert(quote);
+        }
+        for target in rendered.links().iter().filter_map(|link| link.target()) {
+            let id = match target {
+                markdown::LocalLinkTarget::CurrentTopicFloor { floor } => {
+                    let Some(topic_id) = current_topic else {
+                        return Err(ContentError::InvalidInput);
+                    };
+                    repo::post_at_floor(tx, &self.renderer, topic_id, floor)
+                        .await?
+                        .ok_or(ContentError::NotFound)?
+                        .id
+                }
+                markdown::LocalLinkTarget::Post { post_id } => post_id,
+                markdown::LocalLinkTarget::Topic { topic_id, floor } => {
+                    repo::post_at_floor(tx, &self.renderer, topic_id, floor.unwrap_or(1))
+                        .await?
+                        .ok_or(ContentError::NotFound)?
+                        .id
+                }
+            };
+            targets.insert(id);
+        }
+        for id in &targets {
+            let post = repo::post(tx, &self.renderer, *id)
+                .await?
+                .ok_or(ContentError::NotFound)?;
+            let (topic, _, visibility) = self.basic_post_visible(tx, ctx, &post).await?;
+            if post.publication != Publication::Published
+                || topic.state.publication != Publication::Published
+                || destination == Visibility::Public && visibility == Visibility::Members
+            {
+                return Err(ContentError::Forbidden);
+            }
+        }
+        Ok(targets.into_iter().collect())
+    }
+    async fn quota(
+        &self,
+        tx: &mut TransactionConnection<'_>,
+        rules: &ContentRules,
+        facts: &AuthorityFacts,
+        action: Action,
+        now: DateTime<Utc>,
+    ) -> Result<(), ContentError> {
+        if facts.publication != Publication::Published && !rules.count_pending {
+            return Ok(());
+        }
+        let offset = Duration::minutes(i64::from(rules.day_utc_offset_minutes));
+        let local = now
+            .checked_add_signed(offset)
+            .ok_or(ContentError::InvalidInput)?;
+        let start = local
+            .date_naive()
+            .and_hms_opt(0, 0, 0)
+            .ok_or(ContentError::InvalidInput)?
+            .and_utc()
+            - offset;
+        let until = start + Duration::days(1);
+        let topic = action == Action::CreateTopic;
+        let daily = match (facts.tier, topic) {
+            (TrustTier::T1, true) => rules.t1_daily_topics,
+            (TrustTier::T1, false) => rules.t1_daily_replies,
+            (_, true) => rules.t0_daily_topics,
+            (_, false) => rules.t0_daily_replies,
+        };
+        if repo::charges(tx, &self.renderer, facts.user_id, action, start, until).await? >= daily {
+            return Err(ContentError::QuotaExceeded);
+        }
+        if facts.tier == TrustTier::T0 && now < facts.created_at + Duration::hours(24) {
+            let maximum = if topic {
+                rules.early_topics
+            } else {
+                rules.early_replies
+            };
+            if repo::charges(
+                tx,
+                &self.renderer,
+                facts.user_id,
+                action,
+                facts.created_at,
+                facts.created_at + Duration::hours(24),
+            )
+            .await?
+                >= maximum
+            {
+                return Err(ContentError::QuotaExceeded);
+            }
+        }
+        Ok(())
+    }
+    pub async fn operation(
+        &self,
+        credentials: &Credentials,
+        action: Action,
+        operation_id: &str,
+        now: DateTime<Utc>,
+    ) -> Result<OperationStatus, ContentError> {
+        let now = canonical(now)?;
+        let mut tx = DbTransaction::begin(&self.pool).await?;
+        let mut c = tx.connection();
+        self.flags(&mut c, None).await?;
+        let facts = self
+            .authority
+            .authorize(&mut c, credentials, action, now)
+            .await?;
+        if !facts.allowed || !facts.email_verified {
+            return Err(ContentError::Forbidden);
+        }
+        let result = platform_db::idempotency_repo::query_result(
+            &mut c,
+            &self.renderer,
+            &OperationQuery {
+                actor_id: facts.user_id,
+                scope: format!("content.{}", action.as_str()),
+                idempotency_key: credentials.idempotency_key.clone(),
+                operation_id: operation_id.into(),
+            },
+            now,
+        )
+        .await?;
+        tx.rollback().await?;
+        Ok(result)
+    }
+}
+fn list_binding(filter: &ListFilter, viewer: &Viewer) -> Result<String, ContentError> {
+    let value = serde_json::to_vec(&(filter, viewer.user_id, viewer.member))
+        .map_err(|_| ContentError::InvalidCursor)?;
+    Ok(request_hash(&value))
+}
+fn topic_binding(id: i64, viewer: &Viewer) -> String {
+    request_hash(format!("topic:{id}:{:?}:{}", viewer.user_id, viewer.member).as_bytes())
+}
+fn forum_visibility(forums: &[Forum], id: i64) -> Result<Visibility, ContentError> {
+    let mut id = id;
+    let mut seen = BTreeSet::new();
+    let mut visibility = Visibility::Public;
+    loop {
+        if !seen.insert(id) || seen.len() > 64 {
+            return Err(ContentError::Unavailable);
+        }
+        let forum = forums
+            .iter()
+            .find(|f| f.id == id)
+            .ok_or(ContentError::NotFound)?;
+        if forum.status == "draft" {
+            return Err(ContentError::NotFound);
+        }
+        visibility = visibility.strictest(forum.visibility);
+        match forum.parent_id {
+            Some(parent) => id = parent,
+            None => return Ok(visibility),
+        }
+    }
+}
+async fn lock_forum(
+    tx: &mut TransactionConnection<'_>,
+    r: &SchemaRenderer,
+    forums: &[Forum],
+    id: i64,
+) -> Result<Visibility, ContentError> {
+    let visibility = forum_visibility(forums, id)?;
+    let mut ids = BTreeSet::new();
+    let mut current = id;
+    loop {
+        if !ids.insert(current) {
+            return Err(ContentError::Unavailable);
+        }
+        let forum = forums
+            .iter()
+            .find(|f| f.id == current)
+            .ok_or(ContentError::NotFound)?;
+        if forum.status != "active" {
+            return Err(ContentError::Forbidden);
+        }
+        match forum.parent_id {
+            Some(id) => current = id,
+            None => break,
+        }
+    }
+    for id in ids {
+        repo::lock(tx, r, "forums", id).await?;
+    }
+    Ok(visibility)
+}
+fn validate_tags(tags: &[Tag], input: &[i64]) -> Result<Vec<i64>, ContentError> {
+    let ids = input.iter().copied().collect::<BTreeSet<_>>();
+    if ids.len() != input.len() {
+        return Err(ContentError::InvalidInput);
+    }
+    for id in &ids {
+        positive(*id)?;
+        if !tags
+            .iter()
+            .any(|t| t.id == *id && !t.restricted && t.merged_into.is_none())
+        {
+            return Err(ContentError::Forbidden);
+        }
+    }
+    Ok(ids.into_iter().collect())
+}
+fn check_window(
+    created: DateTime<Utc>,
+    now: DateTime<Utc>,
+    seconds: i64,
+) -> Result<(), ContentError> {
+    if now < created
+        || now
+            >= created
+                .checked_add_signed(Duration::seconds(seconds))
+                .ok_or(ContentError::PolicyPending)?
+    {
+        Err(ContentError::Forbidden)
+    } else {
+        Ok(())
+    }
+}
+fn stored_failure(status_code: u16) -> Result<StoredResponse, ContentError> {
+    Ok(StoredResponse {
+        status_code,
+        body: SafePayload::empty()
+            .with_outcome(Outcome::Failure)
+            .to_json()
+            .map_err(|_| ContentError::Unavailable)?,
+    })
+}
+fn stored_success(post: i64, version: i64) -> Result<StoredResponse, ContentError> {
+    Ok(StoredResponse {
+        status_code: 200,
+        body: SafePayload::empty()
+            .with_outcome(Outcome::Success)
+            .with_reference("resource_id", &post.to_string())
+            .and_then(|p| p.with_reference("version", &version.to_string()))
+            .and_then(|p| p.to_json())
+            .map_err(|_| ContentError::Unavailable)?,
+    })
+}
+#[cfg(test)]
+mod tests;

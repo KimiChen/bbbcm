@@ -1,0 +1,81 @@
+
+== 1/7 格式化检查
+
+== 2/7 Clippy -D warnings
+    Checking platform v0.1.0 (<repository>/crates/platform)
+    Checking platform-db v0.1.0 (<repository>/crates/platform-db)
+    Checking platform-outbox v0.1.0 (<repository>/crates/platform-outbox)
+    Checking platform-audit v0.1.0 (<repository>/crates/platform-audit)
+    Checking media v0.1.0 (<repository>/crates/media)
+    Checking support v0.1.0 (<repository>/crates/support)
+    Checking interaction v0.1.0 (<repository>/crates/interaction)
+    Checking privacy v0.1.0 (<repository>/crates/privacy)
+    Checking manage v0.1.0 (<repository>/crates/manage)
+    Checking trust v0.1.0 (<repository>/crates/trust)
+    Checking content v0.1.0 (<repository>/crates/content)
+    Checking moderation v0.1.0 (<repository>/crates/moderation)
+    Checking bbbcm-cli v0.1.0 (<repository>/apps/bbbcm-cli)
+    Checking identity v0.1.0 (<repository>/crates/identity)
+    Checking bbbcm-worker v0.1.0 (<repository>/apps/bbbcm-worker)
+    Checking bbbcm-web v0.1.0 (<repository>/apps/web)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 7.12s
+
+== 3/7 单元测试
+   Compiling platform v0.1.0 (<repository>/crates/platform)
+   Compiling platform-db v0.1.0 (<repository>/crates/platform-db)
+   Compiling platform-outbox v0.1.0 (<repository>/crates/platform-outbox)
+   Compiling platform-audit v0.1.0 (<repository>/crates/platform-audit)
+   Compiling media v0.1.0 (<repository>/crates/media)
+   Compiling support v0.1.0 (<repository>/crates/support)
+   Compiling interaction v0.1.0 (<repository>/crates/interaction)
+   Compiling privacy v0.1.0 (<repository>/crates/privacy)
+   Compiling manage v0.1.0 (<repository>/crates/manage)
+   Compiling trust v0.1.0 (<repository>/crates/trust)
+   Compiling moderation v0.1.0 (<repository>/crates/moderation)
+   Compiling content v0.1.0 (<repository>/crates/content)
+   Compiling identity v0.1.0 (<repository>/crates/identity)
+   Compiling bbbcm-cli v0.1.0 (<repository>/apps/bbbcm-cli)
+   Compiling bbbcm-worker v0.1.0 (<repository>/apps/bbbcm-worker)
+   Compiling bbbcm-web v0.1.0 (<repository>/apps/web)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 15.59s
+     Running unittests src/main.rs (target/debug/deps/bbbcm_cli-ee791bc011b572e1)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/a05_trace.rs (target/debug/deps/a05_trace-8855a321c0f23f94)
+
+running 2 tests
+test upstream_trace_is_preserved_and_invalid_task_ids_never_enter_events ... ok
+test generated_request_trace_reaches_committed_event_and_real_sink_with_background_fallback ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+     Running tests/database_cli.rs (target/debug/deps/database_cli-95672e17b94ab8cf)
+
+running 6 tests
+test production_seed_rejected_before_database_connection ... ok
+test cli_uses_local_override_and_rejects_secrets_in_files ... ok
+test flag_list_distinguishes_persisted_value_and_missing_row ... ok
+test flag_list_reads_storage_and_fails_without_schema ... ok
+test cli_migrates_reports_and_seeds_repeatedly ... FAILED
+test implicit_postgres_environment_cannot_bypass_shared_config ... ok
+
+failures:
+
+---- cli_migrates_reports_and_seeds_repeatedly stdout ----
+
+thread 'cli_migrates_reports_and_seeds_repeatedly' (2741394) panicked at apps/bbbcm-cli/tests/database_cli.rs:69:5:
+assertion failed: succeeds(f.db(&["migrate", "--backend",
+                        "sqlite"])).contains("应用 [1, 2, 3, 4, 5, 6, 7, 8]")
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    cli_migrates_reports_and_seeds_repeatedly
+
+test result: FAILED. 5 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.09s
+
+error: test failed, to rerun pass `-p bbbcm-cli --test database_cli`
+✗ 单元测试失败

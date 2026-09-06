@@ -33,3 +33,6 @@ mod http_tests;
 
 #[cfg(test)]
 mod approved_tests;
+
+#[cfg(test)]
+mod content_access_tests;

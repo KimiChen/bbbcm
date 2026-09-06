@@ -16,18 +16,18 @@ use platform::error::AppError;
 
 use crate::app_state::AppState;
 use crate::assets::Assets;
+#[cfg(test)]
 use crate::contract::{HomeTemplate, PageFrame};
 use crate::error::ApiError;
 use crate::fixtures::{self, FixtureQuery};
 
 pub fn router(state: Arc<AppState>) -> Router {
     let app = Router::new()
-        .route("/", get(home))
         .route("/health", get(health))
         .merge(crate::status::router())
         .merge(crate::assets::router())
         .merge(identity::http::router(state.identity.clone()))
-        .merge(content::http::router())
+        .merge(content::http::router(state.content.clone()))
         .merge(media::http::router())
         .merge(interaction::http::router())
         .merge(moderation::http::router())
@@ -60,15 +60,6 @@ pub(crate) fn render<T: Template>(template: &T, assets: &Assets) -> Result<Html<
         .render_with_values(&("assets", assets as &dyn std::any::Any))
         .map(Html)
         .map_err(|err| ApiError(AppError::Internal(format!("模板渲染失败: {err}"))))
-}
-
-async fn home(State(state): State<Arc<AppState>>) -> Result<Html<String>, ApiError> {
-    render(
-        &HomeTemplate {
-            frame: PageFrame::default(),
-        },
-        &state.assets,
-    )
 }
 
 async fn fixture(
@@ -177,9 +168,9 @@ mod tests {
                 }
             }
             let home = request(&app, "/").await;
-            assert_eq!(home.status(), StatusCode::OK);
+            assert_eq!(home.status(), StatusCode::NOT_FOUND);
             let home = body(home).await;
-            assert!(home.contains("骨架首页"));
+            assert!(!home.contains("骨架首页"));
             assert!(!home.contains(fixtures::FIXTURE_VERSION));
         }
     }

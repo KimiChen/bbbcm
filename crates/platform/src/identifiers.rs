@@ -194,7 +194,67 @@ pub const TABLES: &[TableRegistration] = &[
     },
     TableRegistration {
         schema: "community",
+        table: "commit_state",
+        identity_column: Some("id"),
+    },
+    TableRegistration {
+        schema: "community",
         table: "forums",
+        identity_column: Some("id"),
+    },
+    TableRegistration {
+        schema: "community",
+        table: "tags",
+        identity_column: Some("id"),
+    },
+    TableRegistration {
+        schema: "community",
+        table: "tag_aliases",
+        identity_column: None,
+    },
+    TableRegistration {
+        schema: "community",
+        table: "topics",
+        identity_column: Some("id"),
+    },
+    TableRegistration {
+        schema: "community",
+        table: "posts",
+        identity_column: Some("id"),
+    },
+    TableRegistration {
+        schema: "community",
+        table: "post_revisions",
+        identity_column: Some("id"),
+    },
+    TableRegistration {
+        schema: "community",
+        table: "topic_tags",
+        identity_column: None,
+    },
+    TableRegistration {
+        schema: "community",
+        table: "topic_history",
+        identity_column: None,
+    },
+    TableRegistration {
+        schema: "community",
+        table: "publication_receipts",
+        identity_column: None,
+    },
+    TableRegistration {
+        schema: "community",
+        table: "search_documents",
+        identity_column: None,
+    },
+    TableRegistration {
+        schema: "community",
+        table: "post_links",
+        identity_column: None,
+    },
+    TableRegistration {
+        schema: "moderation",
+        table: "content_restrictions",
         identity_column: Some("id"),
     },
     TableRegistration {
@@ -206,6 +266,14 @@ pub const TABLES: &[TableRegistration] = &[
 
 /// 仅本轮引擎所需索引；迁移与表注册同时版本化。
 pub const INDEXES: &[(&str, &str)] = &[
+    ("community", "topic_forum_idx"),
+    ("community", "topic_owner_idx"),
+    ("community", "post_floor_idx"),
+    ("community", "post_owner_idx"),
+    ("community", "history_topic_idx"),
+    ("community", "publication_owner_idx"),
+    ("community", "search_topic_idx"),
+    ("moderation", "content_restriction_owner_idx"),
     ("identity", "session_owner_idx"),
     ("identity", "invite_owner_idx"),
     ("identity", "token_owner_idx"),

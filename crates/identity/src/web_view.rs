@@ -54,6 +54,7 @@ pub struct Page {
     pub show_form: bool,
     pub policy_consent: bool,
     pub preset_avatar: bool,
+    pub public_content_root: Option<String>,
 }
 impl Page {
     pub fn new(title: &'static str, action: &'static str) -> Self {
@@ -70,6 +71,7 @@ impl Page {
             show_form: true,
             policy_consent: false,
             preset_avatar: false,
+            public_content_root: None,
         }
     }
 }

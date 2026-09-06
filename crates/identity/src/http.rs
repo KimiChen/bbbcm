@@ -895,12 +895,13 @@ async fn public_profile(State(state): State<IdentityWebState>, Path(id): Path<St
         let mut page = Page::new("用户资料", "");
         page.show_form = false;
         page.preset_avatar = true;
+        page.public_content_root = Some(format!("/u/{}", profile.public_ref));
         page.rows = vec![
             row("信任等级", trust_label(profile.trust_level)),
             row("用户名", profile.username),
             row("简介", profile.bio),
             row("加入时间", profile.joined_at.to_string()),
-            row("内容资料", "主题、回帖和贡献统计尚未接入"),
+            row("贡献统计", "贡献统计尚未接入"),
         ];
         Ok(response(&state, &page, StatusCode::OK))
     }

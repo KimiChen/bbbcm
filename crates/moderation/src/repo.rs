@@ -46,3 +46,33 @@ pub(crate) async fn current_documents(
     }
     Ok(documents.into_values().collect())
 }
+
+pub(crate) async fn content_restricted(
+    tx: &mut TransactionConnection<'_>,
+    renderer: &SchemaRenderer,
+    user_id: i64,
+    capability: crate::contract::ContentCapability,
+    now: chrono::DateTime<chrono::Utc>,
+) -> Result<bool, platform_db::transaction::TransactionError> {
+    let table = renderer.table(tx.backend(), "moderation", "content_restrictions")?;
+    let rows = tx.fetch_all(&format!("SELECT id FROM {table} WHERE user_id = ? AND (capability = ? OR capability = ?) AND revoked = ? AND starts_at <= ? AND expires_at > ? ORDER BY id"),
+        &[user_id.into(),DbValue::Text("content".into()),DbValue::Text(capability.as_str().into()),DbValue::Bool(false),DbValue::Time(now),DbValue::Time(now)]).await?;
+    Ok(!rows.is_empty())
+}
+
+pub(crate) async fn published_forum_rule(
+    tx: &mut TransactionConnection<'_>,
+    renderer: &SchemaRenderer,
+    forum_id: i64,
+) -> Result<Option<String>, platform_db::transaction::TransactionError> {
+    let table = renderer.table(tx.backend(), "moderation", "rule_versions")?;
+    tx.fetch_optional(
+        &format!(
+            "SELECT body FROM {table} WHERE forum_id = ? AND status = ? ORDER BY version DESC"
+        ),
+        &[forum_id.into(), DbValue::Text("published".into())],
+    )
+    .await?
+    .map(|row| row.text("body"))
+    .transpose()
+}

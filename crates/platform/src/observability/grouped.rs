@@ -95,12 +95,21 @@ pub enum HttpRoute {
     Profile,
     Policy,
     Invitation,
+    ContentList,
+    ContentDetail,
+    ContentEditor,
+    ContentOperation,
     Other,
 }
 impl HttpRoute {
     pub fn from_path(path: &str) -> Self {
         match path {
             "/" => Self::Home,
+            "/new" | "/pinned" | "/featured" | "/me/topics" | "/me/posts" | "/me/replies" => {
+                Self::ContentList
+            }
+            "/topics/new" => Self::ContentEditor,
+            "/content/operations" => Self::ContentOperation,
             "/status" => Self::Status,
             "/health" | "/health/live" | "/health/ready" => Self::Health,
             "/__diagnostics/metrics" => Self::Diagnostics,
@@ -133,10 +142,24 @@ impl HttpRoute {
             {
                 Self::Profile
             }
+            p if content_route(p).is_some() => content_route(p).unwrap_or(Self::Other),
             p if p.starts_with("/__fixtures/a00/") => Self::Fixture,
             p if p.starts_with("/assets/") => Self::Asset,
             _ => Self::Other,
         }
+    }
+}
+fn content_route(path: &str) -> Option<HttpRoute> {
+    let segments: Vec<_> = path.strip_prefix('/')?.split('/').collect();
+    let valid = |s: &str| !s.is_empty() && !s.contains(['?', '#']);
+    match segments.as_slice() {
+        ["forums" | "tags", id] if valid(id) => Some(HttpRoute::ContentList),
+        ["u", id, "topics" | "posts" | "replies"] if valid(id) => Some(HttpRoute::ContentList),
+        ["topics" | "posts", id] if valid(id) => Some(HttpRoute::ContentDetail),
+        ["topics", id, "reply"] | ["posts", id, "edit" | "delete"] if valid(id) => {
+            Some(HttpRoute::ContentEditor)
+        }
+        _ => None,
     }
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
@@ -461,6 +484,36 @@ impl PoolRegistry {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn content_metrics_never_carry_titles_slugs_owners_or_queries() {
+        for (path, expected) in [
+            ("/new", HttpRoute::ContentList),
+            ("/pinned", HttpRoute::ContentList),
+            ("/featured", HttpRoute::ContentList),
+            ("/me/topics", HttpRoute::ContentList),
+            ("/forums/PRIVATE_SENTINEL", HttpRoute::ContentList),
+            ("/tags/PRIVATE_SENTINEL", HttpRoute::ContentList),
+            ("/u/PRIVATE_SENTINEL/topics", HttpRoute::ContentList),
+            ("/topics/PRIVATE_SENTINEL", HttpRoute::ContentDetail),
+            ("/posts/PRIVATE_SENTINEL", HttpRoute::ContentDetail),
+            ("/topics/new", HttpRoute::ContentEditor),
+            ("/topics/PRIVATE_SENTINEL/reply", HttpRoute::ContentEditor),
+            ("/posts/PRIVATE_SENTINEL/edit", HttpRoute::ContentEditor),
+            ("/posts/PRIVATE_SENTINEL/delete", HttpRoute::ContentEditor),
+            ("/content/operations", HttpRoute::ContentOperation),
+            ("/topics/PRIVATE_SENTINEL/arbitrary", HttpRoute::Other),
+            ("/topics/PRIVATE_SENTINEL?cursor=secret", HttpRoute::Other),
+        ] {
+            let actual = HttpRoute::from_path(path);
+            assert_eq!(actual, expected);
+            assert!(
+                !serde_json::to_string(&actual)
+                    .unwrap()
+                    .contains("PRIVATE_SENTINEL")
+            );
+        }
+    }
 
     #[test]
     fn identity_routes_are_closed_and_dynamic_identifiers_never_escape() {

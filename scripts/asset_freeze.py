@@ -32,9 +32,13 @@ def check():
                 changed.append(name)
                 continue
         raise AssertionError(f'A00 freeze drift beyond asset URL wiring: {name}')
-    # A05/B01 add explicitly scoped status and identity pages; the complete original A00 inventory
+    # A05/B01/C01 add explicitly scoped pages; the complete original A00 inventory
     # and every original byte/structure stay frozen. Other additions still fail closed.
-    additions = {'apps/web/templates/status/index.html', 'apps/web/templates/auth/live.html'}
+    additions = {'apps/web/templates/status/index.html', 'apps/web/templates/auth/live.html',
+                 'apps/web/templates/content/page.html', 'apps/web/templates/content/header.html',
+                 'apps/web/templates/content/sidebar.html', 'apps/web/templates/content/list.html',
+                 'apps/web/templates/content/pagination.html', 'apps/web/templates/content/topic.html',
+                 'apps/web/templates/content/editor.html'}
     inventory = {p.relative_to(ROOT).as_posix() for p in (ROOT / 'apps/web/templates').rglob('*.html')}
     assert inventory == set(freeze['template_tag_order']) | additions
     original_classes = set()

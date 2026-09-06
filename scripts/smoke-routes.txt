@@ -5,7 +5,7 @@
 /assets/unknown.css 404
 /assets/manifest.json 404
 /assets/%2e%2e%2f.env 400
-/ 200
+/ 404
 
 # WP-MVP-A00: stable synthetic SSR, test environment only
 /__fixtures/a00/home 200
@@ -22,6 +22,23 @@
 /__fixtures/a00/empty 200
 /__fixtures/a00/error 200
 /__fixtures/a00/profile 200
+
+# C01/C02 public and owner routes remain closed in the default isolated database.
+/new 404
+/pinned 404
+/featured 404
+/forums/practice 404
+/tags/synthetic 404
+/topics/1 404
+/topics/new 404
+/topics/1/reply 404
+/posts/1 404
+/posts/1/edit 404
+/posts/1/delete 404
+/me/topics 404
+/me/posts 404
+/u/synthetic/topics 404
+/u/synthetic/posts 404
 /__fixtures/a00/assets/fonts.css 200
 /__fixtures/a00/assets/pages.css 200
 /__fixtures/a00/assets/profile.css 200

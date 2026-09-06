@@ -1462,3 +1462,7 @@ fn risk_response(event: &trust::risk::RiskEvent) -> StoredResponse {
     }
     response
 }
+
+#[path = "content_access.rs"]
+mod content_access;
+pub use content_access::*;

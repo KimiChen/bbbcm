@@ -20,14 +20,14 @@ async fn flags_snapshot_migration_registry_restart_missing_and_corruption() {
                 .await
                 .unwrap()
                 .applied,
-            [1, 2, 3, 4, 5, 6, 7, 8]
+            [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         );
         assert_eq!(
             crate::migrations::migrate(&cfg, &migrations)
                 .await
                 .unwrap()
                 .skipped,
-            [1, 2, 3, 4, 5, 6, 7, 8]
+            [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         );
         let r = SchemaRenderer::new(prefix).unwrap();
         let pool = Pool::connect(&cfg).await.unwrap();

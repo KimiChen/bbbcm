@@ -90,6 +90,35 @@ fn defaults_are_safe_experience_mode() {
     config.validate_for(ProcessKind::Web).unwrap();
     config.validate_for(ProcessKind::Cli).unwrap();
 }
+
+#[test]
+fn content_cursor_secret_is_optional_injected_separate_and_redacted() {
+    let fixture = Fixture::new();
+    let base = fixture.file("content.toml", "");
+    let key = "c".repeat(64);
+    let variables = variables(&[("BBBCM_CONTENT_CURSOR_KEY", &key)]);
+    let config = Config::load_layers(
+        &base,
+        None,
+        &variables,
+        SecretOverrides::from_variables(&variables),
+    )
+    .unwrap();
+    assert_eq!(config.content.cursor_key.as_deref(), Some(key.as_str()));
+    config.validate().unwrap();
+    assert!(!format!("{config:?}").contains(&key));
+    assert!(parse("[content]\ncursor_key='do-not-print'\n").is_err());
+    let mut invalid = Config::default();
+    invalid.content.cursor_key = Some("short-private-value".to_string().into());
+    let error = invalid.validate().unwrap_err();
+    assert!(!format!("{error:?} {error}").contains("short-private-value"));
+    invalid.content.cursor_key = Some(key.clone().into());
+    invalid.identity.risk_key = Some(key.into());
+    assert!(
+        invalid.validate().is_err(),
+        "cursor and risk keys cannot be reused"
+    );
+}
 #[test]
 fn precedence_defaults_file_local_environment_and_secret() {
     let fixture = Fixture::new();

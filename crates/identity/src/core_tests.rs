@@ -229,7 +229,7 @@ impl Fixture {
         tx.rollback().await.unwrap();
         (id, raw.expose().into())
     }
-    async fn login(&self) -> (SessionGrant, SessionIdentity) {
+    pub(crate) async fn login(&self) -> (SessionGrant, SessionIdentity) {
         let c = self.context().await;
         let result = self
             .service

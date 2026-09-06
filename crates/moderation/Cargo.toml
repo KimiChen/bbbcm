@@ -10,7 +10,7 @@ publish.workspace = true
 axum.workspace = true
 platform.workspace = true
 platform-db.workspace = true
+chrono.workspace = true
 
 [dev-dependencies]
 tokio.workspace = true
-chrono.workspace = true
