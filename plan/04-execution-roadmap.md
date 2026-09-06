@@ -51,8 +51,8 @@ WP-MVP-A00 参考标的本地化（开发第一步，无依赖）
 | `WP-MVP-B03` | `WP-MVP-A03`、`WP-MVP-A04`、`WP-MVP-A05` |
 | `WP-MVP-B04` | `WP-MVP-A03`、`WP-MVP-A04`、`WP-MVP-A05`、A06 已交付事件字典/分析流水线/本地适配器/邮件代码面（DEC-050）；B06 身份必需合同先冻结，AUTH-008 借 MOD-010 最小政策版本读取 |
 | `WP-MVP-B06` | `WP-MVP-A04`、`WP-MVP-A05`、`WP-MVP-B01`、`WP-MVP-B02` |
-| `WP-MVP-C01` | `WP-MVP-A00`、`WP-MVP-A01`、`WP-MVP-A02` |
-| `WP-MVP-C02` | `WP-MVP-A03`、`WP-MVP-A04`、`WP-MVP-B01`、`WP-MVP-B06` |
+| `WP-MVP-C01` | `WP-MVP-A00`、`WP-MVP-A01`、A02已交付配置/Secrets/Flag只读合同（DEC-052，不等待整包） |
+| `WP-MVP-C02` | A03/A04；B01/B02/B06已交付普通身份/邮箱验证/信任快照/风险合同（DEC-052，不等待整包）；前移C03安全Markdown/预览、借C05权威搜索文档、接B04列表/MOD-009额度 |
 | `WP-MVP-B05` | `WP-MVP-B01`、`WP-MVP-B04`、`WP-MVP-C01`、`WP-MVP-C02` |
 | `WP-MVP-C03` | `WP-MVP-A04`、`WP-MVP-A06`、`WP-MVP-B04`、`WP-MVP-C02` |
 | `WP-MVP-C04` | `WP-MVP-A04`、`WP-MVP-B04`、`WP-MVP-B06`、`WP-MVP-C02` |
@@ -276,6 +276,8 @@ WP-MVP-A00 参考标的本地化（开发第一步，无依赖）
 硬化阶段（`WP-MVP-E01`）：规则版本与输入快照可解释，账号/IP/设备/网段不被单信号封禁，注册与高风险写在风控依赖失败时关闭，普通公开读取可降级。
 
 ## 6. MVP 内容工作包
+
+DEC-052本轮先冻结共享合同，再并行C01公共SSR、C02内容事务与C03安全编辑切片；借C05权威搜索文档，同轮接B04真实内容列表及MOD-009额度。内容政策待决见DEC-053，只暂停受影响分支。精确接口/权限/锁序/状态条件见99 §5.9，不把借入切片视为整包交付。
 
 ### `WP-MVP-C01` 品牌外壳与公共读取
 
