@@ -1,5 +1,9 @@
 //! WP-MVP-D01 举报与案件的隔离测试。
 use super::*;
+use crate::authority::{
+    ManagementActor, ManagementAuthority, ManagementCapability, ManagementCredentials,
+    ManagementTarget,
+};
 use crate::case_repo;
 use platform::config::Config;
 use platform_db::{
@@ -56,6 +60,59 @@ impl Fixture {
 impl Drop for Fixture {
     fn drop(&mut self) {
         let _ = std::fs::remove_dir_all(&self.dir);
+    }
+}
+/// 合成管理授权：显式标注的测试实现，永不作为运行时装配。
+///
+/// `allow` 关闭时模拟「未装配或无权」，用来验证治理命令在授权失败时整体不生效。
+struct SyntheticAuthority {
+    user_id: i64,
+    allow: std::sync::atomic::AtomicBool,
+    /// 观察到的授权请求，供测试断言「用了哪项能力、目标带没带当前版块」。
+    seen: std::sync::Mutex<Vec<(ManagementCapability, ManagementTarget)>>,
+}
+impl SyntheticAuthority {
+    fn new(user_id: i64) -> Self {
+        Self {
+            user_id,
+            allow: std::sync::atomic::AtomicBool::new(true),
+            seen: std::sync::Mutex::new(Vec::new()),
+        }
+    }
+    fn set(&self, allow: bool) {
+        self.allow.store(allow, std::sync::atomic::Ordering::SeqCst);
+    }
+}
+impl ManagementAuthority for SyntheticAuthority {
+    fn authorize<'a>(
+        &'a self,
+        _tx: &'a mut TransactionConnection<'_>,
+        _credentials: &'a ManagementCredentials,
+        capability: ManagementCapability,
+        target: ManagementTarget,
+        _now: DateTime<Utc>,
+    ) -> crate::authority::FutureResult<'a, ManagementActor> {
+        Box::pin(async move {
+            self.seen
+                .lock()
+                .map_err(|_| ModerationError::Unavailable)?
+                .push((capability, target));
+            if !self.allow.load(std::sync::atomic::Ordering::SeqCst) {
+                return Err(ModerationError::Denied);
+            }
+            Ok(ManagementActor {
+                user_id: self.user_id,
+            })
+        })
+    }
+}
+fn credentials() -> ManagementCredentials {
+    ManagementCredentials::new("synthetic-management-session", "synthetic-management-csrf")
+}
+fn target(resource_id: i64, forum_id: Option<i64>) -> ManagementTarget {
+    ManagementTarget {
+        resource_id,
+        forum_id,
     }
 }
 fn at() -> DateTime<Utc> {
@@ -278,43 +335,151 @@ async fn case_status_transitions_are_closed_and_closed_is_terminal() {
     .unwrap();
 
     // 非法迁移被拒绝，且不改变状态。
-    assert!(
-        advance_status(&mut c, &f.renderer, outcome.case_id, Appealed, at())
-            .await
-            .is_err()
+    let authority = SyntheticAuthority::new(f.b);
+    let scope = target(outcome.case_id, Some(3));
+
+    // 未授权时治理命令整体不生效——失败关闭，不做部分修改。
+    authority.set(false);
+    assert_eq!(
+        advance_status(
+            &mut c,
+            &f.renderer,
+            &authority,
+            &credentials(),
+            scope,
+            outcome.case_id,
+            Investigating,
+            at(),
+        )
+        .await
+        .unwrap_err(),
+        ModerationError::Denied
     );
-    advance_status(&mut c, &f.renderer, outcome.case_id, Investigating, at())
+    assert_eq!(
+        case_repo::case(&mut c, &f.renderer, outcome.case_id)
+            .await
+            .unwrap()
+            .unwrap()
+            .status,
+        Triage,
+        "被拒的命令不得改变状态"
+    );
+    authority.set(true);
+
+    // 非法迁移被拒绝，且不改变状态。
+    assert!(
+        advance_status(
+            &mut c,
+            &f.renderer,
+            &authority,
+            &credentials(),
+            scope,
+            outcome.case_id,
+            Appealed,
+            at(),
+        )
         .await
-        .unwrap();
-    assign(&mut c, &f.renderer, outcome.case_id, f.b, at())
-        .await
-        .unwrap();
-    add_note(&mut c, &f.renderer, outcome.case_id, f.b, "内部结论", at())
-        .await
-        .unwrap();
+        .is_err()
+    );
+    advance_status(
+        &mut c,
+        &f.renderer,
+        &authority,
+        &credentials(),
+        scope,
+        outcome.case_id,
+        Investigating,
+        at(),
+    )
+    .await
+    .unwrap();
+    assign(
+        &mut c,
+        &f.renderer,
+        &authority,
+        &credentials(),
+        scope,
+        outcome.case_id,
+        f.b,
+        at(),
+    )
+    .await
+    .unwrap();
+    add_note(
+        &mut c,
+        &f.renderer,
+        &authority,
+        &credentials(),
+        scope,
+        outcome.case_id,
+        "内部结论",
+        at(),
+    )
+    .await
+    .unwrap();
     // 空备注与超长备注拒绝。
     assert!(
-        add_note(&mut c, &f.renderer, outcome.case_id, f.b, "   ", at())
-            .await
-            .is_err()
+        add_note(
+            &mut c,
+            &f.renderer,
+            &authority,
+            &credentials(),
+            scope,
+            outcome.case_id,
+            "   ",
+            at(),
+        )
+        .await
+        .is_err()
     );
+    // 三个命令都用 WriteCase 能力，且目标带上了当前版块。
+    let seen = authority.seen.lock().unwrap().clone();
+    assert!(seen.iter().all(
+        |(capability, t)| *capability == ManagementCapability::WriteCase && t.forum_id == Some(3)
+    ));
 
-    advance_status(&mut c, &f.renderer, outcome.case_id, Resolved, at())
+    for next in [Resolved, Closed] {
+        advance_status(
+            &mut c,
+            &f.renderer,
+            &authority,
+            &credentials(),
+            scope,
+            outcome.case_id,
+            next,
+            at(),
+        )
         .await
         .unwrap();
-    advance_status(&mut c, &f.renderer, outcome.case_id, Closed, at())
-        .await
-        .unwrap();
+    }
     // 终态之后不能再指派、不能再迁移。
     assert!(
-        assign(&mut c, &f.renderer, outcome.case_id, f.a, at())
-            .await
-            .is_err()
+        assign(
+            &mut c,
+            &f.renderer,
+            &authority,
+            &credentials(),
+            scope,
+            outcome.case_id,
+            f.a,
+            at(),
+        )
+        .await
+        .is_err()
     );
     assert!(
-        advance_status(&mut c, &f.renderer, outcome.case_id, Investigating, at())
-            .await
-            .is_err()
+        advance_status(
+            &mut c,
+            &f.renderer,
+            &authority,
+            &credentials(),
+            scope,
+            outcome.case_id,
+            Investigating,
+            at(),
+        )
+        .await
+        .is_err()
     );
 
     // 关闭后新举报另开案件，不复活终态案件。

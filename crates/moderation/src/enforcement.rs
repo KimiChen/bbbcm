@@ -3,7 +3,12 @@
 //! 本模块是处置的唯一事实源：内容状态与账号限制都由这里驱动，不存在第二条修改路径。
 //! 授权判定属 `WP-MVP-D04` 的权限 registry，调用方负责；本模块只保证
 //! 「记录完整、职责分离、历史只追加」。
-use crate::contract::ModerationError;
+use crate::{
+    authority::{
+        ManagementAuthority, ManagementCapability, ManagementCredentials, ManagementTarget,
+    },
+    contract::ModerationError,
+};
 use chrono::{DateTime, Utc};
 use platform::identifiers::SchemaRenderer;
 use platform_db::transaction::TransactionConnection;
@@ -162,9 +167,13 @@ impl TargetKind {
 /// 校验的是「记录本身是否自洽」：作用面与目标类型必须匹配，需要期限的动作必须带期限，
 /// 不该带期限的动作不得带。真正的状态变更由调用方在同一事务内完成——本函数只保证
 /// 「没有无记录的处罚」，不保证「没有无处罚的状态变更」，后者靠调用路径唯一性保证。
+#[allow(clippy::too_many_arguments)]
 pub async fn record(
     tx: &mut TransactionConnection<'_>,
     r: &SchemaRenderer,
+    authority: &dyn ManagementAuthority,
+    credentials: &ManagementCredentials,
+    target: ManagementTarget,
     input: &Enforcement,
     now: DateTime<Utc>,
 ) -> Result<i64, ModerationError> {
@@ -187,6 +196,21 @@ pub async fn record(
     if input.expires_at.is_some_and(|at| at <= now) {
         return Err(ModerationError::InvalidInput);
     }
+    // 账号级处置在 registry 中标记为高危，因此会额外要求一条第三方审批；
+    // 内容级处置不需要。能力按作用面选择，而不是让调用方指定。
+    let capability = if input.action.targets_account() {
+        ManagementCapability::EnforceAccount
+    } else {
+        ManagementCapability::EnforceContent
+    };
+    let actor = authority
+        .authorize(tx, credentials, capability, target, now)
+        .await?;
+    // 执行人以授权结果为准：调用方声称的 operator_id 必须与之一致，
+    // 否则处置记录里的「谁做的」就成了自报，事后追责失去意义。
+    if actor.user_id != input.operator_id {
+        return Err(ModerationError::Denied);
+    }
     crate::enforcement_repo::insert_action(tx, r, input, canonical(now)?).await
 }
 
@@ -194,26 +218,40 @@ pub async fn record(
 ///
 /// 写撤销人与撤销原因，不删除原记录。撤销后限制立即停止生效，但「曾经被处罚过」
 /// 这一事实必须留存，否则申诉与复盘都失去依据。
+#[allow(clippy::too_many_arguments)]
 pub async fn revoke(
     tx: &mut TransactionConnection<'_>,
     r: &SchemaRenderer,
+    authority: &dyn ManagementAuthority,
+    credentials: &ManagementCredentials,
+    target: ManagementTarget,
     action_id: i64,
-    revoked_by: i64,
     reason: &str,
     now: DateTime<Utc>,
 ) -> Result<(), ModerationError> {
     let reason = reason.trim();
-    if revoked_by <= 0 || reason.is_empty() || reason.chars().count() > 512 {
+    if reason.is_empty() || reason.chars().count() > 512 {
         return Err(ModerationError::InvalidInput);
     }
+    let now = canonical(now)?;
     let action = crate::enforcement_repo::action(tx, r, action_id)
         .await?
         .ok_or(ModerationError::NotFound)?;
     if action.revoked {
         return Err(ModerationError::InvalidInput);
     }
-    crate::enforcement_repo::revoke_action(tx, r, &action, revoked_by, reason, canonical(now)?)
-        .await
+    // 撤销与施加同级：撤销一次账号级处置同样要求账号级权限（及其审批），
+    // 否则「能撤销但不能施加」会成为绕过审批的旁路。
+    let capability = if action.action.targets_account() {
+        ManagementCapability::EnforceAccount
+    } else {
+        ManagementCapability::EnforceContent
+    };
+    // 撤销人以授权结果为准，不接受调用方自报。
+    let actor = authority
+        .authorize(tx, credentials, capability, target, now)
+        .await?;
+    crate::enforcement_repo::revoke_action(tx, r, &action, actor.user_id, reason, now).await
 }
 
 /// 提交一次申诉（`MOD-011`：每次处罚只有一次正常申诉）。
@@ -268,21 +306,32 @@ pub async fn submit_appeal(
 pub async fn review_appeal(
     tx: &mut TransactionConnection<'_>,
     r: &SchemaRenderer,
+    authority: &dyn ManagementAuthority,
+    credentials: &ManagementCredentials,
+    target: ManagementTarget,
     appeal_id: i64,
-    reviewer_id: i64,
     outcome: AppealOutcome,
     note: &str,
     reduced_expiry: Option<DateTime<Utc>>,
     now: DateTime<Utc>,
 ) -> Result<(), ModerationError> {
     let note = note.trim();
-    if reviewer_id <= 0
-        || outcome == AppealOutcome::Pending
-        || note.is_empty()
-        || note.chars().count() > 4_000
-    {
+    if outcome == AppealOutcome::Pending || note.is_empty() || note.chars().count() > 4_000 {
         return Err(ModerationError::InvalidInput);
     }
+    let now = canonical(now)?;
+    // 复核人以授权结果为准。MOD-011 的职责分离靠「复核人 ≠ 原处置人」成立，
+    // 如果复核人身份由调用方自报，这条约束就形同虚设。
+    let reviewer_id = authority
+        .authorize(
+            tx,
+            credentials,
+            ManagementCapability::ReviewAppeal,
+            target,
+            now,
+        )
+        .await?
+        .user_id;
     let appeal = crate::enforcement_repo::appeal(tx, r, appeal_id)
         .await?
         .ok_or(ModerationError::NotFound)?;
@@ -296,7 +345,6 @@ pub async fn review_appeal(
     if reviewer_id == action.operator_id || reviewer_id == appeal.appellant_id {
         return Err(ModerationError::InvalidInput);
     }
-    let now = canonical(now)?;
     match outcome {
         AppealOutcome::Overturned => {
             crate::enforcement_repo::revoke_action(

@@ -115,67 +115,24 @@ impl ContentAuthority for ApplicationContentAuthority {
                 // 授权底座未装配：整体失败关闭，不做任何猜测。
                 return Err(ContentError::PolicyPending);
             }
-            // 管理动作走独立的管理会话（03 §6），不接受普通会话。
-            // 会话令牌与 CSRF 复用同一组凭据字段，但校验路径完全独立。
-            let identity = identity::management::authorize_management_session(
+            // 与治理领域共用同一个授权门：独立管理会话 → 管理侧 CSRF → TOTP 已绑定
+            // → 十步授权求值。两条入口不各写一份判定，避免其中一条日后被改松。
+            let key = permission_key(capability);
+            let user_id = crate::management_gate::authorize(
                 tx,
                 &self.renderer,
                 credentials.session_token.expose(),
-                now,
-            )
-            .await
-            .map_err(failure)?;
-            identity
-                .check_csrf(credentials.csrf.expose())
-                .map_err(failure)?;
-            // AUTH-014：未完成 TOTP 绑定前只能访问绑定流程，任何管理动作一律拒绝。
-            if identity.access != identity::management::ManagementAccess::Ready {
-                return Err(ContentError::Forbidden);
-            }
-            // 03 §4：授权所需事实必须在最终写入事务内重新读取，不接受事务外快照。
-            //
-            // `session_authz_version` 直接取账号当前值：管理会话的有效性刚刚校验过，
-            // 而 `authz_version` 的作用是让**权限变更**使旧会话失效——变更会同时递增
-            // 账号版本并撤销会话，因此这里读到的就是本次会话对应的版本。
-            let key = permission_key(capability);
-            let version = manage::iam::repo::account_authz(tx, &self.renderer, identity.user_id)
-                .await
-                .map_err(|_| ContentError::Unavailable)?
-                .map(|(_, version)| version)
-                .unwrap_or_default();
-            let facts = manage::iam::repo::collect_facts(
-                tx,
-                &self.renderer,
-                identity.user_id,
-                true,
-                true,
-                version,
-                true,
+                credentials.csrf.expose(),
                 key,
                 "content",
                 target.resource_id,
+                // ABAC 版块范围按目标当前所属版块判定（03 §5）。
+                target.forum_id,
                 now,
             )
             .await
-            .map_err(|_| ContentError::Unavailable)?;
-            if manage::iam::authorize::authorize(
-                &manage::iam::authorize::AuthorizationRequest {
-                    actor_id: identity.user_id,
-                    permission_key: key,
-                    resource_type: "content",
-                    resource_id: target.resource_id,
-                    // ABAC 版块范围按目标当前所属版块判定（03 §5）。
-                    forum_id: target.forum_id,
-                },
-                &facts,
-                now,
-            ) != manage::iam::authorize::Decision::Allowed
-            {
-                return Err(ContentError::Forbidden);
-            }
-            Ok(ManagementActor {
-                user_id: identity.user_id,
-            })
+            .map_err(|_| ContentError::Forbidden)?;
+            Ok(ManagementActor { user_id })
         })
     }
 
@@ -536,7 +493,7 @@ pub async fn connect(state: &mut crate::app_state::AppState) -> Result<(), Strin
     let mut service = content::core::ContentService::new(
         pool,
         renderer.clone(),
-        Arc::new(ApplicationContentAuthority::approved(renderer)),
+        Arc::new(ApplicationContentAuthority::approved(renderer.clone())),
         Arc::new(policy),
         cursor,
     );
@@ -544,6 +501,11 @@ pub async fn connect(state: &mut crate::app_state::AppState) -> Result<(), Strin
         service = service.with_cache(runtime.cache.clone());
     }
     state.content.service = Some(Arc::new(service));
+    // 治理授权与内容授权共用同一条判定路径，在同一处装配，避免两条入口的
+    // 装配状态出现分叉（一边开着一边关着）。
+    state.moderation_authority = Some(Arc::new(
+        crate::moderation_authority::ApplicationModerationAuthority::approved(renderer.clone()),
+    ));
     if let (Some(key), Some(runtime)) = (&state.config.identity.risk_key, state.runtime.as_ref()) {
         state.content.request_context = Some(Arc::new(
             ContentRiskFactory::new(

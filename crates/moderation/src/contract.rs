@@ -15,6 +15,8 @@ pub enum ModerationError {
     Unavailable,
     #[error("数据已变更，请重新载入")]
     Conflict,
+    #[error("未授权")]
+    Denied,
 }
 impl From<TransactionError> for ModerationError {
     fn from(value: TransactionError) -> Self {

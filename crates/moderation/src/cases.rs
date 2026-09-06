@@ -3,7 +3,12 @@
 //! 领域边界：本模块只管「谁举报了什么、案件走到哪一步、证据长什么样」，
 //! **不做任何处置**——遮蔽、删除、封禁属 `MOD-005`～`MOD-007`（`WP-MVP-D02`），
 //! 权限判定属 `WP-MVP-D04` 的 registry。举报本身不改变被举报内容的任何状态。
-use crate::contract::ModerationError;
+use crate::{
+    authority::{
+        ManagementAuthority, ManagementCapability, ManagementCredentials, ManagementTarget,
+    },
+    contract::ModerationError,
+};
 use chrono::{DateTime, Utc};
 use platform::identifiers::SchemaRenderer;
 use platform_db::transaction::TransactionConnection;
@@ -228,14 +233,27 @@ pub async fn submit_report(
 ///
 /// 只做状态机校验与落库；「谁可以推进」由调用方按 `D04` 的权限 registry 判定。
 /// 非法迁移一律拒绝，不做「就近取一个合法态」的宽容处理——那会让审计链失真。
+#[allow(clippy::too_many_arguments)]
 pub async fn advance_status(
     tx: &mut TransactionConnection<'_>,
     r: &SchemaRenderer,
+    authority: &dyn ManagementAuthority,
+    credentials: &ManagementCredentials,
+    target: ManagementTarget,
     case_id: i64,
     next: CaseStatus,
     now: DateTime<Utc>,
 ) -> Result<(), ModerationError> {
     let now = canonical(now)?;
+    authority
+        .authorize(
+            tx,
+            credentials,
+            ManagementCapability::WriteCase,
+            target,
+            now,
+        )
+        .await?;
     let case = crate::case_repo::case(tx, r, case_id)
         .await?
         .ok_or(ModerationError::NotFound)?;
@@ -246,9 +264,13 @@ pub async fn advance_status(
 }
 
 /// 管理侧：指派处理人。
+#[allow(clippy::too_many_arguments)]
 pub async fn assign(
     tx: &mut TransactionConnection<'_>,
     r: &SchemaRenderer,
+    authority: &dyn ManagementAuthority,
+    credentials: &ManagementCredentials,
+    target: ManagementTarget,
     case_id: i64,
     assignee_id: i64,
     now: DateTime<Utc>,
@@ -257,6 +279,15 @@ pub async fn assign(
         return Err(ModerationError::InvalidInput);
     }
     let now = canonical(now)?;
+    authority
+        .authorize(
+            tx,
+            credentials,
+            ManagementCapability::WriteCase,
+            target,
+            now,
+        )
+        .await?;
     let case = crate::case_repo::case(tx, r, case_id)
         .await?
         .ok_or(ModerationError::NotFound)?;
@@ -270,20 +301,34 @@ pub async fn assign(
 ///
 /// 内部备注属 C2，与用户可见的处罚理由（`MOD-007`，属 `D02`）分开存放，
 /// 避免把内部讨论误发给被处置用户。备注只追加不修改。
+#[allow(clippy::too_many_arguments)]
 pub async fn add_note(
     tx: &mut TransactionConnection<'_>,
     r: &SchemaRenderer,
+    authority: &dyn ManagementAuthority,
+    credentials: &ManagementCredentials,
+    target: ManagementTarget,
     case_id: i64,
-    author_id: i64,
     body: &str,
     now: DateTime<Utc>,
 ) -> Result<(), ModerationError> {
     let trimmed = body.trim();
-    if author_id <= 0 || trimmed.is_empty() || trimmed.chars().count() > 4_000 {
+    if trimmed.is_empty() || trimmed.chars().count() > 4_000 {
         return Err(ModerationError::InvalidInput);
     }
     let now = canonical(now)?;
-    crate::case_repo::insert_note(tx, r, case_id, author_id, trimmed, now).await
+    // 备注作者取自授权结果，而不是调用方传入的 ID：内部备注要能追责，
+    // 让调用方自报作者等于给冒名留了口子。
+    let actor = authority
+        .authorize(
+            tx,
+            credentials,
+            ManagementCapability::WriteCase,
+            target,
+            now,
+        )
+        .await?;
+    crate::case_repo::insert_note(tx, r, case_id, actor.user_id, trimmed, now).await
 }
 
 /// 证据快照的 SHA-256 摘要（`MOD-008`）。

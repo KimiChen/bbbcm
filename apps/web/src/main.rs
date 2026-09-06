@@ -16,7 +16,11 @@ mod fixtures;
 mod identity_services;
 mod identity_web;
 mod jobs;
+mod management_gate;
 mod middleware;
+mod moderation_authority;
+#[cfg(test)]
+mod moderation_runtime_tests;
 mod router;
 mod status;
 #[path = "../../worker_services.rs"]
