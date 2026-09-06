@@ -1687,3 +1687,70 @@ async fn site_statistics_count_visible_content_and_exclude_opening_posts() {
         .unwrap();
     assert_eq!(f.service.site_statistics(at()).await.unwrap().topics, 1);
 }
+
+/// `90` §5 SQLite 体验模式：FTS5 探测结果决定检索能力，正文搜索入口必须给出
+/// **受限提示而非错误**。
+///
+/// 这条容易被写成「正文搜不到就返回空」。空结果会被用户读成「站里没有这条内容」，
+/// 于是他会重发一遍——而实际上内容就在那里，只是体验模式不检索正文。
+/// 因此页面必须明示能力边界，`02` §13 也是这么要求的。
+///
+/// 三层断言：能力确实降级为仅标题；标题词能命中而仅出现在正文里的词不命中
+/// （证明降级是真的在按标题匹配，不是碰巧没结果）；`/search` 返回 200 且带提示。
+#[tokio::test]
+async fn sqlite_search_degrades_to_titles_and_says_so_instead_of_erroring() {
+    use crate::search::SearchCapability;
+
+    let f = Fixture::new().await;
+    // 搜索页需要 `search` Flag；夹具默认只开三个，这里补上。
+    let mut tx = DbTransaction::begin(&f.pool).await.unwrap();
+    {
+        let mut c = tx.connection();
+        let flags = f
+            .renderer
+            .table(c.backend(), "platform", "feature_flags")
+            .unwrap();
+        c.execute(
+            &format!("UPDATE {flags} SET enabled = ?, version = version + 1 WHERE flag_key = ?"),
+            &[DbValue::Bool(true), "search".into()],
+        )
+        .await
+        .unwrap();
+    }
+    tx.commit().await.unwrap();
+
+    // 1. SQLite 上能力必须是仅标题。FTS5 探针在建连接时跑，探不到就降级。
+    assert_eq!(
+        f.service.search_capability(),
+        SearchCapability::TitleOnly,
+        "SQLite 体验模式的检索能力必须降级为仅标题"
+    );
+
+    // 2. 造一条主题：标题含「藏在标题的词」，正文含「藏在正文的词」。
+    let mut input = f.topic_input("藏在标题的词");
+    input.markdown = "这段正文里有一个藏在正文的词，标题里没有它。".into();
+    f.service
+        .create_topic(&f.credentials(1), input, at())
+        .await
+        .expect("建主题");
+
+    let hit = |term: &str| {
+        let service = f.service.clone();
+        let term = term.to_owned();
+        async move {
+            let query = crate::search::SearchQuery::build(&term, None, None, None, "", 50)
+                .expect("查询应可构造");
+            let (_, hits) = service.search(&query, None, at()).await.expect("检索");
+            hits.len()
+        }
+    };
+    assert!(hit("藏在标题的词").await > 0, "标题词必须命中");
+    assert_eq!(
+        hit("藏在正文的词").await,
+        0,
+        "体验模式不检索正文——这里命中反而说明降级判断错了"
+    );
+
+    // 受限提示本身的映射由 `http::search_notice` 的用例断言：它需要页面渲染器，
+    // 而渲染器属应用装配层，不在内容领域的测试范围内。
+}

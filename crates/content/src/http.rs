@@ -42,6 +42,18 @@ pub struct ContentWebState {
     pub secure_cookies: bool,
     pub request_context: Option<Arc<dyn RequestContext>>,
 }
+/// 检索能力对应的页面提示（`02` §13）。
+///
+/// 体验模式只检索标题时**必须明说**。搜不到正文却只给一个空结果，用户会读成
+/// 「站里没有这条内容」，然后重发一遍——而内容就在那里。抽成独立函数是为了让
+/// 这条映射本身可被断言：它藏在 handler 的 match 分支里时，改错了没人会发现。
+pub fn search_notice(capability: crate::search::SearchCapability) -> Option<&'static str> {
+    match capability {
+        crate::search::SearchCapability::TitleOnly => Some("体验模式：仅支持标题搜索。"),
+        crate::search::SearchCapability::FullText => None,
+    }
+}
+
 pub fn router<S: Clone + Send + Sync + 'static>(state: ContentWebState) -> Router<S> {
     let mut router = Router::new();
     for path in [
@@ -705,12 +717,7 @@ async fn read(
                     page.show_list = false;
                     // 02 §13：SQLite 体验模式只支持标题检索，页面必须明示这一点，
                     // 否则用户会把「正文里明明有却搜不到」理解成搜索坏了。
-                    page.notice = match service.search_capability() {
-                        crate::search::SearchCapability::TitleOnly => {
-                            Some("体验模式：仅支持标题搜索。")
-                        }
-                        crate::search::SearchCapability::FullText => None,
-                    };
+                    page.notice = search_notice(service.search_capability());
                     if let Some(built) = crate::search::SearchQuery::build(
                         query.q.as_deref().unwrap_or_default(),
                         query.forum.as_deref().and_then(|v| v.parse().ok()),
@@ -1289,6 +1296,20 @@ async fn operation(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// `90` §5 SQLite 体验模式：正文搜索入口必须给出受限提示，而不是错误或
+    /// 无解释的空结果。完整模式则不应挂这条提示——否则等于对用户撒谎。
+    #[test]
+    fn title_only_search_declares_its_limit_and_full_text_does_not() {
+        assert_eq!(
+            search_notice(crate::search::SearchCapability::TitleOnly),
+            Some("体验模式：仅支持标题搜索。")
+        );
+        assert_eq!(
+            search_notice(crate::search::SearchCapability::FullText),
+            None
+        );
+    }
 
     #[test]
     fn cookies_reject_duplicates_and_never_accept_a_secure_cookie_alias() {
