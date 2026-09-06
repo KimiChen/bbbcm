@@ -4,5 +4,7 @@ pub mod case_repo;
 pub mod cases;
 pub mod contract;
 pub mod core;
+pub mod enforcement;
+pub mod enforcement_repo;
 pub mod http;
 pub mod repo;

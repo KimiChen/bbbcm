@@ -289,6 +289,16 @@ pub const TABLES: &[TableRegistration] = &[
     },
     TableRegistration {
         schema: "moderation",
+        table: "enforcement_actions",
+        identity_column: Some("id"),
+    },
+    TableRegistration {
+        schema: "moderation",
+        table: "appeals",
+        identity_column: Some("id"),
+    },
+    TableRegistration {
+        schema: "moderation",
         table: "cases",
         identity_column: Some("id"),
     },
@@ -341,6 +351,8 @@ pub const INDEXES: &[(&str, &str)] = &[
     ("moderation", "case_queue_idx"),
     ("moderation", "case_note_idx"),
     ("moderation", "evidence_case_idx"),
+    ("moderation", "enforcement_subject_idx"),
+    ("moderation", "enforcement_case_idx"),
     ("platform", "mail_recipient_idx"),
     ("platform", "mail_observed_idx"),
     ("platform", "mail_feedback_time_idx"),
