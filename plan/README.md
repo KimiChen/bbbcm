@@ -92,7 +92,7 @@
 判定补充（`Blocked` 与外部依赖）：
 
 - 外部 provider 依赖类需求，若 adapter、故障语义、配置开关与本地测试实现均已交付，且能力按已批准的未决行为保持关闭，可记 `Implemented`；真实接入属 Production Approved。
-- 行为完全由某条待决决策定义的需求（如 `CAT-014` 之于 `DEC-017`）记 `Blocked`，不得记 `Implemented`。受阻清单见 [`99-traceability.md`](99-traceability.md) 第 4.1 节。
+- 行为完全由某条待决决策定义的需求记 `Blocked`，不得记 `Implemented`；对应决策批准后转 `In progress`，实现完成才可 `Implemented`（`CAT-014` 已随 `DEC-056` 完成此转换）。受阻清单见 [`99-traceability.md`](99-traceability.md) 第 4.1 节。
 
 注记（`DEC-020`）：开发期需求与工作包最高标记 `Implemented`；`Verified` 及以上状态只能在功能开发完成后的统一硬化阶段凭证据授予。
 
