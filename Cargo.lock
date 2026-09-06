@@ -1344,9 +1344,11 @@ dependencies = [
  "platform",
  "platform-db",
  "serde",
+ "sqlx",
  "thiserror",
  "tokio",
  "toml",
+ "url",
 ]
 
 [[package]]

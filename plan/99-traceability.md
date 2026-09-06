@@ -1281,7 +1281,7 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 | 审计与搜索权限状态的同事务提交 | 本轮只验证了 Outbox 一侧。 |
 | 应用的完整搜索模式 | **阻塞性质已改变**：扩展镜像本轮已按 `M0-03` 的 Dockerfile 离线构建成功，`pg_jieba` 1.1.1 与 `pg_trgm` 1.6 实测可用（中文分词、`@@` 匹配、`similarity` 均正确），同一套合同 11 项在该镜像上亦全部通过。真正缺的是应用侧——`crates/content/src/search.rs` 目前只有 `SqliteTitleSearch` 一个 `SearchBackend` 实现，`pg_jieba + pg_trgm` 的 PostgreSQL 后端尚未编写。这属 `WP-MVP-C05` 的实现缺口，不再是 E01 的环境问题。证据见 [`pg-jieba-extension.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/pg-jieba-extension.txt)。 |
 | 并发矩阵：举报合并 | 载体已编写（`crates/moderation/src/concurrency_tests.rs`），**当前失败**——8 路并发在同一目标上开出 8 个案件，根因见上节缺陷登记。裁决并修复后方可通过。 |
-| 并发矩阵：治理命令 | 需在 `manage` crate 内另建载体，本轮未做。 |
+| 并发矩阵：治理命令 | 载体已编写（`crates/manage/src/concurrency_tests.rs`，2 个用例：并发批准只生效一次、操作者自批并发下也必须全败），**当前失败**——两个用例都卡在上节的 `iam` schema `USAGE` 缺失上，连审批都建不出来。裁决并修复后方可通过。 |
 | 并发矩阵：互动唯一性、通知去重 | 属 `WP-MVP-C04`（`Not started`），**功能尚不存在**，不是载体问题。 |
 | 性能与容量基线（`WP-MVP-E02`） | 载体未编写。 |
 | 安全套件与跨平台矩阵 | 载体未编写；SBOM/许可证/漏洞/Secret 扫描已单独完成，见上表。 |
@@ -1326,6 +1326,22 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 2. **加序列化点**（对 `(target_kind, target_id)` 取 advisory lock，或引入案件根锁）。不受三库子集限制，但会改动 `02` 第 386 节冻结的锁序，需要与 `DEC-052`／`DEC-064` 一并复核。
 
 在裁决前，该载体保持**失败**并如实登记，不通过降低断言把它「修绿」。
+
+#### 缺陷：`iam` schema 缺 `USAGE` 授权，完整模式下整个 `/manage` 不可用（2026-09-07 发现）
+
+编写并发矩阵「治理命令」载体（`crates/manage/src/concurrency_tests.rs`）时，两个用例都在**建审批**这一步失败，数据库报 `permission denied for schema <prefix>iam`。
+
+| 事实 | 位置 |
+|---|---|
+| `0016_iam.sql` 建 `iam` schema，逐表授 `SELECT, INSERT, UPDATE`、逐序列授 `USAGE, SELECT` | `db/migrations/postgres/0016_iam.sql:65-82` |
+| 但**没有** `GRANT USAGE ON SCHEMA {{schema:iam}} TO app_rw` | 同文件，缺失 |
+| 0001／0002／0004／0005／0007 每个建 schema 的迁移都授了 schema USAGE | `0001:119`、`0002:87`、`0004:2`、`0005:52`、`0007:2` |
+
+PostgreSQL 中没有 schema `USAGE`，其下所有表级授权一律无效。**影响面**：完整模式下角色分配、撤销、审批申请与批准、以及十步授权的 `collect_facts` 事实读取全部失败——**整个 `/manage` 在 PostgreSQL 上不可用**。SQLite 侧没有 schema 级权限概念，因此看不到。
+
+这一条与前两个缺陷不同：**没有事实源冲突**。`0016` 自己的注释写明「分配与审批授必要写权限」，意图明确，只是漏了让这些授权生效的前置 schema USAGE。补授不扩大任何既定权限边界。
+
+**待裁决的是修复形式，不是要不要修**：迁移不可改历史文件，必须新增前向迁移；而 N 轨编号要求 postgres 与 sqlite 的编号集合完全一致（`migrations/discovery.rs` 的 `verify_alignment`，只有 mysql8 允许整轨为空），纯 ACL 修复在 SQLite 轨没有对应语句可写，而 `validate_content` 又要求每个迁移至少含一条可执行 SQL。
 
 #### 状态影响
 

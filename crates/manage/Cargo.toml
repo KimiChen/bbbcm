@@ -15,6 +15,9 @@ chrono.workspace = true
 
 [dev-dependencies]
 tokio.workspace = true
+# E01 并发夹具：回环校验 + 以迁移身份重建 schema（DbTransaction 只允许 DML）。
+url.workspace = true
+sqlx.workspace = true
 
 [build-dependencies]
 toml.workspace = true
