@@ -51,7 +51,7 @@ async fn content_access_rechecks_mail_csrf_status_revocation_and_preserves_pendi
     assert_eq!(facts.user_id(), session.user_id());
     assert_eq!(
         facts.trust().unwrap().level(),
-        trust::contract::TrustLevel::Pending
+        trust::contract::TrustLevel::T0
     );
     assert!(facts.analytics_excluded());
     assert!(!format!("{facts:?}").contains("member@example.invalid"));

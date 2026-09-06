@@ -1228,6 +1228,37 @@ impl ContentService {
         )
         .await?;
         // No new mutable lock follows risk/analytics/Outbox append phase.
+        // DEC-054 有效贡献判定，供信任等级 T1 规则统计：
+        //   - 主题：已发布且正文达到最低长度即计入；
+        //   - 回复：已发布、达到最低长度，且发布者不是主题作者（防止自问自答刷贡献）；
+        //   - 删除：本人删除后该条不再计入，但事实行保留，贡献数仍可从历史重算。
+        // 最低长度在前面的 `validate_text` 已经强制过，所以这里只需再判断发布状态，
+        // 以及回复场景下作者是否与主题作者相同。
+        // 时机：本段位于追加段，两个调用都是纯插入／更新，不获取任何新锁。
+        let contribution = match action {
+            Action::CreateTopic | Action::CreateReply
+                if facts.publication == Publication::Published =>
+            {
+                let is_reply = action == Action::CreateReply;
+                if is_reply && post.author_id == topic.author_id {
+                    None
+                } else {
+                    Some(Contribution::Recorded {
+                        post_id: post.id,
+                        is_reply,
+                        body_chars: i64::try_from(post.body.trim().chars().count())
+                            .map_err(|_| ContentError::InvalidInput)?,
+                    })
+                }
+            }
+            Action::DeletePost => Some(Contribution::Withdrawn { post_id: post.id }),
+            _ => None,
+        };
+        if let Some(contribution) = contribution {
+            self.authority
+                .record_contribution(tx, facts.user_id, contribution, now)
+                .await?;
+        }
         self.authority
             .append_risk(
                 tx,

@@ -9,12 +9,36 @@ use std::sync::Arc;
 
 pub struct ApplicationContentAuthority {
     renderer: SchemaRenderer,
-    /// No default content policy is approved. Only explicit synthetic tests set this.
+    /// 已批准的内容风控规则版本。
+    ///
+    /// 取 `None` 时发布整体关闭——装配不完整或配置错误的部署必须落到这个失败关闭态，
+    /// 而不是退化成「无风控但可发布」。
     risk_rule_version: Option<i64>,
-    /// PRIV-001/002 default is unapproved; do not invent a Public author fact.
+    /// 作者默认可见性。DEC-054 批准 `PRIV-001`（个人主页列表）与 `PRIV-002`（主题正文）
+    /// 默认对未登录访客公开，用户可分别关闭。
+    ///
+    /// 逐用户的隐私设置入口属于后续波次，因此当前这里承载的是账号级默认值；
+    /// 取 `None` 时相应投影一律关闭，绝不臆造一个 Public 事实。
     author_default: Option<Visibility>,
 }
 impl ApplicationContentAuthority {
+    /// 按 DEC-054／DEC-060 已批准事实装配的正常构造入口。
+    ///
+    /// 注意：仅有本对象还不足以放行发布——`ContentRatePolicy` 也必须装配成功，
+    /// 否则风控预检失败关闭。这样未接入 Redis 的部署会停在「不可发布」而不是
+    /// 「可发布但无保护」。
+    pub fn approved(renderer: SchemaRenderer) -> Self {
+        Self {
+            renderer,
+            risk_rule_version: Some(crate::content_risk::APPROVED_RATE_VERSION),
+            author_default: Some(Visibility::Public),
+        }
+    }
+    /// 未装配的授权对象，仅测试使用。
+    ///
+    /// 保留它是为了让「失败关闭」这条路径持续被测试覆盖：没有已批准的规则版本时，
+    /// 任何内容命令都必须被拒绝，而不是部分成功。
+    #[cfg(test)]
     pub fn new(renderer: SchemaRenderer) -> Self {
         Self {
             renderer,
@@ -49,6 +73,46 @@ fn capability(action: Action) -> moderation::contract::ContentCapability {
     }
 }
 impl ContentAuthority for ApplicationContentAuthority {
+    /// 把内容领域判定出的有效贡献变更转交 trust 落库。
+    ///
+    /// 这是 content 与 trust 之间唯一的受信接线点：content 不直接依赖 trust，
+    /// 由应用装配层在这里完成跨域调用，且只做纯追加，不获取新锁。
+    fn record_contribution<'a>(
+        &'a self,
+        tx: &'a mut TransactionConnection<'_>,
+        user_id: i64,
+        contribution: Contribution,
+        now: DateTime<Utc>,
+    ) -> FutureResult<'a, ()> {
+        Box::pin(async move {
+            match contribution {
+                Contribution::Recorded {
+                    post_id,
+                    is_reply,
+                    body_chars,
+                } => trust::core::record_contribution(
+                    tx,
+                    &self.renderer,
+                    user_id,
+                    if is_reply {
+                        trust::contract::ContributionKind::Reply
+                    } else {
+                        trust::contract::ContributionKind::Topic
+                    },
+                    post_id,
+                    body_chars,
+                    now,
+                )
+                .await
+                .map_err(|_| ContentError::Unavailable),
+                Contribution::Withdrawn { post_id } => {
+                    trust::core::withdraw_contribution(tx, &self.renderer, post_id, now)
+                        .await
+                        .map_err(|_| ContentError::Unavailable)
+                }
+            }
+        })
+    }
     fn forum_rules<'a>(
         &'a self,
         tx: &'a mut TransactionConnection<'_>,
@@ -128,7 +192,25 @@ impl ContentAuthority for ApplicationContentAuthority {
                 now,
             )
             .await?;
-            let snapshot = user.trust().ok_or(ContentError::Unavailable)?;
+            // DEC-054 确定性 T1 规则的评估点。
+            //
+            // 锁序：`authorize_content_identity` 已经取过 `trust.identity_snapshots` 行锁，
+            // 而 community 各表锁在之后才获取，因此在这里应用授级符合 DEC-052 约定的锁序。
+            //
+            // 语义：存在生效处罚时不予升级（`restricted` 已经包含账号级 content 限制）。
+            // 规则本身与版本号留在 trust 领域，本处只负责注入跨域事实并使用评估结果。
+            let evaluated = trust::core::evaluate_tier(
+                tx,
+                &self.renderer,
+                user.user_id(),
+                trust::contract::TierInputs {
+                    active_penalty: restricted,
+                },
+                now,
+            )
+            .await
+            .map_err(|_| ContentError::Unavailable)?;
+            let snapshot = &evaluated;
             let tier = match snapshot.level() {
                 trust::contract::TrustLevel::Pending => TrustTier::Pending,
                 trust::contract::TrustLevel::T0 => TrustTier::T0,
@@ -279,11 +361,13 @@ pub async fn connect(state: &mut crate::app_state::AppState) -> Result<(), Strin
     let pool = platform_db::Pool::connect_existing(&state.config.database)
         .await
         .map_err(|_| "content database unavailable")?;
+    let policy = content::policy::ApprovedContentPolicy::new()
+        .map_err(|_| "approved content rules are inconsistent")?;
     let mut service = content::core::ContentService::new(
         pool,
         renderer.clone(),
-        Arc::new(ApplicationContentAuthority::new(renderer)),
-        Arc::new(content::policy::UnconfiguredContentPolicy),
+        Arc::new(ApplicationContentAuthority::approved(renderer)),
+        Arc::new(policy),
         cursor,
     );
     if let Some(runtime) = state.runtime.as_ref() {
@@ -296,7 +380,10 @@ pub async fn connect(state: &mut crate::app_state::AppState) -> Result<(), Strin
                 key.as_bytes().to_vec(),
                 state.config.features.redis,
                 runtime.rate_limiter.clone(),
-                None,
+                Some(
+                    crate::content_risk::ContentRatePolicy::approved()
+                        .map_err(|_| "approved content rate budget is inconsistent")?,
+                ),
                 state.config.server.environment.is_production_like(),
             )
             .map_err(|_| "content risk assembly unavailable")?,

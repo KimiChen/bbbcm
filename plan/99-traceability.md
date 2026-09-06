@@ -500,6 +500,34 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 
 开发期最小集内新增：批准值与 `ContentRules::validate` 一致性；T0 授予幂等与版本防覆盖；T1 规则四类边界（差 1 分钟未满 2 自然日、恰好满、贡献 4 条与 5 条、存在生效处罚）；贡献事实的长度与非作者判定、删除撤销与重算一致；额度 UTC 日界线、待审计入、删除不返还；作者默认公开后的公共 SSR 与未登录访客投影。真实 PostgreSQL/Redis、并发、性能与视觉仍留统一硬化阶段（`DEC-020`）。
 
+#### 5.11.1 实际交付与逐需求裁决（2026-09-06）
+
+代码版本为本节记录所在的实现提交。实施中发现 `DEC-054` 未覆盖 `DEC-053` 待决行里的「外链门槛/四维预算」，已单独询问并由 `DEC-060` 批准后先行登记提交，再接线。
+
+| 交付项 | 内容 |
+|---|---|
+| 批准发布策略 | `content::policy::ApprovedContentPolicy` 与 `approved_rules()` 承载 `DEC-054/055/060` 全部取值，构造即校验；`APPROVED_RULES_VERSION` 随发布回执落库。正常装配改用该策略，`UnconfiguredContentPolicy` 保留为失败关闭路径。 |
+| T0 自动授级 | `trust::core::grant_verified_tier` 在 `mark_email_verified` 同事务把 `pending` 升为 `t0`，幂等、不降级；已验证但仍 pending 的历史行同样收敛。原因码 `email_verified_tier_t0` 加入封闭白名单。 |
+| T1 确定性规则 | `trust::core::evaluate_tier`，规则与 `TIER_RULE_VERSION` 位于 trust；「满 2 个自然日」实现为 `now >= 注册日 UTC 零点 + 2 天`。跨域事实（是否存在生效处罚）由 apps 注入，trust 不读他域仓储。只升不降。 |
+| 有效贡献事实 | 配对迁移 `0011` 新增 `trust.contribution_facts`（PG 含显式 ACL，只授 `app_rw`；SQLite 同字段；mysql8 占位）。受信表与索引已登记。`record_contribution`／`withdraw_contribution` 由内容写事务在追加段调用，不取新锁；`post_id` 唯一保证重放不重复计数，撤销只置标志位保留可重算历史。 |
+| 内容领域接线 | `ContentAuthority` 新增 `record_contribution`；content 在追加段按 `DEC-054` 判定（主题达最低长度、回复达最低长度且发布者非主题作者），删除时产生撤销。content 仍不反向依赖 trust，跨域调用只在 apps 装配层。 |
+| 作者默认可见性 | `ApplicationContentAuthority::approved` 把 `author_default` 置为 `Public`（`DEC-054` 批准的 `PRIV-001/002` 默认值），公共 SSR 与作者投影不再整体 `PolicyPending`。 |
+| 内容反滥用预算 | `ContentRatePolicy::approved()` 承载 `DEC-060` 四维预算，`APPROVED_RATE_VERSION` 参与受信上下文绑定与写事务二次校验；Redis 关闭时仍明确 `NoProtection`。 |
+
+逐需求裁决（全部维持 `In progress`，本轮不授予 `Implemented`）：
+
+| 需求 | 状态 | 本轮结论 |
+|---|---|---|
+| `TRUST-001` | In progress | T0/T1 自动授级已按批准规则实现且可复算；等级展示、人工复核与覆盖入口、降级路径未接。 |
+| `MOD-009` | In progress | T0/T1 额度、UTC 分日、成功与待审计入、删除不返还、24 小时窗口取严、外链门槛与四维预算均已装配；重复文本与附件门槛未接。 |
+| `AUTH-003` | In progress | 验证同事务授 T0 已接；`AUTH-014` 首账号与特权引导仍留后续。 |
+| `TOPIC-001`／`TOPIC-004` | In progress | 长度、标签上限、30 分钟本人窗口与首帖删除转主题删除态已按批准值生效；首帖占位呈现属后续波次。 |
+| `PRIV-001`／`PRIV-002` | In progress | 账号级默认公开已生效；逐用户隐私设置入口未建，用户当前无法关闭，属明确缺口。 |
+
+测试与证据：`./scripts/dev-check.sh` 七步全过（格式化、Clippy `-D warnings`、287 项单元测试全通过、真实 SQLite 冒烟 88 条路由响应、`git diff --check`、暂存区复核、静态守卫）。本轮新增测试覆盖批准常量与决策记录逐项一致、Unicode 标量计量与标题闭区间边界、外链门槛分级、T1 规则四类边界（贡献差一条／差一分钟未满两自然日／存在生效处罚／三者同时满足）、授级幂等与不降级、贡献事实幂等与撤销后可重算、内容侧有效贡献判定（自回复不计入、他人回复计入、删除撤销）。既有断言中编码 `DEC-051`「不自动授 T0/T1」的 7 处已按 `DEC-054` 更新并注明依据。未执行真实 PostgreSQL/Redis、并发、性能、安全与视觉矩阵。
+
+本轮明确未做（不得因本切片视为完成）：`TOPIC-008` 浏览量与有效回复的统计装配、首帖删除后的占位呈现、`CAT-014` 移帖写入口与 301 路由、逐用户隐私设置入口、权限 registry 与 `/manage`、`visual-baseline-v1` 冻结记录、`NAV-009`。
+
 #### 边界
 
 批准取值不等于整包完成：`C01/C02/C03/C05`、`B01/B04/B06/A06` 整包不因本切片标记 `Implemented`，状态按各自剩余条款裁决。不授予 `Verified` 或任何阶段/发布门禁。仅本机开发、独立复核、开发期最小集与中文新建提交，不推送、不部署、不发送真实邮件，不清空非本地数据库。

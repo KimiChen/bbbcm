@@ -839,7 +839,7 @@ async fn invitation_authority_quota_revocation_privacy_and_operation_binding() {
         .await
         .unwrap()
         .unwrap();
-    assert_eq!(snapshot.level(), trust::contract::TrustLevel::Pending);
+    assert_eq!(snapshot.level(), trust::contract::TrustLevel::T0);
     assert!(snapshot.invitation_allowed());
     tx.rollback().await.unwrap();
     let first = f

@@ -45,6 +45,10 @@ fn snapshot(row: &DbRow) -> Result<TrustSnapshot, TrustError> {
                 | "awaiting_trust_policy"
                 | "approved_policy"
                 | "email_verified_invitation_eligible"
+                // DEC-054 授级新增的两个原因码。这里是封闭集合：库里出现集合外的原因码
+                // 一律按数据损坏处理，而不是宽容接受——防止有人绕过授级路径直接改库。
+                | "email_verified_tier_t0"
+                | "tier_rule_v1_days_contributions"
         )
     {
         return Err(TrustError::CorruptData);
@@ -104,6 +108,130 @@ pub(crate) async fn confirm_email(
         &[DbValue::Bool(true), DbValue::Time(now), DbValue::I64(previous.user_id), DbValue::Bool(false)]).await?;
     Ok(())
 }
+/// 在调用方已持有快照行锁的前提下写入信任等级。
+///
+/// 使用 `execute_versioned` 做乐观版本校验，防止并发覆盖。本函数不含任何资格判断——
+/// 规则评估在 `core` 层完成，仓储层只忠实落库，避免同一规则出现两份实现。
+pub(crate) async fn set_level(
+    tx: &mut TransactionConnection<'_>,
+    r: &SchemaRenderer,
+    previous: &TrustSnapshot,
+    level: TrustLevel,
+    reason_code: &str,
+    now: DateTime<Utc>,
+) -> Result<(), TrustError> {
+    let snapshots = table(tx, r, "identity_snapshots")?;
+    tx.execute_versioned(
+        &format!(
+            "UPDATE {snapshots} SET level = ?, reason_code = ?, updated_at = ?, version = version + 1 WHERE id = ? AND version = ?"
+        ),
+        &[
+            text(level.as_str()),
+            text(reason_code),
+            DbValue::Time(now),
+            DbValue::I64(previous.id),
+            DbValue::I64(previous.version),
+        ],
+    )
+    .await?;
+    Ok(())
+}
+
+/// 追加一条有效贡献事实。
+///
+/// `post_id` 唯一：同一帖子重复调用时保留既有行并直接返回，使命令重放与幂等重试
+/// 不会把贡献数刷高。这里刻意先查后插而不是依赖唯一键冲突，因为 DEC-022 的
+/// 三库交集子集禁用 `ON CONFLICT`。
+pub(crate) async fn insert_contribution(
+    tx: &mut TransactionConnection<'_>,
+    r: &SchemaRenderer,
+    user_id: i64,
+    kind: crate::contract::ContributionKind,
+    post_id: i64,
+    body_chars: i64,
+    now: DateTime<Utc>,
+) -> Result<(), TrustError> {
+    let facts = table(tx, r, "contribution_facts")?;
+    if tx
+        .fetch_optional(
+            &format!("SELECT post_id FROM {facts} WHERE post_id = ?"),
+            &[DbValue::I64(post_id)],
+        )
+        .await?
+        .is_some()
+    {
+        return Ok(());
+    }
+    tx.execute(
+        &format!(
+            "INSERT INTO {facts} (user_id, kind, post_id, body_chars, counted, rule_version, created_at, updated_at, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        ),
+        &[
+            DbValue::I64(user_id),
+            text(kind.as_str()),
+            DbValue::I64(post_id),
+            DbValue::I64(body_chars),
+            DbValue::Bool(true),
+            DbValue::I64(crate::contract::TIER_RULE_VERSION),
+            DbValue::Time(now),
+            DbValue::Time(now),
+            DbValue::I64(1),
+        ],
+    )
+    .await?;
+    Ok(())
+}
+
+/// 把一条已撤销的贡献置为不计数。
+///
+/// 只改 `counted` 标志，保留事实行本身，使贡献总数可以随时从追加历史重算
+/// （`TRUST-002` 要求信任等级可解释、可重算、可复核）。
+/// 条件里带上 `counted = true`，因此重复撤销是无副作用的空操作。
+pub(crate) async fn withdraw_contribution(
+    tx: &mut TransactionConnection<'_>,
+    r: &SchemaRenderer,
+    post_id: i64,
+    now: DateTime<Utc>,
+) -> Result<(), TrustError> {
+    let facts = table(tx, r, "contribution_facts")?;
+    tx.execute(
+        &format!(
+            "UPDATE {facts} SET counted = ?, updated_at = ?, version = version + 1 WHERE post_id = ? AND counted = ?"
+        ),
+        &[
+            DbValue::Bool(false),
+            DbValue::Time(now),
+            DbValue::I64(post_id),
+            DbValue::Bool(true),
+        ],
+    )
+    .await?;
+    Ok(())
+}
+
+/// 统计某账号当前计入的有效贡献条数，供 T1 授级规则使用。
+///
+/// 返回负数视为数据损坏并报错，避免异常值被当成「未达标」而静默吞掉。
+pub(crate) async fn count_contributions(
+    tx: &mut TransactionConnection<'_>,
+    r: &SchemaRenderer,
+    user_id: i64,
+) -> Result<i64, TrustError> {
+    let facts = table(tx, r, "contribution_facts")?;
+    let row = tx
+        .fetch_optional(
+            &format!("SELECT COUNT(*) AS total FROM {facts} WHERE user_id = ? AND counted = ?"),
+            &[DbValue::I64(user_id), DbValue::Bool(true)],
+        )
+        .await?
+        .ok_or(TrustError::CorruptData)?;
+    let total = row.i64("total")?;
+    if total < 0 {
+        return Err(TrustError::CorruptData);
+    }
+    Ok(total)
+}
+
 pub(crate) async fn append_risk(
     tx: &mut TransactionConnection<'_>,
     r: &SchemaRenderer,

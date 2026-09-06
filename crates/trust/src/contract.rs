@@ -2,6 +2,40 @@
 use chrono::{DateTime, Utc};
 
 pub const INVITATION_POLICY_VERSION: i64 = 1;
+/// DEC-054 信任等级规则的版本号。
+///
+/// 贡献事实行会记录评估时的规则版本，规则取值一旦变化必须同步递增本常量，
+/// 以便事后能区分「某条贡献是按哪一版规则计入的」。
+pub const TIER_RULE_VERSION: i64 = 1;
+
+/// 评估 T1 确定性规则所需、且 trust 自身读不到的外部事实。
+///
+/// 领域边界：规则与版本号属于 trust，而「该账号是否存在生效处罚」属于 moderation。
+/// trust 不允许直接读其他领域的仓储，因此由应用装配层查询后经本结构注入。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TierInputs {
+    /// An active, unexpired moderation penalty on the account, read by the caller.
+    pub active_penalty: bool,
+}
+
+/// 一条已发布且合格的贡献类型。
+///
+/// 合格与否在内容领域按 DEC-054 判定后才会到达 trust：主题看正文长度，回复还要求
+/// 发布者不是主题作者。字符数一律按 Unicode 标量计（DEC-055：1 标量 = 1 字符，
+/// 不做中日韩宽度折算）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ContributionKind {
+    Topic,
+    Reply,
+}
+impl ContributionKind {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Topic => "topic",
+            Self::Reply => "reply",
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TrustLevel {

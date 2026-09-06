@@ -55,10 +55,12 @@ tmp/
 *.swp
 *.swo
 
-AGENTS.md
-/g.md
 # 本地视觉证据（本轮原始参考截图由用户后处理）
 /docs/evidence/local/
 
 # SQLite worker host mutex files
 *.worker.lock
+
+# AI
+AGENTS.md
+CLAUDE.md

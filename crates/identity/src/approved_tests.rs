@@ -74,7 +74,7 @@ async fn approved_invites_verify_without_promoting_and_enforce_expiry_quota_and_
             .await
             .unwrap()
             .unwrap();
-    assert_eq!(snapshot.level(), trust::contract::TrustLevel::Pending);
+    assert_eq!(snapshot.level(), trust::contract::TrustLevel::T0);
     assert!(snapshot.email_verified() && snapshot.invitation_allowed());
     assert_eq!(snapshot.policy_version(), 1);
     tx.rollback().await.unwrap();

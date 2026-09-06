@@ -1116,12 +1116,13 @@ async fn invitation_alias_revocation_action_and_existing_profile_projections_are
     assert!(revoked["value"].as_str().unwrap().contains("已撤销"));
     let profile = browser.get(&app, "/settings/profile").await;
     assert_eq!(profile.page["preset_avatar"], true);
+    // DEC-054：邮箱验证在同一事务内自动授予 T0，资料页因此显示 T0 而不再是「待确认」。
     assert!(
         profile.page["rows"]
             .as_array()
             .unwrap()
             .iter()
-            .any(|row| row["label"] == "信任等级" && row["value"] == "待确认")
+            .any(|row| row["label"] == "信任等级" && row["value"] == "T0")
     );
     let own = f.service.profile(&identity, Utc::now()).await.unwrap();
     let public = Browser::default()
@@ -1135,7 +1136,7 @@ async fn invitation_alias_revocation_action_and_existing_profile_projections_are
             .as_array()
             .unwrap()
             .iter()
-            .any(|row| row["label"] == "信任等级" && row["value"] == "待确认")
+            .any(|row| row["label"] == "信任等级" && row["value"] == "T0")
     );
 }
 
@@ -1307,6 +1308,7 @@ async fn approved_registration_normalization_settings_and_invitation_expiry_are_
             .status,
         StatusCode::OK
     );
+    // DEC-054：验证成功即自动授予 T0；T1 仍由 trust::core 的确定性规则单独评估。
     assert_eq!(
         service
             .profile(&identity, Utc::now())
@@ -1314,7 +1316,7 @@ async fn approved_registration_normalization_settings_and_invitation_expiry_are_
             .unwrap()
             .public
             .trust_level,
-        Some("pending")
+        Some("t0")
     );
     for invalid in ["0", "8", "1.5", "-1", ""] {
         let page = browser.get(&app, "/me/invites").await;

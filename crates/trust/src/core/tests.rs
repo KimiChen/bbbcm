@@ -131,8 +131,10 @@ async fn initial_facts_and_invite_use_share_commit_and_rollback_without_any_gran
     .await
     .unwrap();
     assert!(verified.email_verified());
-    assert_eq!(verified.level(), TrustLevel::Pending);
-    assert_eq!(verified.reason_code(), "email_verified_invitation_eligible");
+    // DEC-054：验证在同一事务内授予 T0。
+    // DEC-051 的邀请资格语义不变，仍可从 `invitation_allowed` 读到，两者互不替代。
+    assert_eq!(verified.level(), TrustLevel::T0);
+    assert_eq!(verified.reason_code(), "email_verified_tier_t0");
     assert!(verified.invitation_allowed());
     assert_eq!(verified.policy_version(), INVITATION_POLICY_VERSION);
     tx.commit().await.unwrap();
@@ -284,7 +286,16 @@ async fn approved_invitation_qualification_keeps_every_existing_level_and_repair
         let snapshot = mark_email_verified(&mut tx.connection(), &f.renderer, f.invitee, at())
             .await
             .unwrap();
-        assert_eq!(snapshot.level(), level);
+        // DEC-054：既有的 T0／T1 等级原样保留（验证不会降级），
+        // 而「已验证但仍为 pending」的历史行会在这里收敛到 T0，不再永久停留。
+        assert_eq!(
+            snapshot.level(),
+            if level == TrustLevel::Pending {
+                TrustLevel::T0
+            } else {
+                level
+            }
+        );
         assert!(snapshot.email_verified() && snapshot.invitation_allowed());
         assert_eq!(snapshot.policy_version(), 1);
         let context = TrustedRiskContext {
@@ -320,5 +331,174 @@ async fn approved_invitation_qualification_keeps_every_existing_level_and_repair
                 .allowed()
         );
     }
+    f.pool.close().await;
+}
+
+/// DEC-054 的 T1 规则边界测试。
+///
+/// 规则是确定性的，因此逐个边界都只依据落库事实断言：满 2 个自然日（UTC）、
+/// 至少 5 条计入的有效贡献、无生效处罚。四类边界各覆盖一次：
+///   1. 贡献差 1 条时，账号再老也不升级；
+///   2. 贡献够了但差 1 分钟未满 2 个自然日时不升级；
+///   3. 年龄与贡献都够，但存在生效处罚时不升级；
+///   4. 三者同时满足才升级，且原因码可复核。
+/// 最后验证重复评估幂等且永不降级。
+///
+/// 每次评估放在独立事务里，与生产路径一致——生产中 `trust.identity_snapshots`
+/// 是最近取得的锁，重取同一目标不违反锁序；而在同一测试事务里连续调用会因为
+/// 先前取过 `trust.invite_uses`（排序更靠后）而触发锁序回退。
+#[tokio::test]
+async fn deterministic_t1_rule_applies_only_at_every_approved_boundary() {
+    let f = Fixture::new().await;
+    let mut tx = DbTransaction::begin(&f.pool).await.unwrap();
+    f.initial(&mut tx.connection()).await;
+    let verified = mark_email_verified(&mut tx.connection(), &f.renderer, f.invitee, at())
+        .await
+        .unwrap();
+    assert_eq!(verified.level(), TrustLevel::T0);
+    let opened = verified.created_at();
+    // 先写入 4 条贡献，比批准门槛少 1 条。
+    for post in 1..T1_CONTRIBUTIONS {
+        record_contribution(
+            &mut tx.connection(),
+            &f.renderer,
+            f.invitee,
+            ContributionKind::Reply,
+            post,
+            2,
+            at(),
+        )
+        .await
+        .unwrap();
+    }
+    tx.commit().await.unwrap();
+
+    let evaluate = async |penalty: bool, now: DateTime<Utc>| {
+        let mut tx = DbTransaction::begin(&f.pool).await.unwrap();
+        let snapshot = evaluate_tier(
+            &mut tx.connection(),
+            &f.renderer,
+            f.invitee,
+            TierInputs {
+                active_penalty: penalty,
+            },
+            now,
+        )
+        .await
+        .unwrap();
+        tx.commit().await.unwrap();
+        snapshot
+    };
+
+    // 边界一：贡献不足时，账号再老（这里给到 30 天）也不升级。
+    assert_eq!(
+        evaluate(false, opened + chrono::Duration::days(30))
+            .await
+            .level(),
+        TrustLevel::T0
+    );
+
+    let mut tx = DbTransaction::begin(&f.pool).await.unwrap();
+    record_contribution(
+        &mut tx.connection(),
+        &f.renderer,
+        f.invitee,
+        ContributionKind::Topic,
+        T1_CONTRIBUTIONS,
+        10,
+        at(),
+    )
+    .await
+    .unwrap();
+    tx.commit().await.unwrap();
+
+    let boundary = opened.date_naive().and_hms_opt(0, 0, 0).unwrap().and_utc()
+        + chrono::Duration::days(T1_ACCOUNT_DAYS);
+    // 边界二：贡献已够，但距离第 2 个自然日结束还差 1 分钟，仍为 T0。
+    assert_eq!(
+        evaluate(false, boundary - chrono::Duration::minutes(1))
+            .await
+            .level(),
+        TrustLevel::T0
+    );
+    // 边界三：年龄与贡献都满足，但存在生效处罚，依然不升级。
+    assert_eq!(evaluate(true, boundary).await.level(), TrustLevel::T0);
+
+    let promoted = evaluate(false, boundary).await;
+    assert_eq!(promoted.level(), TrustLevel::T1);
+    assert_eq!(promoted.reason_code(), "tier_rule_v1_days_contributions");
+
+    // 幂等与不降级：升级后再次评估（哪怕此时带上处罚）既不改写等级也不递增版本。
+    let again = evaluate(true, boundary + chrono::Duration::days(1)).await;
+    assert_eq!(again.level(), TrustLevel::T1);
+    assert_eq!(again.version(), promoted.version());
+    f.pool.close().await;
+}
+
+/// 贡献事实的可重算性测试。
+///
+/// 覆盖三点：同一 post_id 重复写入不会重复计数（命令重放安全）；撤销只把该条移出总数
+/// 而保留事实行；重复撤销是空操作，非法 post_id 与负长度被拒绝。
+#[tokio::test]
+async fn contribution_facts_are_idempotent_and_withdrawal_keeps_the_row() {
+    let f = Fixture::new().await;
+    let mut tx = DbTransaction::begin(&f.pool).await.unwrap();
+    f.initial(&mut tx.connection()).await;
+    mark_email_verified(&mut tx.connection(), &f.renderer, f.invitee, at())
+        .await
+        .unwrap();
+    for _ in 0..3 {
+        record_contribution(
+            &mut tx.connection(),
+            &f.renderer,
+            f.invitee,
+            ContributionKind::Topic,
+            42,
+            10,
+            at(),
+        )
+        .await
+        .unwrap();
+    }
+    assert_eq!(f.count(&mut tx.connection(), "contribution_facts").await, 1);
+    assert_eq!(
+        crate::repo::count_contributions(&mut tx.connection(), &f.renderer, f.invitee)
+            .await
+            .unwrap(),
+        1
+    );
+    withdraw_contribution(&mut tx.connection(), &f.renderer, 42, at())
+        .await
+        .unwrap();
+    assert_eq!(f.count(&mut tx.connection(), "contribution_facts").await, 1);
+    assert_eq!(
+        crate::repo::count_contributions(&mut tx.connection(), &f.renderer, f.invitee)
+            .await
+            .unwrap(),
+        0
+    );
+    // 重复撤销无副作用；post_id 非正数、字符数为负一律拒绝。
+    withdraw_contribution(&mut tx.connection(), &f.renderer, 42, at())
+        .await
+        .unwrap();
+    assert!(
+        withdraw_contribution(&mut tx.connection(), &f.renderer, 0, at())
+            .await
+            .is_err()
+    );
+    assert!(
+        record_contribution(
+            &mut tx.connection(),
+            &f.renderer,
+            f.invitee,
+            ContributionKind::Reply,
+            7,
+            -1,
+            at(),
+        )
+        .await
+        .is_err()
+    );
+    tx.commit().await.unwrap();
     f.pool.close().await;
 }

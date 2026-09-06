@@ -272,6 +272,22 @@ impl std::fmt::Debug for AuthorityFacts {
             .finish_non_exhaustive()
     }
 }
+/// 从发布事务里带出的一次有效贡献变更。
+///
+/// `body_chars` 是 Unicode 标量计数（DEC-055），`is_reply` 用于区分 DEC-054 里主题与回复
+/// 各自的长度门槛。`Withdrawn` 表示本人删除后该条不再计入总数，但事实行本身会保留，
+/// 以便信任等级可以从追加历史重算（`TRUST-002` 要求可解释、可重算）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Contribution {
+    Recorded {
+        post_id: i64,
+        is_reply: bool,
+        body_chars: i64,
+    },
+    Withdrawn {
+        post_id: i64,
+    },
+}
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Action {
@@ -333,6 +349,18 @@ pub trait ContentAuthority: Send + Sync {
         user_ids: &'a [i64],
         now: DateTime<Utc>,
     ) -> FutureResult<'a, Vec<Author>>;
+    /// 记录或撤销一条 DEC-054 定义的有效贡献，供信任等级规则统计。
+    ///
+    /// 职责边界：**是否构成有效贡献由 content 判定**（长度、发布状态、回复者是否为主题
+    /// 作者），实现方只负责把判定结果存下来。调用发生在写事务的追加段，此时已经
+    /// `enter_append_phase`，因此实现方**不得再获取任何新锁**，只能做纯插入或更新。
+    fn record_contribution<'a>(
+        &'a self,
+        tx: &'a mut TransactionConnection<'_>,
+        user_id: i64,
+        contribution: Contribution,
+        now: DateTime<Utc>,
+    ) -> FutureResult<'a, ()>;
     #[allow(clippy::too_many_arguments)]
     fn append_risk<'a>(
         &'a self,

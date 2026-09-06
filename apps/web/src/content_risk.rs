@@ -31,7 +31,61 @@ pub(crate) struct ContentRatePolicy {
     pub version: i64,
     pub actions: Vec<(Action, RateRule)>,
 }
+/// DEC-060 已批准的内容反滥用预算版本号。
+///
+/// 该版本号会写进受信风控上下文，并在写事务里二次校验，防止旧版本预算的请求被重放。
+/// 下面任何一个预算数值变化，都必须同步递增本常量。
+pub(crate) const APPROVED_RATE_VERSION: i64 = 1;
+
 impl ContentRatePolicy {
+    /// 构造 DEC-060 已批准的四维反滥用预算。
+    ///
+    /// 令牌桶语义沿用 A05／DEC-051：容量即所列次数，每 `周期 / 容量` 恢复一个 token，
+    /// 因此允许桶容量以内的突发，而不是固定窗口硬计数。周期统一为 1 小时。
+    ///
+    /// 四个维度依次为 账号 / IP / 设备 / 网段，取值（DEC-060）：
+    ///   - 发主题 10 / 30 / 15 / 100
+    ///   - 发回复 60 / 150 / 90 / 500
+    ///   - 编辑与删除各取回复的一半，即 30 / 75 / 45 / 250
+    ///
+    /// 网段聚合按 IPv4 /24、IPv6 /64，与身份侧一致。
+    ///
+    /// 定位：这里只是反滥用兜底。DEC-054 的严格配额在发布事务内单独实施，两者并存。
+    /// 账号维度刻意放宽，使正常用户先碰到产品配额（提示明确），而不是先撞上限速。
+    pub fn approved() -> Result<Self, ContentError> {
+        const HOUR: u64 = 3_600;
+        fn rule(
+            account: u32,
+            ip: u32,
+            device: u32,
+            network: u32,
+        ) -> Result<RateRule, ContentError> {
+            let budget = |capacity: u32| {
+                platform::cache::RateLimitPolicy::new(
+                    capacity,
+                    std::time::Duration::from_millis(HOUR * 1_000 / u64::from(capacity.max(1))),
+                )
+                .map_err(|_| ContentError::PolicyPending)
+            };
+            Ok(RateRule {
+                account: budget(account)?,
+                ip: budget(ip)?,
+                device: budget(device)?,
+                network: budget(network)?,
+                ipv4_prefix: 24,
+                ipv6_prefix: 64,
+            })
+        }
+        Ok(Self {
+            version: APPROVED_RATE_VERSION,
+            actions: vec![
+                (Action::CreateTopic, rule(10, 30, 15, 100)?),
+                (Action::CreateReply, rule(60, 150, 90, 500)?),
+                (Action::EditPost, rule(30, 75, 45, 250)?),
+                (Action::DeletePost, rule(30, 75, 45, 250)?),
+            ],
+        })
+    }
     fn rule(&self, action: Action) -> Result<&RateRule, ContentError> {
         if self.version <= 0 {
             return Err(ContentError::PolicyPending);

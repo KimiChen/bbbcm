@@ -11,6 +11,11 @@ struct SyntheticAuthority {
     deny: AtomicBool,
     fail_append: AtomicBool,
     pseudonym: String,
+    /// 记录观察到的 DEC-054 贡献变更序列。
+    ///
+    /// 让测试可以直接断言「哪些发布构成有效贡献」，而不必反向读 trust 的仓储，
+    /// 从而把内容领域的判定逻辑与信任领域的存储实现分开验证。
+    contributions: std::sync::Mutex<Vec<(i64, Contribution)>>,
 }
 impl SyntheticAuthority {
     fn facts(&self, id: i64) -> AuthorityFacts {
@@ -44,6 +49,21 @@ impl SyntheticAuthority {
     }
 }
 impl ContentAuthority for SyntheticAuthority {
+    fn record_contribution<'a>(
+        &'a self,
+        _tx: &'a mut TransactionConnection<'_>,
+        user_id: i64,
+        contribution: Contribution,
+        _now: DateTime<Utc>,
+    ) -> FutureResult<'a, ()> {
+        Box::pin(async move {
+            self.contributions
+                .lock()
+                .map_err(|_| ContentError::Unavailable)?
+                .push((user_id, contribution));
+            Ok(())
+        })
+    }
     fn read_viewer<'a>(
         &'a self,
         _tx: &'a mut TransactionConnection<'_>,
@@ -215,6 +235,7 @@ impl Fixture {
             deny: AtomicBool::new(false),
             fail_append: AtomicBool::new(false),
             pseudonym: new_operation_id(),
+            contributions: std::sync::Mutex::new(Vec::new()),
         });
         let service = ContentService::new(
             pool.clone(),
@@ -1171,5 +1192,78 @@ async fn tag_aliases_and_merge_chains_resolve_current_canonical_visibility() {
             .await
             .unwrap_err(),
         ContentError::Unavailable
+    );
+}
+
+/// DEC-054 有效贡献只在合格时、且每帖恰好一次地离开发布事务。
+///
+/// 断言四种情形：已发布主题计入；主题作者自己的回复不计入（防自问自答刷贡献）；
+/// 其他账号的回复计入；本人删除该回复时产生一条撤销记录。
+/// 这里直接观察 content 交给授权层的调用序列，因此不依赖 trust 的仓储实现。
+#[tokio::test]
+async fn only_approved_valid_contributions_leave_the_publishing_transaction() {
+    let f = Fixture::new().await;
+    let topic = f.create("贡献事实").await;
+    let self_reply = f.reply(topic.topic_id, "作者自己的回复").await;
+    let version = f.topic(topic.topic_id).await.topic.version;
+    let other_reply = f
+        .service
+        .reply(
+            &f.credentials(2),
+            NewReply {
+                topic_id: topic.topic_id,
+                markdown: "另一个账号的回复".into(),
+                quote_post_id: None,
+                expected_topic_version: version,
+            },
+            at(),
+        )
+        .await
+        .unwrap();
+    let observed = f.authority.contributions.lock().unwrap().clone();
+    assert_eq!(
+        observed,
+        vec![
+            (
+                1,
+                Contribution::Recorded {
+                    post_id: topic.post_id,
+                    is_reply: false,
+                    body_chars: "合成正文 **safe**".chars().count() as i64,
+                }
+            ),
+            (
+                2,
+                Contribution::Recorded {
+                    post_id: other_reply.post_id,
+                    is_reply: true,
+                    body_chars: "另一个账号的回复".chars().count() as i64,
+                }
+            ),
+        ],
+        "self reply {} must not qualify",
+        self_reply.post_id
+    );
+
+    // 删除那条合格回复时，恰好撤销对应的一条事实，不牵连其他贡献。
+    f.service
+        .delete(
+            &f.credentials(2),
+            DeletePost {
+                post_id: other_reply.post_id,
+                expected_version: 1,
+            },
+            at() + Duration::seconds(1),
+        )
+        .await
+        .unwrap();
+    assert_eq!(
+        f.authority.contributions.lock().unwrap().last(),
+        Some(&(
+            2,
+            Contribution::Withdrawn {
+                post_id: other_reply.post_id
+            }
+        ))
     );
 }

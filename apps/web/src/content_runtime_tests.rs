@@ -201,13 +201,16 @@ async fn ordinary_account_real_content_transaction_projection_replay_and_worker_
         )
         .await
         .unwrap();
-    // Verification is necessary, but pending is not a publishing grant.
-    assert!(matches!(
-        content
-            .create_topic(&credentials(&grant), draft.clone(), Utc::now())
-            .await,
-        Err(ContentError::Forbidden)
-    ));
+    // DEC-054：验证通过即授予 T0，信任等级本身不再拦截发布。
+    // 但此刻仍应失败——原因不是授权，而是版块尚未建立，因此期望 NotFound 而非 Forbidden。
+    // 这样区分可以证明「等级放行了」而不是「换了个地方被拒」。
+    let after_verification = content
+        .create_topic(&credentials(&grant), draft.clone(), Utc::now())
+        .await;
+    assert!(
+        matches!(after_verification, Err(ContentError::NotFound)),
+        "unexpected outcome after verification: {after_verification:?}"
+    );
     let forum_id = seed_content(&f, identity.user_id()).await;
     let draft = NewTopic { forum_id, ..draft };
     let mut create = credentials(&grant);
