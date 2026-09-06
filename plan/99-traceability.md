@@ -1262,6 +1262,7 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 |---|---|
 | 真实 Redis 8 合同（`crates/platform/tests/redis_contract.rs`） | **通过**。在 `127.0.0.1:6399` 的隔离实例上执行（独立数据目录、关闭 RDB/AOF 持久化），覆盖原子性、命名空间隔离与恢复。测试自身强制要求显式隔离确认、回环地址与 `redis_version:8.` 大版本断言，非回环端点一律拒绝。运行版本口径见 `DEC-063`。 |
 | 真实 PostgreSQL 16 集成（`crates/platform-db/tests/postgres_contract.rs`） | **通过，11/11**。服务端为供应链锁定镜像 `postgres@sha256:421b84e0…`（`PG_VERSION=16.15`，UTF8 / C.UTF-8），一次性容器 + tmpfs 数据目录，经本机回环 `127.0.0.1:5433` 连接，取证后销毁。默认 `bcm_` 与本次运行新建的随机非默认前缀并存。运行身份 `<prefix>app_login` 仅属 `app_rw`，迁移身份 `<prefix>mig_login` 仅属 `migrator`，均为 `INHERIT FALSE` / `SET TRUE`。证据见 [`postgres-contract.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/postgres-contract.txt)，运行手册见 [`docs/development/postgres.md`](../docs/development/postgres.md)。 |
+| SBOM / 许可证 / 漏洞 / Secret 全量扫描 | **通过**。Syft 1.51.1 生成 CycloneDX SBOM（368 组件）；Trivy 0.74.0 对 347 个包扫描，**任何等级漏洞均为 0**；Gitleaks 8.30.1 全 Git 历史扫描，首轮 10 条 `generic-api-key` 发现经逐条核实**全部为误报**（命中的是资产与证据清单里的 SHA-256 文件摘要，已抽验重算确认），指纹连同依据登记于 `supply-chain/gitleaks.ignore`，重跑后剩余 0。许可证第三方部分全为 MIT/Apache 系宽松许可；唯一的 AGPL-3.0-only 是**本项目自身**的声明（`Cargo.toml`/`package.json`/`LICENSE` 三处一致），2 项 MPL-2.0 为文件级弱 copyleft，1 项 LGPL 为三选一可选 MIT。证据见 [`supply-chain-scan.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/supply-chain-scan.txt)。 |
 | 开发期最小集（`./scripts/dev-check.sh`） | **通过**，七步：格式化、Clippy `-D warnings`、333 项单元测试、真实 SQLite 冒烟 100 条路由、`git diff --check`、暂存区复核、静态守卫。新增的 7 项 PostgreSQL 合同在默认运行中正确保持 ignored。证据见 [`dev-check.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/dev-check.txt)。 |
 
 **运行版本口径（`DEC-063`）**：本机 `redis-server` 为 **8.8.0**。按 2026-09-07 批准的 `DEC-063`，合同运行时只锁 Redis **大版本 8.x**，不要求与 `supply-chain/lock.json` 镜像基线 8.2.9-bookworm 的小版本一致，因此本次结果按正式结果计入 E01 的 Redis 一项，无需在锁定镜像上重跑。`supply-chain/lock.json` 的镜像摘要锁与 `scripts/supply-chain.py` 的 tag 校验不受影响——那是可复现构建与 SBOM 溯源的约束，与合同跑在哪个 8.x 服务端上是两件事。
@@ -1275,12 +1276,12 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 | 审计与搜索权限状态的同事务提交 | 本轮只验证了 Outbox 一侧。 |
 | 应用的完整搜索模式 | **阻塞性质已改变**：扩展镜像本轮已按 `M0-03` 的 Dockerfile 离线构建成功，`pg_jieba` 1.1.1 与 `pg_trgm` 1.6 实测可用（中文分词、`@@` 匹配、`similarity` 均正确），同一套合同 11 项在该镜像上亦全部通过。真正缺的是应用侧——`crates/content/src/search.rs` 目前只有 `SqliteTitleSearch` 一个 `SearchBackend` 实现，`pg_jieba + pg_trgm` 的 PostgreSQL 后端尚未编写。这属 `WP-MVP-C05` 的实现缺口，不再是 E01 的环境问题。证据见 [`pg-jieba-extension.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/pg-jieba-extension.txt)。 |
 | 并发、性能与容量基线（`WP-MVP-E02`） | 载体未编写。 |
-| 安全套件、跨平台矩阵、SBOM 与漏洞全量扫描 | 依赖 Docker 与扫描工具链（`syft`/`trivy`/`gitleaks`，见 `supply-chain/lock.json`）。 |
+| 安全套件与跨平台矩阵 | 载体未编写；SBOM/许可证/漏洞/Secret 扫描已单独完成，见上表。 |
 | 浏览器与视觉矩阵（`WP-MVP-E04`） | 需 `05` 规定的固定浏览器、字体、缩放与视口环境。 |
 
 #### 状态影响
 
-**没有任何需求或工作包因本节推进为 `Verified`。** `DEC-020` 规定 `Verified` 只能在统一硬化阶段凭**完整矩阵**证据授予。本轮完成的是矩阵中的 Redis 合同、PostgreSQL 集成的十一项，以及开发期最小集；安全、并发、性能、E2E 与视觉矩阵仍未执行，`90` §5 的 PostgreSQL 条目也只覆盖了一部分（未覆盖清单见上表与 [`docs/development/postgres.md`](../docs/development/postgres.md)）。`WP-MVP-E01` 由 `Not started` 转 `In progress`——它的退出条件是整套矩阵，跑通若干项不等于包完成。
+**没有任何需求或工作包因本节推进为 `Verified`。** `DEC-020` 规定 `Verified` 只能在统一硬化阶段凭**完整矩阵**证据授予。本轮完成的是矩阵中的 Redis 合同、PostgreSQL 集成的十一项、`pg_jieba` 扩展镜像的离线构建与实测、SBOM/许可证/漏洞/Secret 全量扫描，以及开发期最小集；安全、并发、性能、E2E 与视觉矩阵仍未执行，`90` §5 的 PostgreSQL 条目也只覆盖了一部分（未覆盖清单见上表与 [`docs/development/postgres.md`](../docs/development/postgres.md)）。`WP-MVP-E01` 由 `Not started` 转 `In progress`——它的退出条件是整套矩阵，跑通若干项不等于包完成。
 
 #### 环境阻塞已解除
 
@@ -1301,7 +1302,7 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 
 1. **PostgreSQL 的 `SearchBackend` 实现**（`WP-MVP-C05`）。扩展镜像与扩展本身已验证可用，缺的是应用代码。
 2. **并发、性能、安全与视觉矩阵的载体**，目前尚未编写。
-3. **SBOM、许可证、漏洞与 Secret 的全量扫描**（`syft`/`trivy`/`gitleaks`），本轮未执行。
+3. **端到端（E2E）与浏览器视觉矩阵**，需 `05` 规定的固定浏览器、字体、缩放与视口环境。
 
 当前所有需求的状态天花板仍是 `Implemented`：完整矩阵未跑完之前，`Verified` 不授予。
 

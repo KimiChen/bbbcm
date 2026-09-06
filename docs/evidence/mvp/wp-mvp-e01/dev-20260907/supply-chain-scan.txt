@@ -1,0 +1,70 @@
+# WP-MVP-E01 SBOM / 许可证 / 漏洞 / Secret 扫描（2026-09-07）
+
+工具版本取自 `supply-chain/lock.json`：Syft 1.51.1、Trivy 0.74.0、Gitleaks 8.30.1、Node 24.20.0。
+入口为 `scripts/supply-chain-scan.py`；原始报告写入 `.cache/supply-chain/`（Git 忽略），本文件是脱敏摘要。
+
+## 结果
+
+| 项 | 结果 |
+|---|---|
+| 基线一致性 | **通过**。16 个 Workspace 成员、319 个 registry crate、27 个 npm 包、77 个锁定归档，与锁文件一致。 |
+| SBOM | **已生成**，CycloneDX 格式，368 个组件（含本仓库自身的 18 个不声明许可证的成员与锁文件条目）。 |
+| 漏洞 | **0**。Trivy 对 347 个包扫描，Critical/High 计数为 0，任何等级的发现也为 0。漏洞库快照摘要已随报告记录。 |
+| Secret | **0**。Gitleaks 全 Git 历史扫描（`--log-opts=--all`）。首轮 10 条发现经逐条人工核实**全部为误报**，见下。 |
+| 许可证 | **无阻断项**，见下。 |
+
+## 许可证分布（第三方组件）
+
+| 数量 | 许可证 |
+|---|---|
+| 179 | MIT OR Apache-2.0 |
+| 79 | MIT |
+| 20 | Apache-2.0 OR MIT |
+| 18 | Unicode-3.0 |
+| 12 | MIT/Apache-2.0 |
+| 4 | Unlicense OR MIT |
+| 3 | BSD-3-Clause |
+| 3 | MIT OR Apache-2.0 OR Zlib |
+| 2 | Zlib OR Apache-2.0 OR MIT |
+| 2 | MPL-2.0 |
+| 2 | Zlib |
+| 2 | MIT OR Zlib OR Apache-2.0 |
+| 2 | BSD-3-Clause OR Apache-2.0 |
+| 2 | Apache-2.0 OR ISC OR MIT |
+| 2 | ISC |
+| 2 | Apache-2.0 OR BSL-1.0 OR MIT |
+| 2 | CDLA-Permissive-2.0 |
+| 2 | BSD-2-Clause OR Apache-2.0 OR MIT |
+| 1 | 0BSD OR MIT OR Apache-2.0 |
+| 1 | Apache-2.0 OR MIT OR Zlib |
+| 1 | AGPL-3.0-only |
+| 1 | Apache-2.0/MIT |
+| 1 | MIT AND BSD-3-Clause |
+| 1 | MIT OR Apache-2.0 OR LGPL-2.1-or-later |
+| 1 | Apache-2.0 AND ISC |
+| 1 | Apache-2.0 OR BSL-1.0 |
+| 1 | Apache-2.0 |
+| 1 | (MIT OR Apache-2.0) AND Unicode-3.0 |
+| 1 | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT |
+| 1 | BSL-1.0 |
+
+绝大多数为 MIT / Apache-2.0 系宽松许可。需要单独说明的三项：
+
+- **AGPL-3.0-only（1 项）**：是 **本项目自身** 的许可证声明（npm 包名 `bbbcm-build`，即根 `package.json`），与 `Cargo.toml` 的 `license` 字段和仓库 `LICENSE` 文件三处一致，**不是第三方传染**。
+- **MPL-2.0（2 项）**：`cssparser`、`dtoa-short`。MPL 是文件级弱 copyleft，仅要求修改其自身文件时公开，不影响本项目其余代码。
+- **LGPL-2.1-or-later（1 项）**：`r-efi`，其声明为 `MIT OR Apache-2.0 OR LGPL-2.1-or-later` 三选一，可选 MIT，不构成 LGPL 义务。
+
+清单状态为 `declared-needs-review`：这是「声明值已采集、待人工复核」，不是自动判定通过。
+
+## Secret 首轮 10 条发现的处置
+
+全部由 Gitleaks 的 `generic-api-key` 启发式命中 **64 位十六进制字符串**，命中对象是两份内容摘要清单：
+
+- `docs/evidence/mvp/content/dev-20260906/validation.json`：C01/C02 证据清单，值为源文件 SHA-256。
+- `docs/visual/a00/structure-freeze.json`：A00 资产冻结清单，值为静态资产 SHA-256。
+
+已抽验重算 `oauth-github.svg` 与 `theme-moon.svg` 的 SHA-256，与清单值一致，确认是可公开复算的文件摘要而非凭据。
+十条指纹连同判定依据登记在 `supply-chain/gitleaks.ignore`，复核方式即重算对应文件摘要。
+登记的是**已核实的误报**，不是为让扫描变绿而抑制未核实发现。
+
+重跑后剩余发现：**0**。

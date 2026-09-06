@@ -1,1 +1,25 @@
-# 空列表；不自动忽略历史发现或内联 allow 标记。
+# 已逐条人工核实的误报指纹。规则：只登记确认不是凭据的条目，且必须写明依据；
+# 不得为了让扫描变绿而登记未经核实的发现，也不使用内联 allow 标记（那会让
+# 抑制散落在源码里，无法集中复核）。
+#
+# 以下 10 条全部由 gitleaks 的 `generic-api-key` 启发式命中，命中对象是
+# **SHA-256 内容摘要**（64 位十六进制），而不是访问凭据：
+#
+#   - docs/evidence/mvp/content/dev-20260906/validation.json
+#     WP-MVP-C01/C02 证据清单，键为源文件路径、值为该文件的 SHA-256，
+#     用于证明证据对应的确切代码版本。
+#   - docs/visual/a00/structure-freeze.json
+#     WP-MVP-A00 的资产与模板冻结清单，键为静态资产路径、值为其 SHA-256。
+#
+# 两者都是公开可复算的文件摘要：任何人拿到仓库都能用 sha256sum 重新算出同一串，
+# 因此它们不构成秘密，泄露也不授予任何访问权。复核方式即重算对应文件的摘要。
+d0f3f391cf3196269ee623e55f2026a11c7005d3:docs/evidence/mvp/content/dev-20260906/validation.json:generic-api-key:155
+d0f3f391cf3196269ee623e55f2026a11c7005d3:docs/evidence/mvp/content/dev-20260906/validation.json:generic-api-key:156
+d0f3f391cf3196269ee623e55f2026a11c7005d3:docs/evidence/mvp/content/dev-20260906/validation.json:generic-api-key:158
+d0f3f391cf3196269ee623e55f2026a11c7005d3:docs/evidence/mvp/content/dev-20260906/validation.json:generic-api-key:160
+da905630dc1ea43b5b2c240076a3a21c07080521:docs/visual/a00/structure-freeze.json:generic-api-key:26
+da905630dc1ea43b5b2c240076a3a21c07080521:docs/visual/a00/structure-freeze.json:generic-api-key:27
+da905630dc1ea43b5b2c240076a3a21c07080521:docs/visual/a00/structure-freeze.json:generic-api-key:28
+e5051b8823eba68b7ae5a0d0d19783b6f30a2f27:docs/visual/a00/structure-freeze.json:generic-api-key:26
+e5051b8823eba68b7ae5a0d0d19783b6f30a2f27:docs/visual/a00/structure-freeze.json:generic-api-key:27
+e5051b8823eba68b7ae5a0d0d19783b6f30a2f27:docs/visual/a00/structure-freeze.json:generic-api-key:28
