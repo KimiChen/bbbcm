@@ -1,0 +1,41 @@
+# WP-MVP-E01 安全矩阵：不依赖未完成功能的部分（2026-09-07）
+
+载体：`apps/web/src/security_tests.rs`，跑在完整装配的路由上但**不需要数据库**——
+验证的是「后端未装配时也必须成立」的性质，这类性质恰恰最容易在降级分支里被绕过。
+
+```
+test security_tests::asset_responses_forbid_mime_sniffing ... ok
+test security_tests::management_routes_never_leak_content_without_a_session ... ok
+test security_tests::every_management_response_carries_the_full_security_header_set ... ok
+test security_tests::state_changing_paths_are_not_reachable_by_get ... ok
+test security_tests::no_response_leaks_secrets_connection_strings_or_host_paths ... ok
+test security_tests::redirect_targets_can_never_be_pointed_off_site ... ok
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 38 filtered out; finished in 0.02s
+```
+
+| 用例 | 覆盖的 90 §5 安全条目 |
+|---|---|
+| 管理响应安全头全覆盖 | 点击劫持、CSP、缓存、安全响应头 |
+| 未登录不泄露管理内容 | 垂直越权、C3 永不返回 |
+| 响应不泄露 Secret/连接串/主机路径 | 日志、错误、HTML、JSON 敏感泄露 |
+| 跳转目标不可指向站外 | 开放重定向 |
+| 改状态动作不可经 GET 到达 | CSRF |
+| 资产响应禁止 MIME 嗅探 | XSS（sniffing 导致的脚本执行） |
+
+## 本轮修复的缺陷
+
+首个用例即抓到：`secure_headers` 原先只在 `render` 的成功分支与 `redirect` 里调用，
+而 handler 里有**六处** `StatusCode::X.into_response()` 提前返回——`/manage` 的 404 与 500
+不带任何安全头。后台 URL 本身带案件与主题 ID（`99` §1008），缺 `Referrer-Policy` 等于
+把它送到站外，缺 `no-store` 则允许中间层缓存管理响应。
+
+修复方式是把安全头改由 `axum::middleware::map_response` 统一施加，而不是在每个 return
+前逐个调用——将来新增的任何提前返回都不会再漏。这是无歧义的实现遗漏，`99` §1008 已
+写明「管理响应带…」，不存在事实源冲突，故直接修复未另行请示。
+
+## 未覆盖（不得据本文件宣称已验证）
+
+- 上传 MIME／文件头／压缩炸弹／像素炸弹与下载鉴权：`WP-MVP-C03` 上传链未实现。
+- 验证码边界、凭证填充、时序：需真实身份后端与统计样本，随 `WP-MVP-E02` 一并做。
+- SQL 注入与 SSRF：SQL 侧由 `sql_lint` 静态守卫与 PostgreSQL 集成的 bind 往返覆盖；
+  SSRF 需外部 provider 接入后才有攻击面，当前无出站请求路径。

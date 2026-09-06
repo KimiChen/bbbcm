@@ -1267,6 +1267,7 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 | 并发矩阵：identity 三项 | **通过**。邮箱验证、密码恢复、邀请码消费/额度，各 8 路并发。邮箱验证除断言恰好一次成功外，还回读 `consumed` 标志——只看返回值排除不了「第二次也写了、只是返回幂等重放」；密码恢复在并发结束后再单独试一次并要求失败，把一次性验到底；邀请码额外核对实际只新增一个账号。证据见 [`identity-concurrency.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/identity-concurrency.txt)。 |
 | 并发矩阵：主题楼层 | **通过**。8 路 Worker × 每路 5 条 = 40 条并发回复，各用独立账号以避开 `DEC-060` 的每小时预算。断言楼层不重复、从 2 起连续（2–41）、主题 `next_floor` 与 `raw_reply_count` 与实际行数一致。本项首次执行即暴露并修复了 `DEC-064` 的 `forums` ACL 缺陷。证据见 [`content-concurrency.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/content-concurrency.txt)。 |
 | 并发矩阵：Outbox lease | **通过**。120 条事件 / 8 路 Worker 并发 `claim`，四层断言：反空转（八路全部领到，非单线程退化）、至多一次（无重复租约）、不饿死（120 条全部领走）、两两不相交。数据库侧复核状态全为 `leased` 且计数相符。证据见 [`postgres-concurrency.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/postgres-concurrency.txt)。**只覆盖 `90` §5 并发九项中的一项**，其余见下表。 |
+| 安全矩阵：不依赖未完成功能的部分 | **通过，6/6**（`apps/web/src/security_tests.rs`）。覆盖管理响应安全头全覆盖、未登录不泄露管理内容（C3 永不返回）、响应不泄露 Secret/连接串/主机路径、跳转不可指向站外、改状态动作不可经 GET 到达、资产禁止 MIME 嗅探。首个用例即抓到并修复了 `/manage` 404/500 不带安全头的缺陷。证据见 [`security-suite.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/security-suite.txt)。 |
 | SBOM / 许可证 / 漏洞 / Secret 全量扫描 | **通过**。Syft 1.51.1 生成 CycloneDX SBOM（368 组件）；Trivy 0.74.0 对 347 个包扫描，**任何等级漏洞均为 0**；Gitleaks 8.30.1 全 Git 历史扫描，首轮 10 条 `generic-api-key` 发现经逐条核实**全部为误报**（命中的是资产与证据清单里的 SHA-256 文件摘要，已抽验重算确认），指纹连同依据登记于 `supply-chain/gitleaks.ignore`，重跑后剩余 0。许可证第三方部分全为 MIT/Apache 系宽松许可；唯一的 AGPL-3.0-only 是**本项目自身**的声明（`Cargo.toml`/`package.json`/`LICENSE` 三处一致），2 项 MPL-2.0 为文件级弱 copyleft，1 项 LGPL 为三选一可选 MIT。证据见 [`supply-chain-scan.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/supply-chain-scan.txt)。 |
 | 开发期最小集（`./scripts/dev-check.sh`） | **通过**，七步：格式化、Clippy `-D warnings`、333 项单元测试、真实 SQLite 冒烟 100 条路由、`git diff --check`、暂存区复核、静态守卫。新增的 11 项 PostgreSQL 合同在默认运行中正确保持 ignored。证据见 [`dev-check.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/dev-check.txt)。 |
 
@@ -1284,7 +1285,9 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 | 应用的完整搜索模式 | **阻塞性质已改变**：扩展镜像本轮已按 `M0-03` 的 Dockerfile 离线构建成功，`pg_jieba` 1.1.1 与 `pg_trgm` 1.6 实测可用（中文分词、`@@` 匹配、`similarity` 均正确），同一套合同 11 项在该镜像上亦全部通过。真正缺的是应用侧——`crates/content/src/search.rs` 目前只有 `SqliteTitleSearch` 一个 `SearchBackend` 实现，`pg_jieba + pg_trgm` 的 PostgreSQL 后端尚未编写。这属 `WP-MVP-C05` 的实现缺口，不再是 E01 的环境问题。证据见 [`pg-jieba-extension.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/pg-jieba-extension.txt)。 |
 | 并发矩阵：互动唯一性、通知去重 | 属 `WP-MVP-C04`（`Not started`），**功能尚不存在**，不是载体问题。`90` §5 并发九项中的其余七项本轮全部通过。 |
 | 性能与容量基线（`WP-MVP-E02`） | 载体未编写。 |
-| 安全套件与跨平台矩阵 | 载体未编写；SBOM/许可证/漏洞/Secret 扫描已单独完成，见上表。 |
+| 安全矩阵：上传相关 | 上传 MIME／文件头／压缩炸弹／像素炸弹与下载鉴权依赖 `WP-MVP-C03` 的上传链，**功能尚未实现**。 |
+| 安全矩阵：验证码、凭证填充、时序 | 需真实身份后端与统计样本，随 `WP-MVP-E02` 性能矩阵一并做。 |
+| 跨平台矩阵 | 载体未编写。 |
 | 浏览器与视觉矩阵（`WP-MVP-E04`） | 需 `05` 规定的固定浏览器、字体、缩放与视口环境。 |
 
 #### 缺陷：完整模式下所有内容写入必然失败（2026-09-07 发现）
@@ -1345,9 +1348,17 @@ PostgreSQL 中没有 schema `USAGE`，其下所有表级授权一律无效。**�
 
 修复为新增前向迁移 `0019_iam_schema_usage.sql`：postgres 轨 `GRANT USAGE ON SCHEMA iam TO app_rw`，只补 `app_rw`——`worker_rw`／`report_ro` 在 0016 已被显式 REVOKE，不在此放宽。修复后 `manage` 的两个并发用例通过。
 
+#### 缺陷：`/manage` 的 404 与 500 不带安全响应头（2026-09-07 发现并修复）
+
+安全矩阵首个用例即抓到：`secure_headers` 原先只在 `render` 的成功分支与 `redirect` 里调用，而 `crates/manage/src/console/http.rs` 的 handler 内有**六处** `StatusCode::X.into_response()` 提前返回（`:197`、`:239`、`:319`、`:321`、`:403`、`:463`），这些响应不带 `X-Frame-Options`、`frame-ancestors 'none'`、`Referrer-Policy: no-referrer` 与 `Cache-Control: no-store`。
+
+**影响面**：后台 URL 本身带案件与主题 ID（本节第 1008 行已写明这条理由），缺 `Referrer-Policy` 时一个 404 页面上的站外链接就会把该 URL 送出去；缺 `no-store` 则允许中间层缓存管理响应。
+
+**已直接修复，未另行请示**：`99` 第 1008 行已无条件写明「管理响应带 …」，代码只是漏了分支，不存在事实源冲突。修法是把安全头改由 `axum::middleware::map_response` 在管理路由层统一施加，而不是在每个 return 前逐个调用——将来新增的任何提前返回都不会再漏。
+
 #### 状态影响
 
-**没有任何需求或工作包因本节推进为 `Verified`。** `DEC-020` 规定 `Verified` 只能在统一硬化阶段凭**完整矩阵**证据授予。本轮完成的是矩阵中的 Redis 合同、PostgreSQL 集成的十一项、并发九项中的七项（Outbox lease、主题楼层、邮箱验证、密码恢复、邀请码消费/额度、举报合并、治理命令）、`pg_jieba` 扩展镜像的离线构建与实测、SBOM/许可证/漏洞/Secret 全量扫描，以及开发期最小集；安全、并发、性能、E2E 与视觉矩阵仍未执行，`90` §5 的 PostgreSQL 条目也只覆盖了一部分（未覆盖清单见上表与 [`docs/development/postgres.md`](../docs/development/postgres.md)）。`WP-MVP-E01` 由 `Not started` 转 `In progress`——它的退出条件是整套矩阵，跑通若干项不等于包完成。
+**没有任何需求或工作包因本节推进为 `Verified`。** `DEC-020` 规定 `Verified` 只能在统一硬化阶段凭**完整矩阵**证据授予。本轮完成的是矩阵中的 Redis 合同、PostgreSQL 集成的十一项、并发九项中的七项（Outbox lease、主题楼层、邮箱验证、密码恢复、邀请码消费/额度、举报合并、治理命令）、安全矩阵中不依赖未完成功能的六项、`pg_jieba` 扩展镜像的离线构建与实测、SBOM/许可证/漏洞/Secret 全量扫描，以及开发期最小集；安全、并发、性能、E2E 与视觉矩阵仍未执行，`90` §5 的 PostgreSQL 条目也只覆盖了一部分（未覆盖清单见上表与 [`docs/development/postgres.md`](../docs/development/postgres.md)）。`WP-MVP-E01` 由 `Not started` 转 `In progress`——它的退出条件是整套矩阵，跑通若干项不等于包完成。
 
 #### 环境阻塞已解除
 

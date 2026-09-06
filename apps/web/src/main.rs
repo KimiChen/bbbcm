@@ -25,6 +25,8 @@ mod moderation_authority;
 #[cfg(test)]
 mod moderation_runtime_tests;
 mod router;
+#[cfg(test)]
+mod security_tests;
 mod status;
 #[path = "../../worker_services.rs"]
 mod worker_services;

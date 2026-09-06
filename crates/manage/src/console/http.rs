@@ -139,6 +139,19 @@ where
         .route("/manage/cases/{id}", get(page).post(submit))
         .route("/manage/content", get(page).post(submit))
         .with_state(state)
+        // 安全头统一由这一层加，而不是在每个 handler 里逐个 return 前调用。
+        //
+        // 原先只有 `render` 的成功分支与 `redirect` 调了 `secure_headers`，而
+        // handler 里有六处 `StatusCode::X.into_response()` 的提前返回——`/manage`
+        // 的 404 与 500 因此不带任何安全头。后台 URL 本身带案件与主题 ID（`99`
+        // §1008），缺 `Referrer-Policy` 就等于把它送到站外，缺 `no-store` 则允许
+        // 中间层缓存管理响应。放在 layer 上，将来新增的任何提前返回都不会再漏。
+        .layer(axum::middleware::map_response(
+            |mut response: Response| async move {
+                secure_headers(&mut response);
+                response
+            },
+        ))
 }
 
 fn cookie_name(state: &ConsoleState, name: &str) -> String {
