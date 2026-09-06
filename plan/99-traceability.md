@@ -1267,6 +1267,7 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 | 并发矩阵：identity 三项 | **通过**。邮箱验证、密码恢复、邀请码消费/额度，各 8 路并发。邮箱验证除断言恰好一次成功外，还回读 `consumed` 标志——只看返回值排除不了「第二次也写了、只是返回幂等重放」；密码恢复在并发结束后再单独试一次并要求失败，把一次性验到底；邀请码额外核对实际只新增一个账号。证据见 [`identity-concurrency.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/identity-concurrency.txt)。 |
 | 并发矩阵：主题楼层 | **通过**。8 路 Worker × 每路 5 条 = 40 条并发回复，各用独立账号以避开 `DEC-060` 的每小时预算。断言楼层不重复、从 2 起连续（2–41）、主题 `next_floor` 与 `raw_reply_count` 与实际行数一致。本项首次执行即暴露并修复了 `DEC-064` 的 `forums` ACL 缺陷。证据见 [`content-concurrency.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/content-concurrency.txt)。 |
 | 并发矩阵：Outbox lease | **通过**。120 条事件 / 8 路 Worker 并发 `claim`，四层断言：反空转（八路全部领到，非单线程退化）、至多一次（无重复租约）、不饿死（120 条全部领走）、两两不相交。数据库侧复核状态全为 `leased` 且计数相符。证据见 [`postgres-concurrency.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/postgres-concurrency.txt)。**只覆盖 `90` §5 并发九项中的一项**，其余见下表。 |
+| 浏览器结构化检查（`05` §6 B 级） | **部分通过**。14 个 A00 夹具页 × 六视口（1440/1024/768/760/390/320）× light 全量 + dark 抽查，共 154 个组合。**通过**：无横向溢出 0/154、键盘可达（无 `tabindex="-1"`）、无 JavaScript 可用（SSR 全量内容）、错误态可达。**不达标**：触控目标 ≥44px 与对比度 WCAG AA——但这两项是**计划内部冲突**而非实现缺陷，见下节。证据见 [`b-level-structural.txt`](../docs/evidence/mvp/wp-mvp-e04/dev-20260907/b-level-structural.txt)。A 级像素与几何比对仍未执行。 |
 | SQLite 体验模式矩阵 | **通过**。逐条核对 `90` §5「SQLite 体验模式」四项：WAL／`busy_timeout`／外键与连接池行为（`platform-db` 既有用例已覆盖并复核）；迁移 N 轨编号对齐（`verify_repository` 用例）；**本轮补齐** FTS5 探测与 LIKE 降级断言——`sqlite_search_degrades_to_titles_and_says_so_instead_of_erroring` 断言能力降级为仅标题、标题词命中而仅存于正文的词不命中，`title_only_search_declares_its_limit_and_full_text_does_not` 断言受限提示的映射。核心流程（注册、登录、发帖、回复、标题搜索、举报、基础后台）由 `identity/http_tests`、`content_runtime_tests`、`moderation_runtime_tests` 与 SQLite 冒烟 100 条路由分层覆盖。 |
 | `90` §6 固定指标：参数门槛一致性 | **通过，6/6**（`apps/web/src/parameter_conformance_tests.rs`）。把 `90` §6 表中已批准的固定取值逐项钉到实现上：内容长度与窗口、T0/T1 发布额度与日界线语义、外链门槛、T1 授予门槛、管理会话与高危重认证、四维反滥用预算（连补充间隔与网段前缀一并断言）。这些数字散落在四个 crate，文档与代码各改各的都不会报错，因此必须有这层核验。证据见 [`parameter-conformance.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/parameter-conformance.txt)。 |
 | 安全矩阵：不依赖未完成功能的部分 | **通过，6/6**（`apps/web/src/security_tests.rs`）。覆盖管理响应安全头全覆盖、未登录不泄露管理内容（C3 永不返回）、响应不泄露 Secret/连接串/主机路径、跳转不可指向站外、改状态动作不可经 GET 到达、资产禁止 MIME 嗅探。首个用例即抓到并修复了 `/manage` 404/500 不带安全头的缺陷。证据见 [`security-suite.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/security-suite.txt)。 |
@@ -1290,7 +1291,7 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 | 安全矩阵：上传相关 | 上传 MIME／文件头／压缩炸弹／像素炸弹与下载鉴权依赖 `WP-MVP-C03` 的上传链，**功能尚未实现**。 |
 | 安全矩阵：验证码、凭证填充、时序 | 需真实身份后端与统计样本，随 `WP-MVP-E02` 性能矩阵一并做。 |
 | 跨平台矩阵 | 载体未编写。 |
-| 浏览器与视觉矩阵（`WP-MVP-E04`） | 需 `05` 规定的固定浏览器、字体、缩放与视口环境。 |
+| A 级像素与几何比对（`WP-MVP-E04`） | 需 `05` 规定的固定浏览器、字体、缩放与视口环境；结构级检查已完成，见上表。 |
 
 #### 缺陷：完整模式下所有内容写入必然失败（2026-09-07 发现）
 
@@ -1358,9 +1359,23 @@ PostgreSQL 中没有 schema `USAGE`，其下所有表级授权一律无效。**�
 
 **已直接修复，未另行请示**：`99` 第 1008 行已无条件写明「管理响应带 …」，代码只是漏了分支，不存在事实源冲突。修法是把安全头改由 `axum::middleware::map_response` 在管理路由层统一施加，而不是在每个 return 前逐个调用——将来新增的任何提前返回都不会再漏。
 
+#### 冲突：无障碍门禁与 A00 严格参考冻结不可兼得（2026-09-07 发现，待裁决）
+
+浏览器结构化检查发现两项不达标，逐条核对后确认**两者都不是实现缺陷**，而是计划内部两条要求互相冲突：
+
+| 事实源 | 要求 |
+|---|---|
+| `05` 第 6 节 B 级检查项 | 触控目标不小于 44px、对比度达标 |
+| `90` 第 5 节浏览器与视觉 | WCAG 2.2 AA、44px 触控 |
+| `05` + `DEC-021`／`DEC-046`、`AGENTS.md` | 「严格参考」等于复制 `sb.sb` 的公开视觉风格，**不得降级为近似设计**；A00 模板与 CSS 类名已冻结 |
+
+实测不达标项：触控目标方面，`a.brand`（34px 高）、`a.mobile-forum-link`（33px 高）、`input.search-input`（37px 高）、`button.search-btn`（32×26）、`a.nav-mine`（46×37）、`a.tab`（36px 宽）在全部 14 页、全部 6 个视口均低于 44px，移动视口同样如此；对比度方面，light 主题的 `a.post-title`（3.19）、`span.footer-version`（2.95）、`span.post-user-group`（3.84／3.91）与 dark 主题的 `span.footer-version`（4.04）、`span.post-user-group`（3.91）低于 4.5:1。判定已按 WCAG 2.5.8 排除正文内联链接的豁免情形。
+
+把触控目标撑到 44px、把配色改到 4.5:1，正是对参考设计的改动——与冻结要求直接抵触。按 `AGENTS.md`「发现冲突时停止冲突部分、列出精确位置并直接询问用户」，此处停止，**未改动任何冻结资产**，待用户裁决。
+
 #### 状态影响
 
-**没有任何需求或工作包因本节推进为 `Verified`。** `DEC-020` 规定 `Verified` 只能在统一硬化阶段凭**完整矩阵**证据授予。本轮完成的是矩阵中的 Redis 合同、PostgreSQL 集成的十一项、并发九项中的七项（Outbox lease、主题楼层、邮箱验证、密码恢复、邀请码消费/额度、举报合并、治理命令）、安全矩阵中不依赖未完成功能的六项、`90` §6 参数门槛一致性六项、SQLite 体验模式矩阵、`pg_jieba` 扩展镜像的离线构建与实测、SBOM/许可证/漏洞/Secret 全量扫描，以及开发期最小集；安全、并发、性能、E2E 与视觉矩阵仍未执行，`90` §5 的 PostgreSQL 条目也只覆盖了一部分（未覆盖清单见上表与 [`docs/development/postgres.md`](../docs/development/postgres.md)）。`WP-MVP-E01` 由 `Not started` 转 `In progress`——它的退出条件是整套矩阵，跑通若干项不等于包完成。
+**没有任何需求或工作包因本节推进为 `Verified`。** `DEC-020` 规定 `Verified` 只能在统一硬化阶段凭**完整矩阵**证据授予。本轮完成的是矩阵中的 Redis 合同、PostgreSQL 集成的十一项、并发九项中的七项（Outbox lease、主题楼层、邮箱验证、密码恢复、邀请码消费/额度、举报合并、治理命令）、安全矩阵中不依赖未完成功能的六项、`90` §6 参数门槛一致性六项、SQLite 体验模式矩阵、浏览器结构化检查的四项、`pg_jieba` 扩展镜像的离线构建与实测、SBOM/许可证/漏洞/Secret 全量扫描，以及开发期最小集；安全、并发、性能、E2E 与视觉矩阵仍未执行，`90` §5 的 PostgreSQL 条目也只覆盖了一部分（未覆盖清单见上表与 [`docs/development/postgres.md`](../docs/development/postgres.md)）。`WP-MVP-E01` 由 `Not started` 转 `In progress`——它的退出条件是整套矩阵，跑通若干项不等于包完成。
 
 #### 环境阻塞已解除
 

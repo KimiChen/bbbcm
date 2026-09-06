@@ -64,3 +64,6 @@ tmp/
 # AI
 AGENTS.md
 CLAUDE.md
+
+# 本机工具配置（预览服务端口等），不属项目产物
+.claude/
