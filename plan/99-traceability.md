@@ -121,7 +121,8 @@
 | `WP-MVP-C05` | In progress | 只借入同事务权威search_documents；搜索引擎/页面、SEO、Feed/sitemap等仍缺，见5.9。 |
 | `WP-MVP-C04` | Not started | 互动、通知与跨设备阅读位置后续。 |
 | `WP-MVP-D01..D04` | Not started | - |
-| `WP-MVP-E01/E02/E04/E05` | Not started | - |
+| `WP-MVP-E01` | In progress | 真实 Redis 8 合同与真实 PostgreSQL 16 双前缀集成（7 项）已通过并留证；`90` §5 其余 PostgreSQL 条目、`pg_jieba` 完整搜索、安全/并发/性能/E2E/视觉矩阵未执行，见 5.23。 |
+| `WP-MVP-E02/E04/E05` | Not started | - |
 | `WP-P1A-01..09` | Not started / flag closed | - |
 | `WP-P1B-*` | Not started / flag closed | - |
 | `WP-P2-*` | Not started / flag closed | - |
@@ -1249,18 +1250,19 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 
 本轮不授予 `Verified` 或任何阶段门禁；`C05` 整包继续 `In progress`（PostgreSQL 全文、结构化数据的完整覆盖、Atom 与标签级订阅未做）。仅本机开发、开发期最小集与中文新建提交。新增与改动代码一律使用详细中文注释。
 
-### 5.23 `WP-MVP-E01` 硬化验证：本机可执行部分与环境阻塞（2026-09-07）
+### 5.23 `WP-MVP-E01` 硬化验证：已执行范围与剩余缺口（2026-09-07）
 
 产品决策与最终批准：项目所有者（用户）；执行与登记：Claude。
 
-本节按 `AGENTS.md`「未执行、失败或受环境阻塞的检查必须如实报告，不得声称通过」如实记录 E01 在**本机环境**下的可执行范围。
+本节按 `AGENTS.md`「未执行、失败或受环境阻塞的检查必须如实报告，不得声称通过」如实记录 E01 已执行的范围与仍未覆盖的缺口。
 
 #### 已执行并通过
 
 | 检查 | 结果 |
 |---|---|
 | 真实 Redis 8 合同（`crates/platform/tests/redis_contract.rs`） | **通过**。在 `127.0.0.1:6399` 的隔离实例上执行（独立数据目录、关闭 RDB/AOF 持久化），覆盖原子性、命名空间隔离与恢复。测试自身强制要求显式隔离确认、回环地址与 `redis_version:8.` 大版本断言，非回环端点一律拒绝。运行版本口径见 `DEC-063`。 |
-| 开发期最小集（`./scripts/dev-check.sh`） | **通过**，七步：格式化、Clippy `-D warnings`、333 项单元测试、真实 SQLite 冒烟 100 条路由、`git diff --check`、暂存区复核、静态守卫。 |
+| 真实 PostgreSQL 16 集成（`crates/platform-db/tests/postgres_contract.rs`） | **通过，7/7**。服务端为供应链锁定镜像 `postgres@sha256:421b84e0…`（`PG_VERSION=16.15`，UTF8 / C.UTF-8），一次性容器 + tmpfs 数据目录，经本机回环 `127.0.0.1:5433` 连接，取证后销毁。默认 `bcm_` 与本次运行新建的随机非默认前缀并存。运行身份 `<prefix>app_login` 仅属 `app_rw`，迁移身份 `<prefix>mig_login` 仅属 `migrator`，均为 `INHERIT FALSE` / `SET TRUE`。证据见 [`postgres-contract.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/postgres-contract.txt)，运行手册见 [`docs/development/postgres.md`](../docs/development/postgres.md)。 |
+| 开发期最小集（`./scripts/dev-check.sh`） | **通过**，七步：格式化、Clippy `-D warnings`、333 项单元测试、真实 SQLite 冒烟 100 条路由、`git diff --check`、暂存区复核、静态守卫。新增的 7 项 PostgreSQL 合同在默认运行中正确保持 ignored。证据见 [`dev-check.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/dev-check.txt)。 |
 
 **运行版本口径（`DEC-063`）**：本机 `redis-server` 为 **8.8.0**。按 2026-09-07 批准的 `DEC-063`，合同运行时只锁 Redis **大版本 8.x**，不要求与 `supply-chain/lock.json` 镜像基线 8.2.9-bookworm 的小版本一致，因此本次结果按正式结果计入 E01 的 Redis 一项，无需在锁定镜像上重跑。`supply-chain/lock.json` 的镜像摘要锁与 `scripts/supply-chain.py` 的 tag 校验不受影响——那是可复现构建与 SBOM 溯源的约束，与合同跑在哪个 8.x 服务端上是两件事。
 
@@ -1268,24 +1270,35 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 
 | 检查 | 阻塞原因 |
 |---|---|
-| 真实 PostgreSQL 16 双前缀集成（`90` §5「PostgreSQL 集成」全部条目） | 本机**未安装 PostgreSQL**，且 **Docker/Podman 不可用**，无法起 `16.15-alpine3.23` 锁定镜像。仓库中也尚无对应的集成测试载体。 |
-| `pg_jieba` / `pg_trgm` 搜索完整模式 | 同上；扩展需按 `M0-03` 的 Dockerfile 从锁定 commit 源码编译。 |
-| 并发、性能与容量基线（`WP-MVP-E02`） | 依赖真实 PostgreSQL。 |
+| `90` §5 的其余 PostgreSQL 条目 | 本载体**不含**：未来对象默认权限、未知提交（`CommitUnknown`）、`40001`/`40P01` 受控重试与固定锁顺序的并发验证、Outbox/审计/搜索权限状态与业务事实同事务提交。载体已就位，补齐是后续工作而非环境阻塞。 |
+| `pg_jieba` / `pg_trgm` 搜索完整模式 | 扩展需按 `M0-03` 的 Dockerfile 从锁定 commit 源码编译镜像，本轮未构建。 |
+| 并发、性能与容量基线（`WP-MVP-E02`） | 载体未编写。 |
 | 安全套件、跨平台矩阵、SBOM 与漏洞全量扫描 | 依赖 Docker 与扫描工具链（`syft`/`trivy`/`gitleaks`，见 `supply-chain/lock.json`）。 |
 | 浏览器与视觉矩阵（`WP-MVP-E04`） | 需 `05` 规定的固定浏览器、字体、缩放与视口环境。 |
 
 #### 状态影响
 
-**没有任何需求或工作包因本节推进为 `Verified`。** `DEC-020` 规定 `Verified` 只能在统一硬化阶段凭**完整矩阵**证据授予；本轮只完成了矩阵中的 Redis 一项与开发期最小集，远不构成完整矩阵。`WP-MVP-E01` 维持 `Not started`——它的退出条件是整套矩阵，跑通其中一项不改变包状态。
+**没有任何需求或工作包因本节推进为 `Verified`。** `DEC-020` 规定 `Verified` 只能在统一硬化阶段凭**完整矩阵**证据授予。本轮完成的是矩阵中的 Redis 合同、PostgreSQL 集成的七项，以及开发期最小集；安全、并发、性能、E2E 与视觉矩阵仍未执行，`90` §5 的 PostgreSQL 条目也只覆盖了一部分（未覆盖清单见上表与 [`docs/development/postgres.md`](../docs/development/postgres.md)）。`WP-MVP-E01` 由 `Not started` 转 `In progress`——它的退出条件是整套矩阵，跑通若干项不等于包完成。
 
-#### 解除阻塞所需
+#### 环境阻塞已解除
 
-按优先级：
+用户于 2026-09-07 提供了一台可用的 Ubuntu 26.04 开发机（Docker 29.8.0），此前登记的两项阻塞——「没有 PostgreSQL 16 端点」与「没有容器运行时」——均已解除。PostgreSQL 实例按锁定镜像摘要拉起、绑回环、经 SSH 本地端口转发到本机 `127.0.0.1:5433`，取证后销毁；具体主机不入库（`AGENTS.md` 要求脱敏内网地址），连接串一律经环境变量注入。
 
-1. **一个可用的 PostgreSQL 16 端点**（本机安装、Docker 镜像或外部实例均可）。有了它就能执行 `90` §5 的 PostgreSQL 集成全部条目与双前缀矩阵，这是把当前 31 条 `Implemented` 推向 `Verified` 的必要前提。
-2. **可用的容器运行时**，用于 `pg_jieba` 扩展镜像构建与锁定基线复现。
+#### 本轮的设计发现
 
-在 1 到位之前，E01 无法推进，当前所有需求的状态天花板仍是 `Implemented`。
+集成载体第一次运行即暴露两条此前只存在于代码、从未被真实数据库验证过的约束，两条都不是测试缺陷，而是设计在起作用：
+
+1. **迁移与运行必须是两个登录角色**。`prepare_postgres` 要求运行登录角色的组成员关系**恰好一条**（自己的用途组，`INHERIT FALSE` / `SET TRUE`），因此同一个角色不可能既迁移又跑应用。载体据此拆出 `POSTGRES_CONTRACT_MIGRATOR_URL`。
+2. **`community.forums` 对运行角色只读**。版块是由迁移/种子维护的参照数据，`app_rw` 只被授予 SELECT。载体因此改用 `identity.users` 作为写入目标，并新增 `app_role_cannot_write_reference_tables_but_can_read_them` 正面断言这条最小权限边界。
+
+另有一条运行前置：官方镜像默认 `datctype=C`，会被 `prepare_postgres` 的 locale 校验拒绝，必须以 `--locale=C.UTF-8` 初始化。三条都已写入运行手册。
+
+#### 仍需的能力
+
+1. **`pg_jieba` 扩展镜像**，按 `M0-03` 的 Dockerfile 从锁定 commit 构建，用于搜索完整模式。
+2. **并发、性能、安全与视觉矩阵的载体**，目前尚未编写。
+
+当前所有需求的状态天花板仍是 `Implemented`：完整矩阵未跑完之前，`Verified` 不授予。
 
 ## 6. 门禁状态
 

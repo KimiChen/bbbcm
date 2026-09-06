@@ -1,0 +1,686 @@
+//! `WP-MVP-E01` 的真实 PostgreSQL 集成入口，对应 `90` 第 5 节「PostgreSQL 集成」。
+//!
+//! 与 `platform/tests/redis_contract.rs` 同一模式：默认 `#[ignore]`，只有显式提供
+//! **隔离且可丢弃** 的 PostgreSQL 16 端点才会执行。开发期最小集不会跑到它，也因此
+//! 不会有人把 SQLite 冒烟误当成 PostgreSQL 语义已验证。
+//!
+//! 运行前置与完整步骤见 `docs/development/postgres.md`。摘要：
+//!
+//! ```text
+//! POSTGRES_CONTRACT_ISOLATED=yes \
+//! POSTGRES_CONTRACT_URL='postgres://{prefix}app_login@127.0.0.1:5433/bbbcm_contract' \
+//! POSTGRES_CONTRACT_MIGRATOR_URL='postgres://{prefix}mig_login@127.0.0.1:5433/bbbcm_contract' \
+//! POSTGRES_CONTRACT_ALT_PREFIX=probe<随机>_ \
+//! cargo test -p platform-db --test postgres_contract -- --ignored --nocapture
+//! ```
+//!
+//! 两道闸门不是形式：`AGENTS.md` 明令「不得以开发期为由擅自清空非本地数据库」，
+//! 而本文件会建表写数据。指错一次 URL 就足以把集成测试变成一次生产事故。
+//! 注意闸门只证明「连的是本机回环」，不证明「库是空的可丢弃的」——后者由运行者
+//! 按运行手册用一次性容器保证，测试无法代为担保。
+//!
+//! 需要两个连接串是**设计要求**，不是本测试图方便：`prepare_postgres` 要求运行登录
+//! 角色的组成员关系**恰好一条**（自己的用途组，`INHERIT FALSE`、`SET TRUE`），所以
+//! 同一个登录角色不可能既迁移又跑应用。字面量 `{prefix}` 由本文件按 schema 前缀替换
+//! ——角色名带前缀，双前缀矩阵下每套 schema 各有一组角色。
+use platform::config::{Config, DatabaseConfig, SecretString};
+use platform::db::Backend;
+use platform::identifiers::SchemaRenderer;
+use platform::transaction::{
+    CommandIdentity, CommitOutcome, DbErrorClass, LockPlan, LockTarget, StoredResponse,
+    new_operation_id, request_hash,
+};
+use platform_db::Pool;
+use platform_db::command::execute_command;
+use platform_db::transaction::{DbTransaction, DbValue, TransactionError};
+use std::path::{Path, PathBuf};
+
+/// 确认运行者已声明目标库可丢弃；放在每个入口最前面，早于任何连接。
+fn require_isolation() {
+    assert_eq!(
+        std::env::var("POSTGRES_CONTRACT_ISOLATED").ok().as_deref(),
+        Some("yes"),
+        "必须显式确认目标库是隔离且可丢弃的"
+    );
+}
+
+/// 取某用途、某 schema 前缀的连接串：替换 `{prefix}` 后做回环校验。
+///
+/// 连接串本身从不打印——它可能带凭据，而测试输出会进证据包。
+fn endpoint(var: &str, prefix: &str) -> String {
+    require_isolation();
+    let raw = std::env::var(var).unwrap_or_else(|_| panic!("需要 {var}"));
+    let raw = raw.replace("{prefix}", prefix);
+    let parsed = url::Url::parse(&raw).unwrap_or_else(|_| panic!("{var} 的 URL 非法"));
+    assert!(
+        parsed.host_str().is_some_and(|host| host
+            .parse::<std::net::IpAddr>()
+            .is_ok_and(|ip| ip.is_loopback())),
+        "{var} 只允许字面回环 IP"
+    );
+    raw
+}
+
+/// 运行身份（`Purpose::App`）与迁移身份（`Purpose::Migrator`）各自的连接串。
+fn app_url(prefix: &str) -> String {
+    endpoint("POSTGRES_CONTRACT_URL", prefix)
+}
+fn migrator_url(prefix: &str) -> String {
+    endpoint("POSTGRES_CONTRACT_MIGRATOR_URL", prefix)
+}
+
+/// 随机非默认前缀由运行手册生成并注入：它的物理角色必须先由 DBA 建好
+/// （`bbbcm-cli db bootstrap-sql`），测试自身没有、也不应有建角色的权限。
+fn alt_prefix() -> String {
+    let value = std::env::var("POSTGRES_CONTRACT_ALT_PREFIX")
+        .unwrap_or_else(|_| panic!("需要 POSTGRES_CONTRACT_ALT_PREFIX（随机非默认前缀）"));
+    assert_ne!(value, "bcm_", "非默认前缀不能等于默认前缀");
+    assert!(
+        SchemaRenderer::new(&value).is_ok(),
+        "非默认前缀本身必须合法"
+    );
+    value
+}
+
+fn config(prefix: &str, url: &str) -> DatabaseConfig {
+    let mut cfg = Config::default().database;
+    cfg.backend = Backend::Postgres;
+    cfg.schema_prefix = prefix.to_owned();
+    cfg.postgres_url = Some(SecretString::new(url.to_owned()));
+    // 单连接会把并发、重试与锁等待路径整个藏起来，集成测试必须留出多连接。
+    cfg.max_connections = 8;
+    cfg
+}
+
+fn migrations_root() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../db/migrations")
+}
+
+/// 所有非迁移语义的测试共用默认前缀。`migrate` 幂等，并发调用会真实经过
+/// 迁移 advisory lock —— 这本身就是 `90` §5 要求覆盖的一项。
+async fn prepared() -> (Pool, SchemaRenderer) {
+    platform_db::migrations::migrate(&config("bcm_", &migrator_url("bcm_")), &migrations_root())
+        .await
+        .expect("默认前缀迁移应成功（角色需已由 bootstrap-sql 建好）");
+    let pool = Pool::connect(&config("bcm_", &app_url("bcm_")))
+        .await
+        .expect("以运行身份连接默认前缀");
+    (pool, SchemaRenderer::new("bcm_").expect("默认前缀"))
+}
+
+/// 建一个用户并返回其 id。
+///
+/// 写入目标选 `identity.users` 而不是 `community.forums`，是因为最小权限 ACL 只给
+/// 运行角色 `community.forums` 的 SELECT——版块属于由迁移/种子维护的参照数据。
+/// 这条边界本身由 `app_role_cannot_write_reference_tables` 正面断言。
+async fn insert_user(pool: &Pool, r: &SchemaRenderer, marker: &str) -> i64 {
+    let mut tx = DbTransaction::begin(pool).await.expect("事务");
+    let id = {
+        let mut c = tx.connection();
+        write_user(&mut c, r, marker).await.expect("写入用户");
+        c.last_insert_id().await.expect("回读主键")
+    };
+    tx.commit().await.expect("提交");
+    id
+}
+
+/// 单条用户插入；`marker` 负责让三个唯一列互不冲突。
+async fn write_user(
+    c: &mut platform_db::transaction::TransactionConnection<'_>,
+    r: &SchemaRenderer,
+    marker: &str,
+) -> Result<u64, TransactionError> {
+    let users = r.table(c.backend(), "identity", "users").expect("表名");
+    let now = chrono::Utc::now();
+    c.execute(
+        &format!(
+            "INSERT INTO {users} (public_id, analytics_pseudonym, analytics_excluded, username, \
+             username_key, email, email_key, status, email_verified, bio, created_at, \
+             username_changed_at, credential_version, version) \
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, 1, 1)"
+        ),
+        &[
+            DbValue::Text(format!("pub-{marker}")),
+            DbValue::Text(format!("anon-{marker}")),
+            DbValue::Bool(false),
+            DbValue::Text(format!("u{marker}")),
+            DbValue::Text(format!("u{marker}")),
+            DbValue::Text(format!("{marker}@example.invalid")),
+            DbValue::Text(format!("{marker}@example.invalid")),
+            DbValue::Bool(false),
+            DbValue::Text(String::new()),
+            DbValue::Time(now),
+            DbValue::Time(now),
+        ],
+    )
+    .await
+}
+
+/// 短标记：唯一列用它拼装，避免各测试互相踩。
+fn marker() -> String {
+    new_operation_id().replace('-', "")
+}
+
+// ---------------------------------------------------------------------------
+// 1. 迁移：空库、重复运行、双前缀并存
+// ---------------------------------------------------------------------------
+
+/// `90` §5：空库迁移、重复运行幂等、默认与随机非默认前缀并存且互不可见。
+///
+/// 双前缀是这条测试的核心。「查询不得硬编码物理 Schema」只有在两套 schema 同时
+/// 存在、且一方写入对另一方完全不可见时才真正被验证到——单前缀跑通说明不了
+/// 受信标识符渲染器有没有被绕过。
+///
+/// 本测试独占随机前缀，因此可以对 applied/skipped 做确定性断言；其他测试都用
+/// 默认前缀，不会污染这里的初始状态。
+#[tokio::test]
+#[ignore = "需要显式隔离的 PostgreSQL 16 端点；见 docs/development/postgres.md"]
+async fn migrations_apply_once_then_skip_and_two_prefixes_stay_isolated() {
+    let alt = alt_prefix();
+
+    // 随机前缀是本次运行新建的，必须是「全部应用、零跳过」。
+    let alt_cfg = config(&alt, &migrator_url(&alt));
+    let first = platform_db::migrations::migrate(&alt_cfg, &migrations_root())
+        .await
+        .expect("空库迁移应成功");
+    assert!(!first.applied.is_empty(), "空库首次运行必须应用迁移");
+    assert!(first.skipped.is_empty(), "空库不应跳过任何迁移");
+    // 编号必须从 0001 起连续：缺一条就说明迁移发现逻辑漏了文件。
+    let expected: Vec<i64> = (1..=first.applied.len() as i64).collect();
+    assert_eq!(first.applied, expected, "应用编号必须从 0001 起连续");
+
+    // 重复运行：全部跳过、零应用，且跳过集恰好等于上一轮的应用集。
+    let second = platform_db::migrations::migrate(&alt_cfg, &migrations_root())
+        .await
+        .expect("重复迁移应成功");
+    assert!(second.applied.is_empty(), "重复运行不得再次应用");
+    assert_eq!(second.skipped, first.applied, "跳过集必须等于已应用集");
+
+    // 默认前缀独立迁移，随后验证跨前缀不可见。
+    let (pool, renderer) = prepared().await;
+    let m = marker();
+    insert_user(&pool, &renderer, &m).await;
+
+    let alt_pool = Pool::connect(&config(&alt, &app_url(&alt)))
+        .await
+        .expect("以运行身份连接随机前缀");
+    let alt_renderer = SchemaRenderer::new(&alt).expect("随机前缀");
+    let mut tx = DbTransaction::begin_read(&alt_pool).await.expect("事务");
+    let leaked = {
+        let mut c = tx.connection();
+        let users = alt_renderer
+            .table(c.backend(), "identity", "users")
+            .expect("表名");
+        c.fetch_optional(
+            &format!("SELECT id FROM {users} WHERE public_id = ?"),
+            &[DbValue::Text(format!("pub-{m}"))],
+        )
+        .await
+        .expect("查询")
+    };
+    tx.rollback().await.expect("回滚");
+    assert!(
+        leaked.is_none(),
+        "随机前缀不得看到默认前缀写入的行——若可见说明有查询硬编码了物理 schema"
+    );
+    pool.close().await;
+    alt_pool.close().await;
+}
+
+// ---------------------------------------------------------------------------
+// 2. 受信标识符与 bind 参数
+// ---------------------------------------------------------------------------
+
+/// `90` §5：受信标识符渲染与 bind 参数。
+///
+/// 敌意前缀必须在**渲染器层**被拒绝，而不是拼进 SQL 后靠数据库报错；后者意味着
+/// 渲染器可以被绕过。值一侧则用真实往返证明 bind 从不做字符串插值：把 SQL 元字符
+/// 当值写进去再读回来，必须逐字节相同，且不产生任何附带效果。
+#[tokio::test]
+#[ignore = "需要显式隔离的 PostgreSQL 16 端点；见 docs/development/postgres.md"]
+async fn trusted_identifiers_are_whitelisted_and_values_are_always_bound() {
+    require_isolation();
+    for hostile in [
+        "bcm\"; DROP SCHEMA public CASCADE; --",
+        "bcm-",
+        "1bcm_",
+        "",
+        "BCM_",
+        "bcm_'",
+    ] {
+        assert!(
+            SchemaRenderer::new(hostile).is_err(),
+            "{hostile:?} 必须在渲染器层被拒绝"
+        );
+    }
+    let renderer = SchemaRenderer::new("bcm_").expect("合法前缀");
+    // 受信表注册表是白名单，不是提示：未登记的 schema/表一律拒绝渲染。
+    assert!(
+        renderer
+            .table(Backend::Postgres, "identity", "not_registered")
+            .is_err()
+    );
+    assert!(
+        renderer
+            .table(Backend::Postgres, "nosuch_schema", "users")
+            .is_err()
+    );
+
+    let (pool, renderer) = prepared().await;
+    let m = marker();
+    let id = insert_user(&pool, &renderer, &m).await;
+
+    // 值里塞满 SQL 元字符；任何一层做了字符串拼接，这行要么写不进去，要么读回来不同。
+    let hostile_bio = "'); DROP TABLE x; -- \\ % _ \" $1 ?";
+    let users = renderer
+        .table(Backend::Postgres, "identity", "users")
+        .expect("表名");
+    let mut tx = DbTransaction::begin(&pool).await.expect("事务");
+    tx.connection()
+        .execute(
+            &format!("UPDATE {users} SET bio = ? WHERE id = ?"),
+            &[DbValue::Text(hostile_bio.into()), DbValue::I64(id)],
+        )
+        .await
+        .expect("写入敌意值");
+    tx.commit().await.expect("提交");
+
+    let mut tx = DbTransaction::begin_read(&pool).await.expect("事务");
+    let bio = {
+        let mut c = tx.connection();
+        c.fetch_optional(
+            &format!("SELECT bio FROM {users} WHERE id = ?"),
+            &[DbValue::I64(id)],
+        )
+        .await
+        .expect("查询")
+        .expect("行应存在")
+        .text("bio")
+        .expect("取值")
+    };
+    tx.rollback().await.expect("回滚");
+    assert_eq!(bio, hostile_bio, "bind 值必须逐字节原样往返");
+    pool.close().await;
+}
+
+// ---------------------------------------------------------------------------
+// 3. ACL：运行角色的最小权限
+// ---------------------------------------------------------------------------
+
+/// `90` §5：ACL 与最小权限。
+///
+/// `community.forums` 是由迁移/种子维护的参照数据，运行角色只被授予 SELECT。
+/// 这条测试正面断言这个边界：即使应用代码写错表，数据库也会拒绝。反过来也要
+/// 断言 SELECT 仍可用——否则「拒绝」可能只是因为表根本不可见，证明不了 ACL 生效。
+#[tokio::test]
+#[ignore = "需要显式隔离的 PostgreSQL 16 端点；见 docs/development/postgres.md"]
+async fn app_role_cannot_write_reference_tables_but_can_read_them() {
+    let (pool, renderer) = prepared().await;
+    let forums = renderer
+        .table(Backend::Postgres, "community", "forums")
+        .expect("表名");
+
+    let mut tx = DbTransaction::begin_read(&pool).await.expect("事务");
+    tx.connection()
+        .fetch_all(&format!("SELECT id FROM {forums}"), &[])
+        .await
+        .expect("运行角色必须能读参照数据");
+    tx.rollback().await.expect("回滚");
+
+    let mut tx = DbTransaction::begin(&pool).await.expect("事务");
+    let denied = tx
+        .connection()
+        .execute(
+            &format!(
+                "INSERT INTO {forums} (slug, name, position, status, version) \
+                 VALUES (?, ?, 1, 'active', 1)"
+            ),
+            &[
+                DbValue::Text(format!("acl-{}", marker())),
+                DbValue::Text("越权探针".into()),
+            ],
+        )
+        .await;
+    tx.rollback().await.expect("回滚");
+    assert!(
+        denied.is_err(),
+        "运行角色写参照表必须被数据库拒绝，实际为 {denied:?}"
+    );
+    pool.close().await;
+}
+
+// ---------------------------------------------------------------------------
+// 4. 约束：唯一、CHECK、外键
+// ---------------------------------------------------------------------------
+
+/// `90` §5：唯一、CHECK 与外键约束由**数据库**兜底，而不是只靠应用层校验。
+///
+/// 应用层校验会被新代码路径绕过，数据库约束不会。这条测试直接绕开领域服务写库，
+/// 就是为了证明即使应用层失守，坏数据也进不去。
+#[tokio::test]
+#[ignore = "需要显式隔离的 PostgreSQL 16 端点；见 docs/development/postgres.md"]
+async fn database_constraints_reject_invalid_rows() {
+    let (pool, renderer) = prepared().await;
+    let m = marker();
+    insert_user(&pool, &renderer, &m).await;
+    let users = renderer
+        .table(Backend::Postgres, "identity", "users")
+        .expect("表名");
+
+    // 唯一约束：同一 marker 第二次插入必须被判为唯一冲突（username_key 等三列唯一）。
+    let mut tx = DbTransaction::begin(&pool).await.expect("事务");
+    let dup = {
+        let mut c = tx.connection();
+        write_user(&mut c, &renderer, &m).await
+    };
+    tx.rollback().await.expect("回滚");
+    assert_eq!(
+        dup,
+        Err(TransactionError::Database(DbErrorClass::UniqueConflict)),
+        "重复唯一键必须被分类为唯一冲突"
+    );
+
+    // CHECK 约束：status 必须在枚举内，version 必须为正。
+    let now = chrono::Utc::now();
+    for (label, status, version) in [("status", "bogus", 1_i64), ("version", "active", 0)] {
+        let bad_marker = marker();
+        let mut tx = DbTransaction::begin(&pool).await.expect("事务");
+        let bad = {
+            let mut c = tx.connection();
+            c.execute(
+                &format!(
+                    "INSERT INTO {users} (public_id, analytics_pseudonym, analytics_excluded, \
+                     username, username_key, email, email_key, status, email_verified, bio, \
+                     created_at, username_changed_at, credential_version, version) \
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)"
+                ),
+                &[
+                    DbValue::Text(format!("pub-{bad_marker}")),
+                    DbValue::Text(format!("anon-{bad_marker}")),
+                    DbValue::Bool(false),
+                    DbValue::Text(format!("u{bad_marker}")),
+                    DbValue::Text(format!("u{bad_marker}")),
+                    DbValue::Text(format!("{bad_marker}@example.invalid")),
+                    DbValue::Text(format!("{bad_marker}@example.invalid")),
+                    DbValue::Text(status.into()),
+                    DbValue::Bool(false),
+                    DbValue::Text(String::new()),
+                    DbValue::Time(now),
+                    DbValue::Time(now),
+                    DbValue::I64(version),
+                ],
+            )
+            .await
+        };
+        tx.rollback().await.expect("回滚");
+        assert!(bad.is_err(), "{label} 越界必须被 CHECK 拒绝");
+    }
+
+    // 外键：credentials.user_id 引用不存在的用户必须被拒绝。
+    let credentials = renderer
+        .table(Backend::Postgres, "identity", "credentials")
+        .expect("表名");
+    let mut tx = DbTransaction::begin(&pool).await.expect("事务");
+    let orphan = {
+        let mut c = tx.connection();
+        c.execute(
+            &format!(
+                "INSERT INTO {credentials} (user_id, password_hash, updated_at) VALUES (?, ?, ?)"
+            ),
+            &[
+                DbValue::I64(i64::MAX),
+                DbValue::Text("x".into()),
+                DbValue::Time(now),
+            ],
+        )
+        .await
+    };
+    tx.rollback().await.expect("回滚");
+    assert!(orphan.is_err(), "悬空外键必须被数据库拒绝");
+    pool.close().await;
+}
+
+// ---------------------------------------------------------------------------
+// 5. 事务回滚
+// ---------------------------------------------------------------------------
+
+/// `90` §5：事务回滚不留痕迹。
+///
+/// SQLite 单写者下这条几乎必然成立，PostgreSQL 多连接下才真正有信息量：
+/// 回读特意换一条连接，确认回滚是数据库级别的，而不是同连接的可见性错觉。
+#[tokio::test]
+#[ignore = "需要显式隔离的 PostgreSQL 16 端点；见 docs/development/postgres.md"]
+async fn rollback_leaves_no_trace() {
+    let (pool, renderer) = prepared().await;
+    let m = marker();
+
+    let mut tx = DbTransaction::begin(&pool).await.expect("事务");
+    {
+        let mut c = tx.connection();
+        write_user(&mut c, &renderer, &m).await.expect("写入");
+    }
+    tx.rollback().await.expect("回滚");
+
+    let users = renderer
+        .table(Backend::Postgres, "identity", "users")
+        .expect("表名");
+    let mut tx = DbTransaction::begin_read(&pool).await.expect("事务");
+    let found = {
+        let mut c = tx.connection();
+        c.fetch_optional(
+            &format!("SELECT id FROM {users} WHERE public_id = ?"),
+            &[DbValue::Text(format!("pub-{m}"))],
+        )
+        .await
+        .expect("查询")
+    };
+    tx.rollback().await.expect("回滚");
+    assert!(found.is_none(), "回滚后不得留下任何行");
+    pool.close().await;
+}
+
+// ---------------------------------------------------------------------------
+// 6. 版本防覆盖
+// ---------------------------------------------------------------------------
+
+/// `90` §5：版本冲突阻止丢失更新。
+///
+/// 两个写者都基于 version=1 出发，先提交者把版本推到 2，后提交者的
+/// `WHERE version = 1` 匹配零行，必须报 `VersionConflict` 而不是静默成功。
+#[tokio::test]
+#[ignore = "需要显式隔离的 PostgreSQL 16 端点；见 docs/development/postgres.md"]
+async fn version_conflict_prevents_lost_update() {
+    let (pool, renderer) = prepared().await;
+    let id = insert_user(&pool, &renderer, &marker()).await;
+    let users = renderer
+        .table(Backend::Postgres, "identity", "users")
+        .expect("表名");
+    let update =
+        format!("UPDATE {users} SET bio = ?, version = version + 1 WHERE id = ? AND version = ?");
+
+    // 第一个写者成功，版本 1 -> 2。
+    let mut tx = DbTransaction::begin(&pool).await.expect("事务");
+    tx.connection()
+        .execute_versioned(
+            &update,
+            &[
+                DbValue::Text("赢家".into()),
+                DbValue::I64(id),
+                DbValue::I64(1),
+            ],
+        )
+        .await
+        .expect("首个写者应成功");
+    tx.commit().await.expect("提交");
+
+    // 第二个写者仍持旧版本 1，必须冲突。
+    let mut tx = DbTransaction::begin(&pool).await.expect("事务");
+    let conflict = tx
+        .connection()
+        .execute_versioned(
+            &update,
+            &[
+                DbValue::Text("输家".into()),
+                DbValue::I64(id),
+                DbValue::I64(1),
+            ],
+        )
+        .await;
+    tx.rollback().await.expect("回滚");
+    assert_eq!(
+        conflict,
+        Err(TransactionError::VersionConflict),
+        "陈旧版本必须冲突，不能静默覆盖"
+    );
+
+    // 赢家的写入必须完好：冲突分支没有部分生效。
+    let mut tx = DbTransaction::begin_read(&pool).await.expect("事务");
+    let (bio, version) = {
+        let mut c = tx.connection();
+        let row = c
+            .fetch_optional(
+                &format!("SELECT bio, version FROM {users} WHERE id = ?"),
+                &[DbValue::I64(id)],
+            )
+            .await
+            .expect("查询")
+            .expect("行应存在");
+        (
+            row.text("bio").expect("正文"),
+            row.i64("version").expect("版本"),
+        )
+    };
+    tx.rollback().await.expect("回滚");
+    assert_eq!(bio, "赢家");
+    assert_eq!(version, 2, "版本必须恰好推进一次");
+    pool.close().await;
+}
+
+// ---------------------------------------------------------------------------
+// 7. 幂等：同载荷重放、异载荷冲突
+// ---------------------------------------------------------------------------
+
+/// `90` §5：同幂等键 + 同载荷重放返回原结果且不重复写；同键 + 异载荷必须冲突。
+///
+/// 这是重复提交与客户端重试的核心保护。断言不只看返回值，还要数一遍实际行数：
+/// 「返回了缓存结果」和「没有写第二行」是两件事，必须分别证明。
+#[tokio::test]
+#[ignore = "需要显式隔离的 PostgreSQL 16 端点；见 docs/development/postgres.md"]
+async fn idempotency_replays_same_payload_and_rejects_different_payload() {
+    let (pool, renderer) = prepared().await;
+    let m = marker();
+
+    let identity = |hash: String| CommandIdentity {
+        scope: "integration.user.create".into(),
+        actor_id: 1,
+        idempotency_key: format!("key-{m}"),
+        request_hash: hash,
+        operation_id: new_operation_id(),
+    };
+    let hash_a = request_hash(b"payload-a");
+    let hash_b = request_hash(b"payload-b");
+    let plan = LockPlan::new(Vec::<LockTarget>::new());
+    let now = chrono::Utc::now();
+
+    // 闭包签名是 `for<'a, 'c>`，捕获 `&SchemaRenderer` 会活不够久；
+    // 因此把表名与参数在进闭包前就定死，闭包内只做一次 execute。
+    let users = renderer
+        .table(Backend::Postgres, "identity", "users")
+        .expect("表名");
+    let insert = format!(
+        "INSERT INTO {users} (public_id, analytics_pseudonym, analytics_excluded, username, \
+         username_key, email, email_key, status, email_verified, bio, created_at, \
+         username_changed_at, credential_version, version) \
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, 1, 1)"
+    );
+    let params = vec![
+        DbValue::Text(format!("pub-{m}")),
+        DbValue::Text(format!("anon-{m}")),
+        DbValue::Bool(false),
+        DbValue::Text(format!("u{m}")),
+        DbValue::Text(format!("u{m}")),
+        DbValue::Text(format!("{m}@example.invalid")),
+        DbValue::Text(format!("{m}@example.invalid")),
+        DbValue::Bool(false),
+        DbValue::Text(String::new()),
+        DbValue::Time(now),
+        DbValue::Time(now),
+    ];
+
+    let body = platform::outbox::SafePayload::empty()
+        .to_json()
+        .expect("空 SafePayload 必须可序列化");
+
+    let run = |ident: CommandIdentity| {
+        let pool = &pool;
+        let renderer = &renderer;
+        let plan = &plan;
+        let insert = insert.clone();
+        let params = params.clone();
+        let body = body.clone();
+        async move {
+            execute_command(pool, renderer, &ident, plan, now, move |c| {
+                let insert = insert.clone();
+                let params = params.clone();
+                let body = body.clone();
+                Box::pin(async move {
+                    c.execute(&insert, &params).await?;
+                    // 幂等结果体不是任意 JSON：`idempotency_repo` 只接受
+                    // `SafePayload` 白名单结构（受信 references + 固定 outcome），
+                    // 以免把 Secret 或 C3 顺手存进幂等表。这里直接用该类型序列化，
+                    // 而不是手写字面量——手写的话，契约一变测试就悄悄失真。
+                    Ok(StoredResponse {
+                        status_code: 201,
+                        body: body.clone(),
+                    })
+                })
+            })
+            .await
+        }
+    };
+
+    // 首次执行：真实写入，非重放。
+    let first = run(identity(hash_a.clone())).await.expect("首次命令应成功");
+    let CommitOutcome::Committed(first) = first else {
+        panic!("首次命令必须提交，实际为 {first:?}");
+    };
+    assert!(!first.replayed, "首次执行不是重放");
+
+    // 同键同载荷：返回原结果，且不得再写一行。
+    let second = run(identity(hash_a)).await.expect("重放应成功");
+    let CommitOutcome::Committed(second) = second else {
+        panic!("重放必须提交，实际为 {second:?}");
+    };
+    assert!(second.replayed, "同键同载荷必须判定为重放");
+    assert_eq!(second.response, first.response, "重放必须返回原结果");
+    assert_eq!(
+        second.operation_id, first.operation_id,
+        "重放必须沿用原操作 ID，不能发新的"
+    );
+
+    // 同键异载荷：必须冲突，绝不能当成重放返回一个不属于该请求的结果。
+    let conflict = run(identity(hash_b)).await;
+    assert_eq!(
+        conflict.err(),
+        Some(TransactionError::IdempotencyConflict),
+        "同键异载荷必须冲突"
+    );
+
+    // 行数是最终裁决：三次调用只能留下一行。
+    let mut tx = DbTransaction::begin_read(&pool).await.expect("事务");
+    let count = {
+        let mut c = tx.connection();
+        c.fetch_optional(
+            &format!("SELECT count(*) AS n FROM {users} WHERE public_id = ?"),
+            &[DbValue::Text(format!("pub-{m}"))],
+        )
+        .await
+        .expect("查询")
+        .expect("聚合必有行")
+        .i64("n")
+        .expect("计数")
+    };
+    tx.rollback().await.expect("回滚");
+    assert_eq!(count, 1, "重放与冲突都不得产生第二行");
+    pool.close().await;
+}
