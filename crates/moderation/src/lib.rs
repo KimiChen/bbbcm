@@ -3,6 +3,8 @@
 pub mod authority;
 pub mod case_repo;
 pub mod cases;
+#[cfg(test)]
+mod concurrency_tests;
 pub mod contract;
 pub mod core;
 pub mod enforcement;

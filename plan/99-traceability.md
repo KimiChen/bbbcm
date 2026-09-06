@@ -1280,7 +1280,9 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 | `40001`/`40P01` 受控重试 | 压出序列化失败或死锁必须**故意违反**固定锁顺序，而平台层会先一步拒绝（已由 `lock_order_is_frozen_…` 正面验证）。需另建绕过平台层的夹具，或承认该故障被设计挡在发生之前。 |
 | 审计与搜索权限状态的同事务提交 | 本轮只验证了 Outbox 一侧。 |
 | 应用的完整搜索模式 | **阻塞性质已改变**：扩展镜像本轮已按 `M0-03` 的 Dockerfile 离线构建成功，`pg_jieba` 1.1.1 与 `pg_trgm` 1.6 实测可用（中文分词、`@@` 匹配、`similarity` 均正确），同一套合同 11 项在该镜像上亦全部通过。真正缺的是应用侧——`crates/content/src/search.rs` 目前只有 `SqliteTitleSearch` 一个 `SearchBackend` 实现，`pg_jieba + pg_trgm` 的 PostgreSQL 后端尚未编写。这属 `WP-MVP-C05` 的实现缺口，不再是 E01 的环境问题。证据见 [`pg-jieba-extension.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/pg-jieba-extension.txt)。 |
-| 并发矩阵其余三项 | 举报合并、治理命令需在 `moderation`／`manage` crate 内另建载体，本轮未做；互动唯一性与通知去重属 `WP-MVP-C04`（`Not started`），**功能尚不存在**，不是载体问题。 |
+| 并发矩阵：举报合并 | 载体已编写（`crates/moderation/src/concurrency_tests.rs`），**当前失败**——8 路并发在同一目标上开出 8 个案件，根因见上节缺陷登记。裁决并修复后方可通过。 |
+| 并发矩阵：治理命令 | 需在 `manage` crate 内另建载体，本轮未做。 |
+| 并发矩阵：互动唯一性、通知去重 | 属 `WP-MVP-C04`（`Not started`），**功能尚不存在**，不是载体问题。 |
 | 性能与容量基线（`WP-MVP-E02`） | 载体未编写。 |
 | 安全套件与跨平台矩阵 | 载体未编写；SBOM/许可证/漏洞/Secret 扫描已单独完成，见上表。 |
 | 浏览器与视觉矩阵（`WP-MVP-E04`） | 需 `05` 规定的固定浏览器、字体、缩放与视口环境。 |
@@ -1305,6 +1307,25 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 2. **改加锁策略**：内容写路径不再对版块行取 `FOR UPDATE`。版块是迁移/种子维护的参照数据，运行期不会被并发修改，`lock_root`（`community.commit_state`）已经把所有社区写串行化了，版块行锁可能本就是多余的。代价是需要复核 `DEC-052` 的锁序假设是否依赖这把锁。
 
 **用户已于 2026-09-07 裁决：采用选项 2（去掉版块行锁），登记为 `DEC-064`。** 事实源先行更新（`06` 新增 `DEC-064`、`02` 第 386 节锁序改写），随后实施：`lock_forum` 更名为 `check_forum_chain`，去掉对链上每个版块的 `FOR UPDATE`，可见性、启用状态与父链环检测**一条不少地保留**；`community.forums` 的 `GRANT SELECT` 不放宽，`app_role_cannot_write_reference_tables_but_can_read_them` 断言继续成立。修复后 `crates/content/tests/postgres_concurrency.rs` 通过（40 条并发回复，楼层 2–41 不重不漏），开发期最小集七步全绿，无回归。
+
+#### 缺陷：并发举报不会合并，同一目标会开出多个案件（2026-09-07 发现）
+
+编写并发矩阵「举报合并」载体（`crates/moderation/src/concurrency_tests.rs`）时，8 路并发举报同一目标**开出了 8 个案件**。根因是合并逻辑既无序列化点，也无唯一约束兜底：
+
+| 事实 | 位置 |
+|---|---|
+| `open_case` 是不带 `FOR UPDATE` 的普通 `SELECT` | `crates/moderation/src/case_repo.rs:44` |
+| 读到 `None` 即 `insert_case`，8 路同时读到 `None` | `crates/moderation/src/cases.rs` 的 `submit_report` |
+| `case_target_idx` 是**普通索引**，不是唯一索引 | `db/migrations/postgres/0014_reports_and_cases.sql:29` |
+
+**影响面**：同一条内容被多人同时举报时，审核队列被同一件事刷屏，且每个案件独立处置、结论可能互相矛盾——这正是 `MOD-002` 合并语义要防的。**为什么此前没被发现**：SQLite 单写者会把「两次读到 None」串行成「读到 None」+「读到已有」，于是合并在 SQLite 上恒成立。
+
+**未自行修复**，两条候选路径都触及事实源：
+
+1. **唯一偏索引**（如 `UNIQUE … WHERE closed_at = <哨兵>`）。语义最贴切，但 `DEC-022` 要求 SQL 落在 PostgreSQL 16／SQLite 3.25+／MySQL 8.0 的**交集子集**内，而 MySQL 8.0 不支持偏索引。若采用需先修订 `DEC-022` 或明确 MySQL 接入时的替代方案。
+2. **加序列化点**（对 `(target_kind, target_id)` 取 advisory lock，或引入案件根锁）。不受三库子集限制，但会改动 `02` 第 386 节冻结的锁序，需要与 `DEC-052`／`DEC-064` 一并复核。
+
+在裁决前，该载体保持**失败**并如实登记，不通过降低断言把它「修绿」。
 
 #### 状态影响
 

@@ -1451,8 +1451,10 @@ dependencies = [
  "platform",
  "platform-db",
  "sha2",
+ "sqlx",
  "thiserror",
  "tokio",
+ "url",
 ]
 
 [[package]]

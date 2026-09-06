@@ -16,3 +16,7 @@ chrono.workspace = true
 
 [dev-dependencies]
 tokio.workspace = true
+# E01 并发夹具解析端点主机做回环校验；不新增 registry 包。
+url.workspace = true
+# 重建 schema 需要 DDL，DbTransaction 只允许 DML。
+sqlx.workspace = true
