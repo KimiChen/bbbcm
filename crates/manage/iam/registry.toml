@@ -1,0 +1,128 @@
+# 角色与权限的唯一事实源（DEC-058、CR-011、CR-013）。
+#
+# 这个文件是「机器可读 registry」本体：构建期由 build.rs 生成 Rust 枚举与常量，
+# 同一份内容也用于生成数据库种子。代码、本文件与数据库三者不一致时启动拒绝，
+# 因此**不要**在别处手写第二份角色或权限清单。
+#
+# 命名约定：权限为 `领域.资源.动作`，与 03 第 2 节的路由能力列一致。
+# 高危权限（high_risk = true）在使用时额外要求一条已通过的双人审批（03 §7）。
+
+[[permission]]
+key = "community.content.move"
+resource = "content"
+high_risk = false
+note = "把主题移动到另一个版块（CAT-014）"
+
+[[permission]]
+key = "moderation.cases.read"
+resource = "case"
+high_risk = false
+note = "查看举报队列与案件详情"
+
+[[permission]]
+key = "moderation.cases.write"
+resource = "case"
+high_risk = false
+note = "分派、改优先级、加内部备注、推进案件状态"
+
+[[permission]]
+key = "moderation.enforcement.content"
+resource = "content"
+high_risk = false
+note = "内容级处置：遮蔽、隐藏、软删除、锁帖"
+
+[[permission]]
+key = "moderation.enforcement.account"
+resource = "account"
+high_risk = true
+note = "账号级处置：限言、临时封禁、永久封禁。影响他人发言权，需双人审批"
+
+[[permission]]
+key = "moderation.appeals.review"
+resource = "appeal"
+high_risk = false
+note = "复核申诉。职责分离由服务端另行强制，不靠权限区分"
+
+[[permission]]
+key = "iam.keys.rotate"
+resource = "environment"
+high_risk = true
+note = "密钥轮换"
+
+[[permission]]
+key = "iam.billing.manage"
+resource = "environment"
+high_risk = true
+note = "账单与供应商"
+
+[[permission]]
+key = "iam.production.access"
+resource = "environment"
+high_risk = true
+note = "生产访问授权"
+
+[[permission]]
+key = "iam.disaster.recover"
+resource = "environment"
+high_risk = true
+note = "灾备恢复"
+
+# 角色。scopes 限定该角色的分配可以使用哪些 ABAC 范围类型（03 §5）。
+# 本轮只实现 global 与 forums 两类范围。
+
+[[role]]
+key = "site_owner"
+name = "站点所有者"
+scopes = ["global"]
+# CR-011／DEC-058：恰好四类极高危运维，不含任何内容、用户、审核或客服日常权限。
+# 需要日常操作时应使用独立的管理账号，而不是给这个角色加权限。
+permissions = [
+  "iam.keys.rotate",
+  "iam.billing.manage",
+  "iam.production.access",
+  "iam.disaster.recover",
+]
+
+[[role]]
+key = "administrator"
+name = "管理员"
+scopes = ["global"]
+permissions = [
+  "community.content.move",
+  "moderation.cases.read",
+  "moderation.cases.write",
+  "moderation.enforcement.content",
+  "moderation.enforcement.account",
+  "moderation.appeals.review",
+]
+
+[[role]]
+key = "moderator"
+name = "版主"
+# 版主必须绑定版块范围：全站版主应当授予 global_moderator 而不是给版主开 global。
+scopes = ["forums"]
+permissions = [
+  "community.content.move",
+  "moderation.cases.read",
+  "moderation.cases.write",
+  "moderation.enforcement.content",
+]
+
+[[role]]
+key = "global_moderator"
+name = "全局版主"
+scopes = ["global", "forums"]
+permissions = [
+  "community.content.move",
+  "moderation.cases.read",
+  "moderation.cases.write",
+  "moderation.enforcement.content",
+  "moderation.enforcement.account",
+]
+
+[[role]]
+key = "auditor"
+name = "只读审计员"
+scopes = ["global"]
+# 只读：不含任何写权限，也不含生产访问。
+permissions = ["moderation.cases.read"]

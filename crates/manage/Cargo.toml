@@ -9,3 +9,8 @@ publish.workspace = true
 [dependencies]
 axum.workspace = true
 platform.workspace = true
+chrono.workspace = true
+
+[build-dependencies]
+toml.workspace = true
+serde.workspace = true

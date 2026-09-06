@@ -288,6 +288,31 @@ pub const TABLES: &[TableRegistration] = &[
         identity_column: Some("id"),
     },
     TableRegistration {
+        schema: "iam",
+        table: "roles",
+        identity_column: Some("id"),
+    },
+    TableRegistration {
+        schema: "iam",
+        table: "role_permissions",
+        identity_column: Some("id"),
+    },
+    TableRegistration {
+        schema: "iam",
+        table: "role_assignments",
+        identity_column: Some("id"),
+    },
+    TableRegistration {
+        schema: "iam",
+        table: "assignment_scopes",
+        identity_column: Some("id"),
+    },
+    TableRegistration {
+        schema: "iam",
+        table: "approvals",
+        identity_column: Some("id"),
+    },
+    TableRegistration {
         schema: "moderation",
         table: "enforcement_actions",
         identity_column: Some("id"),
@@ -353,6 +378,9 @@ pub const INDEXES: &[(&str, &str)] = &[
     ("moderation", "evidence_case_idx"),
     ("moderation", "enforcement_subject_idx"),
     ("moderation", "enforcement_case_idx"),
+    ("iam", "assignment_owner_idx"),
+    ("iam", "scope_assignment_idx"),
+    ("iam", "approval_lookup_idx"),
     ("platform", "mail_recipient_idx"),
     ("platform", "mail_observed_idx"),
     ("platform", "mail_feedback_time_idx"),
