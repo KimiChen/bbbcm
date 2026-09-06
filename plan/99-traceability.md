@@ -459,6 +459,51 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 
 仍为 `Pending`：`DEC-011` 具体供应商与隐私评估（方向已定）、`DEC-002`、`DEC-003-B`、`DEC-004-B`、`DEC-006-B`、`DEC-007-B`、`DEC-008-B`、`DEC-010-B`、`DEC-012`、`DEC-013`、`DEC-014`，以及 `NAV-009` 最近浏览的保存数量与清理期限。14 项业务 Feature Flag 仍默认全关，不新增写入口或运行时绕过。本轮为纯文档决策提交，未改代码、迁移或配置，不推送、不部署；`Verified` 及以上状态继续只在统一硬化阶段凭证据授予（`DEC-020`）。
 
+### 5.11 正常内容政策装配与信任自动授级（2026-09-06，DEC-054/055，实施前登记）
+
+产品决策与最终批准：项目所有者（用户）；实现、开发期验证与本机中文提交：Claude。实施前工作区仅含未跟踪的 `.workbuddy/` 与 `CLAUDE.md` 符号链接，HEAD=`b0716d3`（决策登记提交）。本节为本轮波次一的实施前登记，不预先宣称任何交付。
+
+#### 精确范围与需求 ID
+
+本轮只做 `DEC-054`／`DEC-055` 批准值可直接解锁、且不依赖新领域能力的装配切片：
+
+| 工作包 | 本轮触及的需求 |
+|---|---|
+| `WP-MVP-B06` | `TRUST-001`、`MOD-009` 的正常发布策略与额度装配 |
+| `WP-MVP-B01` | `AUTH-003` 邮箱验证同事务授予 T0 |
+| `WP-MVP-C02` | `TOPIC-001` 长度与标签上限、`TOPIC-004` 30 分钟本人窗口 |
+| `WP-MVP-C01` | 作者默认可见性接通后的公共 SSR 投影 |
+| `WP-MVP-B04` | `PRIV-001`／`PRIV-002` 默认公开对 `USER-001/002` 列表投影的影响 |
+
+明确不在本轮：`TOPIC-008` 浏览量与有效回复的统计装配、首帖删除占位呈现、`CAT-014` 移帖写入口与 301 路由、权限 registry 与 `/manage`、`visual-baseline-v1` 冻结记录、`NAV-009`。这些留后续波次，本轮结束时相应需求不得因本切片标记完成。
+
+#### 依赖与接口
+
+依赖已交付的 A02 配置、A03 迁移、A04 事务/幂等/Outbox、A05 观测与限流、B01/B02 身份与会话、B06 风险合同、C01/C02/C03/C05 既有内容切片，不等待任一整包。新增接口：
+
+- `content::policy::ApprovedContentPolicy`：版本化常量承载 `DEC-054`／`DEC-055` 批准值，`rules()` 返回经 `ContentRules::validate` 校验的规则。批准值是代码常量而非运行时配置，不新增配置旁路或 Flag 写口。
+- `trust::core::grant_verified_tier`：邮箱验证同事务把 `pending` 提升为 `t0`，写 `reason_code` 与规则版本；沿用既有 `identity_snapshots` 根锁与版本防覆盖。
+- `trust::core::evaluate_tier`：确定性 T1 规则，由调用方注入「是否存在生效处罚」，账号年龄与有效贡献计数取自 trust 自有事实。规则、版本与原因码位于 trust core，可解释、可重算、可审计（`TRUST-002`）。
+- `trust::core::record_contribution` / `withdraw_contribution`：内容发布与本人删除在同一事务内追加或撤销一条有效贡献事实。content 仍不反向依赖 trust，调用经 apps 的 `ContentAuthority` 受信装配注入。
+
+「账号存在满 2 个自然日（UTC）」按自然日读取实现为 `now >= date(created_at) + 2 天的 00:00 UTC`，与 `DEC-048`／`DEC-054` 的 UTC 零点分日一致，也对应 `01` §3.2「跨天活跃」。该读取写入代码注释与本节，不另行扩大解释。
+
+有效贡献计数按 `DEC-054`：主题正文 ≥10 标量、回复 ≥2 标量且回复者非主题作者，且发布状态为 `published`。以 post 唯一的追加事实行记录，本人在窗口内删除时同事务置为不计数，计数即当前有效行数，可从事实行重算。
+
+#### 数据、权限、事务与 Outbox
+
+新增配对迁移 `0011`（postgres/sqlite，mysql8 占位）：`trust.contribution_facts`，含 `user_id`、`kind`、`post_id` 唯一、`body_chars`、`counted`、`created_at`、`version`。同一迁移内写显式 ACL，只授 `app_rw` 必要权限，`worker_rw`／`report_ro` 与 PUBLIC 一律 REVOKE；同时在受信表注册表登记。不改 `0001`–`0010`。
+
+锁序沿用 `DEC-052`：幂等、`identity.users`、`identity.sessions`、`trust.identity_snapshots`、`community.commit_state`、forums、topics、posts，贡献事实与授级在 `trust.identity_snapshots` 锁下完成，风险与分析追加仍在全部可变锁之后。不新增 Outbox 事件类型，不新增 Feature Flag，14 项业务 Flag 继续默认全关。
+
+#### 测试设计
+
+开发期最小集内新增：批准值与 `ContentRules::validate` 一致性；T0 授予幂等与版本防覆盖；T1 规则四类边界（差 1 分钟未满 2 自然日、恰好满、贡献 4 条与 5 条、存在生效处罚）；贡献事实的长度与非作者判定、删除撤销与重算一致；额度 UTC 日界线、待审计入、删除不返还；作者默认公开后的公共 SSR 与未登录访客投影。真实 PostgreSQL/Redis、并发、性能与视觉仍留统一硬化阶段（`DEC-020`）。
+
+#### 边界
+
+批准取值不等于整包完成：`C01/C02/C03/C05`、`B01/B04/B06/A06` 整包不因本切片标记 `Implemented`，状态按各自剩余条款裁决。不授予 `Verified` 或任何阶段/发布门禁。仅本机开发、独立复核、开发期最小集与中文新建提交，不推送、不部署、不发送真实邮件，不清空非本地数据库。
+
 ## 6. 门禁状态
 
 | 门禁 | 当前状态 | 原因 |
