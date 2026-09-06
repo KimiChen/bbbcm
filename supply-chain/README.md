@@ -14,7 +14,7 @@ M0-03 锁定构建前置；A01 直接共用本目录及根目录锁文件，交�
 | 输入 | 本轮取值与依据 |
 |---|---|
 | Rust / Cargo | 保留现有 1.97.0，rustfmt/Clippy 随相同工具链；官方 dist manifest 的 SHA-256 已登记。`rust-version = 1.88` 是既有最低版本声明，本轮没有运行 1.88 矩阵。 |
-| Rust 库 | 保留 247 个 registry 包及现有锁文件；Axum 0.8.9、Askama 0.16.1、sqlx 0.8.6、Tokio 1.53.1。工作区 16 个成员。 |
+| Rust 库 | registry 包 335 个（原 326，`DEC-062` 为 TOTP 新增 `chacha20poly1305 0.10.1` 与 `sha1 0.10.7` 及其传递依赖），依赖图以根 `Cargo.lock` 为准；Axum 0.8.9、Askama 0.16.1、sqlx 0.8.6、Tokio 1.53.1。工作区 16 个成员。 |
 | Node / npm | 24.20.0 LTS / 随附 npm 11.19.0；来自 Node 官方归档和 SHASUMS256。A00 全局 Node 26.5.0/npm 11.17.0 是采集环境盘点值，未成为构建基线，也未被本轮替换。 |
 | esbuild | 精确 0.28.2；npm 官方 registry；共用 v3 锁文件含原生 optional 包，共 27 个包。安装时只选本机平台，锁文件保留所有平台。 |
 | PostgreSQL | Docker Official Image `16.15-alpine3.23`；索引摘要、linux/amd64 与 linux/arm64 manifest/config 摘要分别登记。Alpine 版保留 server headers，可构建扩展。 |

@@ -40,6 +40,10 @@ sha2 = "0.10"
 argon2 = "0.5"
 rand_core = { version = "0.6", features = ["getrandom"] }
 hmac = "0.12"
+# AUTH-011/012 的 TOTP：sha1 供 RFC 6238 默认算法（认证器普遍只支持 SHA-1），
+# chacha20poly1305 用于把共享密钥加密后落库（DEC-062）。均为 RustCrypto 同族维护。
+sha1 = "0.10"
+chacha20poly1305 = { version = "0.10", default-features = false, features = ["alloc", "getrandom"] }
 pulldown-cmark = { version = "0.13.4", default-features = false, features = ["html"] }
 ammonia = "4.1.4"
 url = "2"
