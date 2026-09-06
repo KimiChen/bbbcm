@@ -20,6 +20,19 @@ pub trait RequestContext: Send + Sync {
         actor_id: i64,
         action: Action,
     ) -> FutureResult<'a, Arc<dyn Any + Send + Sync>>;
+
+    /// 为一次主题详情页浏览派生去重主体（DEC-054）。
+    ///
+    /// 由应用装配层实现，因为只有它持有 HMAC 密钥；内容领域始终拿不到原始用户 ID、
+    /// 会话 Cookie 或设备指纹。返回 `None` 表示这次访问**不应计数**——已知爬虫 UA、
+    /// 被标记分析排除的账号，或者派生所需材料缺失，都走这一条，宁可少计不可错计。
+    fn view_subject(
+        &self,
+        headers: &HeaderMap,
+        peer: Option<SocketAddr>,
+        viewer_id: Option<i64>,
+        excluded: bool,
+    ) -> Option<ViewSubject>;
 }
 #[derive(Clone)]
 pub struct ContentWebState {
@@ -375,6 +388,7 @@ fn row(topic: TopicView, theme: &str) -> view::TopicRow {
         created_at: topic.created_at.format("%Y-%m-%d %H:%M UTC").to_string(),
         last_reply,
         replies: topic.reply_count,
+        views: topic.view_count,
         pinned: topic.pinned || topic.globally_pinned,
         state: state_label(&topic.state),
     }
@@ -390,6 +404,9 @@ fn post(post: PostView, viewer: Viewer, theme: &str) -> view::PostView {
             .edited_at
             .map(|at| at.format("%Y-%m-%d %H:%M UTC").to_string()),
         body_html: post.html,
+        // 正文已在服务端投影阶段清空，这里只补一句占位文案，模板不做任何隐藏逻辑。
+        body_placeholder: (!post.body_state.visible())
+            .then(|| post.body_state.placeholder().to_owned()),
         floor: post.floor_no,
         permalink: format!("/posts/{id}?theme={theme}"),
         quote_href: viewer
@@ -440,6 +457,27 @@ async fn read(
                     Utc::now(),
                 )
                 .await?;
+            // DEC-054：主题详情页服务端渲染成功后登记一次浏览。
+            //
+            // 放在这里而不是 `service.topic()` 内部，是因为触发条件是「SSR 成功」而不是
+            // 「读到了主题」；同时读路径是只读事务，计数必须走独立的短写事务。
+            // 任何失败只记观测并继续渲染：丢一次阅读量，远好过让统计把正常阅读变成错误页。
+            if let Some(subject) = state.request_context.as_ref().and_then(|context| {
+                context.view_subject(
+                    &headers,
+                    None,
+                    detail.viewer.user_id,
+                    detail.viewer.excluded,
+                )
+            }) {
+                match service
+                    .record_view(detail.topic.id, &subject, detail.viewer.user_id, Utc::now())
+                    .await
+                {
+                    Ok(counted) => tracing::debug!(counted, "topic view registered"),
+                    Err(_) => tracing::debug!("topic view registration skipped"),
+                }
+            }
             page.title = detail.topic.title.clone();
             page.next = detail
                 .next_cursor
@@ -584,6 +622,8 @@ async fn read(
                     created_at: reply.created_at.format("%Y-%m-%d %H:%M UTC").to_string(),
                     last_reply: None,
                     replies: None,
+                    // 回复行展示的是单条回复本身，浏览数属于主题维度，这里不重复呈现。
+                    views: None,
                     pinned: false,
                     state: if reply.publication == Publication::Pending {
                         "待审".into()

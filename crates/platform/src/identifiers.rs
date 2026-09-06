@@ -253,6 +253,11 @@ pub const TABLES: &[TableRegistration] = &[
         identity_column: None,
     },
     TableRegistration {
+        schema: "community",
+        table: "topic_views",
+        identity_column: Some("id"),
+    },
+    TableRegistration {
         schema: "trust",
         table: "contribution_facts",
         identity_column: Some("id"),
@@ -284,6 +289,7 @@ pub const INDEXES: &[(&str, &str)] = &[
     ("identity", "token_owner_idx"),
     ("trust", "risk_actor_idx"),
     ("trust", "contribution_owner_idx"),
+    ("community", "topic_view_subject_idx"),
     ("platform", "mail_recipient_idx"),
     ("platform", "mail_observed_idx"),
     ("platform", "mail_feedback_time_idx"),

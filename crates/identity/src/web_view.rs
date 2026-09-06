@@ -24,6 +24,19 @@ impl Field {
             required: true,
         }
     }
+    /// 复选框字段，用于隐私开关这类布尔设置。
+    ///
+    /// `value` 为 "yes" 表示当前勾选。未勾选的复选框浏览器不会提交，因此服务端把
+    /// 「字段缺失」解释为显式的假，不需要额外的隐藏字段来区分。
+    pub fn checkbox(name: &'static str, label: &'static str, checked: bool) -> Self {
+        Self {
+            name,
+            label,
+            kind: "checkbox",
+            value: if checked { "yes".into() } else { String::new() },
+            required: false,
+        }
+    }
     pub fn hidden(name: &'static str, value: impl Into<String>) -> Self {
         Self {
             name,

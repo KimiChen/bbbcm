@@ -2,7 +2,7 @@
 //! Policies and keys are explicitly injected. No product threshold is selected here.
 use axum::http::{HeaderMap, header};
 use content::{
-    contract::{Action, ContentError, FutureResult},
+    contract::{Action, ContentError, FutureResult, ViewSubject, ViewSubjectKind},
     http::RequestContext,
 };
 use hmac::{Hmac, Mac};
@@ -297,7 +297,77 @@ impl ContentRiskFactory {
         })
     }
 }
+/// 保守的爬虫 UA 子串清单（小写匹配）。
+///
+/// DEC-054 要求把已知爬虫排除在浏览量之外。这里刻意只列少数明确自报身份的关键词：
+/// 判定不到就照常计数，宁可多计一个爬虫，也不要把正常浏览器误判成机器人。
+/// 本清单只用于统计口径，不参与任何访问控制，也不做封禁。
+const CRAWLER_MARKERS: &[&str] = &[
+    "bot",
+    "crawler",
+    "spider",
+    "slurp",
+    "curl",
+    "wget",
+    "python-requests",
+    "headlesschrome",
+];
+
+fn looks_like_crawler(headers: &HeaderMap) -> bool {
+    headers
+        .get(header::USER_AGENT)
+        .and_then(|v| v.to_str().ok())
+        .map(|agent| {
+            let agent = agent.to_ascii_lowercase();
+            CRAWLER_MARKERS.iter().any(|m| agent.contains(m))
+        })
+        .unwrap_or(false)
+}
+
 impl RequestContext for ContentRiskFactory {
+    /// 派生 DEC-054 的浏览去重主体。
+    ///
+    /// 优先级：登录用户 ID > 会话 Cookie > 设备 Cookie。三者都取不到时返回 `None`，
+    /// 该次访问不计数——没有稳定主体就无法去重，计上去只会让阅读量随刷新虚高。
+    ///
+    /// 原始值一律不出本函数：先用与限流密钥同源、但用途标签不同的 HMAC 派生成摘要
+    /// （沿用 DEC-051 的用途隔离约定），内容领域与数据库只看得到摘要。
+    fn view_subject(
+        &self,
+        headers: &HeaderMap,
+        _peer: Option<SocketAddr>,
+        viewer_id: Option<i64>,
+        excluded: bool,
+    ) -> Option<ViewSubject> {
+        // 被分析排除的账号与已知爬虫直接不计数，压根不进入派生流程。
+        if excluded || looks_like_crawler(headers) {
+            return None;
+        }
+        let (kind, raw) = match viewer_id {
+            Some(id) => (ViewSubjectKind::Account, format!("account:{id}")),
+            None => match session_cookie(headers, self.secure_cookies) {
+                Some(session) => (ViewSubjectKind::Session, format!("session:{session}")),
+                None => (
+                    ViewSubjectKind::Device,
+                    format!("device:{}", device_cookie(headers, self.secure_cookies)?),
+                ),
+            },
+        };
+        let mut mac = Hmac::<sha2::Sha256>::new_from_slice(&self.key).ok()?;
+        mac.update(b"content.view.subject.v1");
+        mac.update(b"\0");
+        mac.update(raw.as_bytes());
+        Some(ViewSubject {
+            kind,
+            hash: mac
+                .finalize()
+                .into_bytes()
+                .iter()
+                .map(|b| format!("{b:02x}"))
+                .collect(),
+        })
+    }
+
     fn prepare<'a>(
         &'a self,
         headers: &'a HeaderMap,
@@ -317,6 +387,33 @@ impl std::fmt::Debug for ContentRiskFactory {
         f.write_str("ContentRiskFactory([REDACTED])")
     }
 }
+/// 读取会话 Cookie 的原始值，仅用于派生浏览去重主体的摘要。
+///
+/// 这里不校验会话有效性，也不据此授予任何权限——一个过期或伪造的会话值同样是稳定主体，
+/// 用于去重完全够用，而校验会话会把只读的统计路径拖成一次数据库访问。
+fn session_cookie(headers: &HeaderMap, secure: bool) -> Option<String> {
+    let wanted = format!("{}bcm_session", if secure { "__Host-" } else { "" });
+    let mut values = headers
+        .get_all(header::COOKIE)
+        .iter()
+        .filter_map(|v| v.to_str().ok())
+        .flat_map(|v| v.split(';'))
+        .filter_map(|v| v.trim().split_once('='))
+        .filter(|(key, _)| *key == wanted)
+        .map(|(_, value)| value);
+    let value = values.next()?;
+    // 与其他 Cookie 读取保持同一条严格规则：重复出现、超长或含非法字符一律视为不可用。
+    if values.next().is_some()
+        || !(1..=256).contains(&value.len())
+        || !value
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
+    {
+        return None;
+    }
+    Some(value.into())
+}
+
 fn device_cookie(headers: &HeaderMap, secure: bool) -> Option<String> {
     let name = if secure {
         "__Host-bcm_device"
@@ -575,5 +672,86 @@ mod tests {
             .unwrap();
         let keys = keys.0.lock().unwrap();
         assert_eq!(&keys[..4], &keys[4..]);
+    }
+
+    /// DEC-054 浏览去重主体的派生规则。
+    ///
+    /// 覆盖：优先级（账号 > 会话 > 设备）、被排除账号与爬虫直接不计数、
+    /// 无任何稳定主体时不计数，以及摘要不可逆——原始值不得出现在结果里。
+    #[test]
+    fn view_subject_follows_priority_and_never_leaks_the_raw_value() {
+        let factory = ContentRiskFactory::new(
+            vec![9; 32],
+            false,
+            Arc::new(platform::cache::DisabledRateLimiter),
+            Some(ContentRatePolicy::approved().unwrap()),
+            false,
+        )
+        .unwrap();
+        let with_cookies = |value: &str| {
+            let mut headers = HeaderMap::new();
+            headers.insert(header::COOKIE, value.parse().unwrap());
+            headers
+        };
+
+        // 登录用户优先按账号去重，即便同时带着会话与设备 Cookie。
+        let headers = with_cookies("bcm_session=sess123; bcm_device=dev123");
+        let account = factory
+            .view_subject(&headers, None, Some(42), false)
+            .unwrap();
+        assert_eq!(account.kind, ViewSubjectKind::Account);
+
+        // 游客带会话 Cookie 时按会话去重。
+        let session = factory.view_subject(&headers, None, None, false).unwrap();
+        assert_eq!(session.kind, ViewSubjectKind::Session);
+        assert_ne!(session.hash, account.hash);
+
+        // 只有设备 Cookie 时退到设备指纹。
+        let device_only = with_cookies("bcm_device=dev123");
+        let device = factory
+            .view_subject(&device_only, None, None, false)
+            .unwrap();
+        assert_eq!(device.kind, ViewSubjectKind::Device);
+
+        // 摘要不可逆：原始值不得以任何形式出现在结果里。
+        for subject in [&account, &session, &device] {
+            assert_eq!(subject.hash.len(), 64);
+            assert!(subject.hash.chars().all(|c| c.is_ascii_hexdigit()));
+            // 只对含非十六进制字符的原始值做子串断言：像 "42" 这种纯十六进制短串
+            // 本来就可能在任何摘要里偶然出现，拿它断言会得到随机失败的脆弱测试。
+            for raw in ["sess123", "dev123"] {
+                assert!(!subject.hash.contains(raw));
+            }
+        }
+
+        // 被分析排除的账号不计数。
+        assert!(
+            factory
+                .view_subject(&headers, None, Some(42), true)
+                .is_none()
+        );
+
+        // 已知爬虫 UA 不计数，普通浏览器 UA 照常计数。
+        let mut crawler = with_cookies("bcm_session=sess123");
+        crawler.insert(
+            header::USER_AGENT,
+            "Mozilla/5.0 (compatible; ExampleBot/1.0)".parse().unwrap(),
+        );
+        assert!(factory.view_subject(&crawler, None, None, false).is_none());
+        let mut browser = with_cookies("bcm_session=sess123");
+        browser.insert(
+            header::USER_AGENT,
+            "Mozilla/5.0 (Macintosh) AppleWebKit/537.36 Safari/537.36"
+                .parse()
+                .unwrap(),
+        );
+        assert!(factory.view_subject(&browser, None, None, false).is_some());
+
+        // 既无会话也无设备 Cookie 的游客没有稳定主体，不计数。
+        assert!(
+            factory
+                .view_subject(&HeaderMap::new(), None, None, false)
+                .is_none()
+        );
     }
 }

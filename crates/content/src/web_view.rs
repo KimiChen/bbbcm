@@ -24,6 +24,8 @@ pub struct TopicRow {
     pub created_at: String,
     pub last_reply: Option<String>,
     pub replies: Option<i64>,
+    /// NAV-003 主题行的浏览数。
+    pub views: Option<i64>,
     pub pinned: bool,
     pub state: String,
 }
@@ -34,6 +36,9 @@ pub struct PostView {
     pub created_at: String,
     pub edited_at: Option<String>,
     pub body_html: String,
+    /// 正文被扣留时的占位提示；为空表示正常展示正文。
+    /// 模板据此二选一渲染，永远不会同时拿到占位文案和原文。
+    pub body_placeholder: Option<String>,
     pub floor: i64,
     pub permalink: String,
     pub quote_href: Option<String>,

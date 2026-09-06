@@ -41,6 +41,32 @@ pub(crate) async fn update_bio(
     .await
 }
 
+/// 写入 PRIV-001／PRIV-002 的逐用户隐私开关。
+///
+/// 两项独立存储、独立生效：列表可见性与正文可见性互不牵连，关闭其一不影响另一项。
+/// 与其他资料变更一样走版本 CAS，避免并发请求互相覆盖；本函数不改动任何其他资料字段。
+pub(crate) async fn update_privacy(
+    tx: &mut TransactionConnection<'_>,
+    renderer: &SchemaRenderer,
+    account: &Account,
+    profile_lists_public: bool,
+    topic_body_public: bool,
+) -> Result<(), TransactionError> {
+    let users = table(tx, renderer, "users")?;
+    tx.execute_versioned(
+        &format!(
+            "UPDATE {users} SET profile_lists_public = ?, topic_body_public = ?, version = version + 1 WHERE id = ? AND version = ?"
+        ),
+        &[
+            DbValue::Bool(profile_lists_public),
+            DbValue::Bool(topic_body_public),
+            account.id.into(),
+            account.version.into(),
+        ],
+    )
+    .await
+}
+
 /// 当前名和历史保留名共用唯一键；新增占用的唯一冲突及CAS失效均回滚整次变更。
 /// 历史记录只追加，过期只解除占用，不清除审计事实。
 pub(crate) async fn change_username(

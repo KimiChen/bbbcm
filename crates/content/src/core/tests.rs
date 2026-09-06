@@ -44,7 +44,18 @@ impl SyntheticAuthority {
             user_id: id,
             public_id: format!("synthetic-{id}"),
             username: format!("fixture_{id}"),
-            default_visibility: Visibility::Public,
+            // 合成夹具里账号 8 代表已关闭 PRIV-002 的作者，用于验证正文扣留；
+            // 账号 7 代表已关闭 PRIV-001 的作者，用于验证个人列表对访客不可见。
+            body_visibility: if id == 8 {
+                Visibility::Members
+            } else {
+                Visibility::Public
+            },
+            lists_visibility: if id == 7 {
+                Visibility::Members
+            } else {
+                Visibility::Public
+            },
         }
     }
 }
@@ -75,6 +86,8 @@ impl ContentAuthority for SyntheticAuthority {
             Ok(Viewer {
                 user_id: id,
                 member: id.is_some_and(|id| id != 4),
+                // 合成夹具里账号 9 代表被分析排除的账号，用于验证浏览量排除规则。
+                excluded: id == Some(9),
             })
         })
     }
@@ -206,7 +219,10 @@ impl Fixture {
         let mut tx = DbTransaction::begin(&pool).await.unwrap();
         let mut c = tx.connection();
         let users = renderer.table(c.backend(), "identity", "users").unwrap();
-        for i in 1..=5 {
+        // 1..=5 是既有夹具账号（3 为 pending 等级、4 为非成员、5 为待审发布）。
+        // 6..=9 为本轮新增：7 关闭 PRIV-001 列表公开、8 关闭 PRIV-002 正文公开、
+        // 9 为分析排除账号，均由 SyntheticAuthority 按 ID 映射。
+        for i in 1..=9 {
             let name = format!("synthetic_{i}");
             let email = format!("synthetic-{i}@example.invalid");
             c.execute(&format!("INSERT INTO {users} (public_id, analytics_pseudonym, analytics_excluded, username, username_key, email, email_key, status, email_verified, bio, created_at, username_changed_at, credential_version, version) VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, '', ?, ?, 1, 1)"),&[new_operation_id().into(),new_operation_id().into(),DbValue::Bool(true),name.clone().into(),name.into(),email.clone().into(),email.into(),DbValue::Bool(true),DbValue::Time(at()),DbValue::Time(at())]).await.unwrap();
@@ -385,12 +401,17 @@ async fn create_edit_delete_share_projection_revisions_events_and_idempotency() 
         )
         .await
         .unwrap();
+    // DEC-061：作者删除首帖后主题页仍可打开，首帖正文以占位呈现，回复继续可读。
+    let deleted = f
+        .service
+        .topic(created.topic_id, None, None, at())
+        .await
+        .unwrap();
+    assert_eq!(deleted.first_post.body_state, BodyState::Deleted);
+    assert!(deleted.first_post.markdown.is_empty() && deleted.first_post.html.is_empty());
     assert_eq!(
-        f.service
-            .topic(created.topic_id, None, None, at())
-            .await
-            .unwrap_err(),
-        ContentError::NotFound
+        deleted.first_post.body_state.placeholder(),
+        "该内容已删除。"
     );
     assert_eq!(f.count("community", "post_revisions").await, 3);
     assert_eq!(f.count("community", "publication_receipts").await, 1);
@@ -486,10 +507,12 @@ async fn authority_policy_cross_owner_window_and_version_fail_closed() {
         .list(&ListFilter::default(), None, None, at())
         .await
         .unwrap();
+    // 回复数受发布策略控制，策略未装配时不展示；浏览量是独立的存量计数，
+    // 与发布策略无关，因此仍然给出（此处尚无浏览，故为 0）。
     assert!(
         list.topics
             .iter()
-            .all(|t| t.reply_count.is_none() && t.view_count.is_none())
+            .all(|t| t.reply_count.is_none() && t.view_count == Some(0))
     );
 }
 #[tokio::test]
@@ -581,7 +604,9 @@ async fn stable_reply_floors_fixed_watermark_and_permalinks() {
         .unwrap();
     assert_eq!(detail.replies[0].id, ids[52].post_id);
     assert_eq!(detail.replies[0].floor_no, 54);
-    assert_eq!(detail.topic.reply_count, Some(53));
+    // DEC-054 有效回复排除主题作者本人。本夹具里 53 条回复全部由主题作者发出，
+    // 因此有效回复数为 0，而楼层号与分页定位不受影响——两者是不同口径。
+    assert_eq!(detail.topic.reply_count, Some(0));
 }
 #[tokio::test]
 async fn latest_reply_list_history_does_not_move_old_topics_across_cursor() {
@@ -1265,5 +1290,131 @@ async fn only_approved_valid_contributions_leave_the_publishing_transaction() {
                 post_id: other_reply.post_id
             }
         ))
+    );
+}
+
+/// DEC-054 浏览量：SSR 成功后的计数、30 分钟去重窗口、作者本人排除。
+///
+/// 覆盖四点：
+///   1. 首次浏览累加，阅读量随之可读；
+///   2. 窗口内重复浏览不累加，且台账时间戳不被刷新（固定窗口而非滑动窗口）；
+///   3. 跨过窗口后再次累加；
+///   4. 主题作者本人的访问不计入自己的阅读量。
+#[tokio::test]
+async fn view_counting_deduplicates_within_the_window_and_excludes_the_author() {
+    let f = Fixture::new().await;
+    let topic = f.create("浏览量").await;
+    let guest = ViewSubject {
+        kind: ViewSubjectKind::Session,
+        hash: "synthetic-guest-digest".into(),
+    };
+
+    assert!(
+        f.service
+            .record_view(topic.topic_id, &guest, None, at())
+            .await
+            .unwrap()
+    );
+    assert_eq!(f.topic(topic.topic_id).await.topic.view_count, Some(1));
+
+    // 窗口内重复访问不累加。第 29 分钟仍在 30 分钟窗口内。
+    assert!(
+        !f.service
+            .record_view(topic.topic_id, &guest, None, at() + Duration::minutes(29))
+            .await
+            .unwrap()
+    );
+    assert_eq!(f.topic(topic.topic_id).await.topic.view_count, Some(1));
+
+    // 窗口自「上一次计数」起算：第 31 分钟越过窗口，重新计数。
+    assert!(
+        f.service
+            .record_view(topic.topic_id, &guest, None, at() + Duration::minutes(31))
+            .await
+            .unwrap()
+    );
+    assert_eq!(f.topic(topic.topic_id).await.topic.view_count, Some(2));
+
+    // 主题作者本人（夹具里是账号 1）的访问不计数。
+    let author = ViewSubject {
+        kind: ViewSubjectKind::Account,
+        hash: "synthetic-author-digest".into(),
+    };
+    assert!(
+        !f.service
+            .record_view(topic.topic_id, &author, Some(1), at() + Duration::hours(2))
+            .await
+            .unwrap()
+    );
+    assert_eq!(f.topic(topic.topic_id).await.topic.view_count, Some(2));
+
+    // 空摘要没有稳定主体，拒绝而不是记一笔无法去重的浏览。
+    assert_eq!(
+        f.service
+            .record_view(
+                topic.topic_id,
+                &ViewSubject {
+                    kind: ViewSubjectKind::Device,
+                    hash: String::new(),
+                },
+                None,
+                at(),
+            )
+            .await
+            .unwrap_err(),
+        ContentError::InvalidInput
+    );
+}
+
+/// DEC-054 的 PRIV-001／PRIV-002：作者关闭后未登录访客的投影收敛，登录成员与本人不受影响。
+///
+/// 合成夹具约定：账号 8 关闭了正文公开（PRIV-002），账号 7 关闭了列表公开（PRIV-001）。
+#[tokio::test]
+async fn author_privacy_withholds_body_and_lists_from_guests_only() {
+    let f = Fixture::new().await;
+    let version = f.topic(f.create("隐私作者").await.topic_id).await.topic.id;
+    let private = f
+        .service
+        .create_topic(&f.credentials(8), f.topic_input("正文不公开"), at())
+        .await
+        .unwrap();
+    assert!(version > 0);
+
+    // 未登录访客：标题与元信息保留，正文被扣留并给出占位提示。
+    let guest = f
+        .service
+        .topic(private.topic_id, None, None, at())
+        .await
+        .unwrap();
+    assert_eq!(guest.first_post.body_state, BodyState::WithheldByAuthor);
+    assert!(guest.first_post.markdown.is_empty() && guest.first_post.html.is_empty());
+    assert!(!guest.topic.title.is_empty(), "标题按 DEC-054 保留");
+
+    // 登录成员：正文正常展示。
+    let member = f
+        .service
+        .topic(private.topic_id, None, Some("2"), at())
+        .await
+        .unwrap();
+    assert_eq!(member.first_post.body_state, BodyState::Visible);
+    assert!(!member.first_post.html.is_empty());
+
+    // PRIV-001：账号 7 的个人列表对访客整体不可见，对登录成员可见。
+    let owner_filter = ListFilter {
+        owner_id: Some(7),
+        ..ListFilter::default()
+    };
+    assert_eq!(
+        f.service
+            .list(&owner_filter, None, None, at())
+            .await
+            .unwrap_err(),
+        ContentError::NotFound
+    );
+    assert!(
+        f.service
+            .list(&owner_filter, None, Some("2"), at())
+            .await
+            .is_ok()
     );
 }

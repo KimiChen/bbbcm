@@ -30,6 +30,9 @@ pub(crate) fn decode_account(row: &DbRow) -> Result<Account, TransactionError> {
         created_at: row.time("created_at")?,
         username_changed_at: row.time("username_changed_at")?,
         credential_version: row.i64("credential_version")?,
+        // PRIV-001/002 的逐用户开关。列有非空默认值，缺失即视为数据损坏而不是静默放行。
+        profile_lists_public: row.boolean("profile_lists_public")?,
+        topic_body_public: row.boolean("topic_body_public")?,
         version: row.i64("version")?,
     })
 }
@@ -39,7 +42,7 @@ pub(crate) async fn account_by_id(
     id: i64,
 ) -> Result<Option<Account>, TransactionError> {
     let t = table(tx, r, "users")?;
-    tx.fetch_optional(&format!("SELECT id, public_id, username, username_key, email, email_key, status, email_verified, bio, created_at, username_changed_at, credential_version, version FROM {t} WHERE id = ?"),&[id.into()]).await?.as_ref().map(decode_account).transpose()
+    tx.fetch_optional(&format!("SELECT id, public_id, username, username_key, email, email_key, status, email_verified, bio, created_at, username_changed_at, credential_version, profile_lists_public, topic_body_public, version FROM {t} WHERE id = ?"),&[id.into()]).await?.as_ref().map(decode_account).transpose()
 }
 pub(crate) async fn account_by_identifier(
     tx: &mut TransactionConnection<'_>,
@@ -50,11 +53,11 @@ pub(crate) async fn account_by_identifier(
     let t = table(tx, r, "users")?;
     let sql = if email {
         format!(
-            "SELECT id, public_id, username, username_key, email, email_key, status, email_verified, bio, created_at, username_changed_at, credential_version, version FROM {t} WHERE email_key = ?"
+            "SELECT id, public_id, username, username_key, email, email_key, status, email_verified, bio, created_at, username_changed_at, credential_version, profile_lists_public, topic_body_public, version FROM {t} WHERE email_key = ?"
         )
     } else {
         format!(
-            "SELECT id, public_id, username, username_key, email, email_key, status, email_verified, bio, created_at, username_changed_at, credential_version, version FROM {t} WHERE username_key = ?"
+            "SELECT id, public_id, username, username_key, email, email_key, status, email_verified, bio, created_at, username_changed_at, credential_version, profile_lists_public, topic_body_public, version FROM {t} WHERE username_key = ?"
         )
     };
     tx.fetch_optional(&sql, &[text(key)])
@@ -593,7 +596,9 @@ pub(crate) async fn content_author(
 ) -> Result<Option<crate::core::ContentAuthor>, TransactionError> {
     let users = table(tx, r, "users")?;
     tx.fetch_optional(
-        &format!("SELECT public_id, username, status FROM {users} WHERE id = ?"),
+        &format!(
+            "SELECT public_id, username, status, profile_lists_public, topic_body_public FROM {users} WHERE id = ?"
+        ),
         &[id.into()],
     )
     .await?
@@ -611,6 +616,9 @@ pub(crate) async fn content_author(
             } else {
                 "不可用账号".into()
             },
+            // 非活跃账号一律按最严格处理：不暴露列表，也不暴露正文。
+            profile_lists_public: active && row.boolean("profile_lists_public")?,
+            topic_body_public: active && row.boolean("topic_body_public")?,
         })
     })
     .transpose()

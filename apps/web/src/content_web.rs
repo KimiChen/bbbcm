@@ -72,6 +72,7 @@ mod tests {
             created_at: "2026-01-01 00:00 UTC".into(),
             last_reply: None,
             replies: None,
+            views: Some(0),
             pinned: false,
             state: String::new(),
         });
@@ -93,6 +94,7 @@ mod tests {
                 created_at: "2026-01-01 00:00 UTC".into(),
                 edited_at: Some("2026-01-01 01:00 UTC".into()),
                 body_html: safe.html().into(),
+                body_placeholder: None,
                 floor: 1,
                 permalink: "/posts/1".into(),
                 quote_href: None,

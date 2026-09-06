@@ -226,6 +226,10 @@ pub struct Account {
     pub created_at: DateTime<Utc>,
     pub username_changed_at: DateTime<Utc>,
     pub credential_version: i64,
+    /// PRIV-001：个人主页的主题/回帖列表是否对未登录访客可见。DEC-054 默认公开。
+    pub profile_lists_public: bool,
+    /// PRIV-002：本人主题正文是否对未登录访客可见。DEC-054 默认公开，标题另按规则保留。
+    pub topic_body_public: bool,
     pub version: i64,
 }
 impl std::fmt::Debug for Account {

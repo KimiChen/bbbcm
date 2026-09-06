@@ -44,6 +44,7 @@ where
         "/settings/username",
         "/settings/password",
         "/settings/sessions",
+        "/settings/privacy",
         "/settings/invitations",
         "/me/invites",
     ] {
@@ -311,6 +312,7 @@ async fn build_page(
         "/settings/username" => ("修改用户名", "/settings/username"),
         "/settings/password" => ("修改密码", "/settings/password"),
         "/settings/sessions" => ("登录设备", "/settings/sessions"),
+        "/settings/privacy" => ("隐私设置", "/settings/privacy"),
         "/settings/invitations" => ("我的邀请", "/me/invites"),
         _ => return Err(IdentityError::Disabled),
     };
@@ -338,6 +340,24 @@ async fn build_page(
                     view.rows.push(row("邮箱", profile.email));
                     view.rows
                         .push(row("内容资料", "主题、回帖和贡献统计尚未接入"));
+                }
+                // PRIV-001／PRIV-002 的用户自助入口。两项分列渲染，勾选即公开；
+                // DEC-054 批准的默认值是两项都公开，这里回显的是账号当前实际取值。
+                "/settings/privacy" => {
+                    view.fields.push(Field::checkbox(
+                        "profile_lists_public",
+                        "允许未登录访客查看我的主题和回帖列表",
+                        profile.profile_lists_public,
+                    ));
+                    view.fields.push(Field::checkbox(
+                        "topic_body_public",
+                        "允许未登录访客查看我的主题正文",
+                        profile.topic_body_public,
+                    ));
+                    view.rows.push(row(
+                        "说明",
+                        "关闭后未登录访客看不到对应内容，登录成员与本人不受影响；标题按版块规则保留。",
+                    ));
                 }
                 "/settings/email" => view.fields.push(Field::input("email", "新邮箱", "email")),
                 "/settings/username" => {
@@ -790,6 +810,21 @@ async fn submit_inner(
                 "/settings/profile" => {
                     service
                         .update_bio(&identity, csrf, key, version()?, value(form, "bio")?, now)
+                        .await?;
+                }
+                // 未勾选的复选框浏览器不会提交，因此缺失即显式的「关闭」。
+                "/settings/privacy" => {
+                    let checked = |name: &str| form.get(name).map(String::as_str) == Some("yes");
+                    service
+                        .update_privacy(
+                            &identity,
+                            csrf,
+                            key,
+                            version()?,
+                            checked("profile_lists_public"),
+                            checked("topic_body_public"),
+                            now,
+                        )
                         .await?;
                 }
                 "/settings/email" => {

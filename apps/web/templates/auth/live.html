@@ -37,6 +37,7 @@
 {% if field.kind == "hidden" %}<input type="hidden" name="{{ field.name }}" value="{{ field.value }}" />
 {% else %}<label class="grid"><span>{{ field.label }}</span>
 {% if field.kind == "textarea" %}<textarea name="{{ field.name }}"{% if field.required %} required{% endif %}>{{ field.value }}</textarea>
+{% else if field.kind == "checkbox" %}<input type="checkbox" name="{{ field.name }}" value="yes"{% if field.value == "yes" %} checked{% endif %} />
 {% else %}<input type="{{ field.kind }}" name="{{ field.name }}" value="{{ field.value }}"{% if field.required %} required{% endif %}{% if field.name == "days" %} min="1" max="7" step="1"{% endif %}{% if field.name == "token" || field.name == "challenge_proof" %} autocomplete="off"{% else if field.kind == "password" %}{% if page.action == "/login" || page.action == "/reauth" %} autocomplete="current-password"{% else %} autocomplete="new-password"{% endif %}{% endif %} />{% endif %}</label>{% endif %}
 {% endfor %}
 {% if page.policy_consent %}<label class="auth-agree"><input type="checkbox" name="consent" value="yes" required /><span>我已阅读并同意本页列明版本的<a href="/terms">服务条款</a>、<a href="/privacy">隐私政策</a>和<a href="/rules">社区规则</a></span></label>{% endif %}

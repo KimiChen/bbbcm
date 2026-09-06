@@ -190,9 +190,14 @@ impl ContentState {
             archived_at: None,
         }
     }
+    /// 主题级可读性。
+    ///
+    /// 按 DEC-061，作者自助删除**不**再让主题整体不可读：删除态主题继续可以打开、
+    /// 继续出现在列表与搜索中，只有首帖正文以占位呈现（见 `BodyState::Deleted`）。
+    /// 真正把内容移出公开视图的手段仍是 `moderation` 轴的 `obscured`／`hidden`，
+    /// 以及未发布状态对非作者的不可见，这两条在下面照旧生效。
     pub fn can_read(&self, viewer: &Viewer, owner_id: i64) -> bool {
-        self.deleted_at.is_none()
-            && self.moderation == Moderation::Normal
+        self.moderation == Moderation::Normal
             && self.visibility.permits(viewer)
             && match self.publication {
                 Publication::Published => true,
@@ -238,13 +243,64 @@ pub enum OwnerStateChange {
 pub struct Viewer {
     pub user_id: Option<i64>,
     pub member: bool,
+    /// 该账号是否被标记为分析排除（系统账号、测试账号、已确认作弊流量）。
+    /// DEC-054 要求把这类流量排除在浏览量之外；未登录访客恒为假。
+    pub excluded: bool,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Author {
     pub user_id: i64,
     pub public_id: String,
     pub username: String,
-    pub default_visibility: Visibility,
+    /// PRIV-002：本人主题正文对未登录访客的可见性。`Members` 表示作者已关闭，
+    /// 未登录访客只能看到标题与元信息，正文位置渲染占位提示。
+    pub body_visibility: Visibility,
+    /// PRIV-001：个人主页主题/回帖列表对未登录访客的可见性。`Members` 表示作者已关闭。
+    pub lists_visibility: Visibility,
+}
+
+/// DEC-054 的浏览去重主体。
+///
+/// `hash` 是应用装配层用用途隔离 HMAC 派生出的不可逆摘要，原始用户 ID、会话 Cookie 与
+/// 设备指纹都不会到达内容领域，也不落库。`kind` 只用于观测与测试断言，不参与去重键。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ViewSubject {
+    pub kind: ViewSubjectKind,
+    pub hash: String,
+}
+/// 去重主体的来源，优先级为 登录用户 > 会话 Cookie > 设备指纹（DEC-054）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ViewSubjectKind {
+    Account,
+    Session,
+    Device,
+}
+
+/// 一条正文当前对本次访问者的呈现状态。
+///
+/// 正文被扣留时 `markdown` 与 `html` 一律为空串，绝不把原文塞进「占位」再靠模板隐藏——
+/// 扣留必须发生在服务端投影阶段，否则任何模板疏漏都会导致正文泄露。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BodyState {
+    /// 正常展示。
+    Visible,
+    /// 作者按 PRIV-002 关闭了对未登录访客的正文展示（DEC-054）。
+    WithheldByAuthor,
+    /// 作者已删除该内容，按 DEC-061 保留主题可读性并以占位呈现。
+    Deleted,
+}
+impl BodyState {
+    pub fn visible(self) -> bool {
+        self == Self::Visible
+    }
+    /// 占位提示文案。放在合同层而不是模板里，保证服务端与任何渲染端口径一致。
+    pub fn placeholder(self) -> &'static str {
+        match self {
+            Self::Visible => "",
+            Self::WithheldByAuthor => "作者已设置该主题正文仅对登录成员可见。",
+            Self::Deleted => "该内容已删除。",
+        }
+    }
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TrustTier {
@@ -455,8 +511,12 @@ pub struct PostView {
     pub topic_id: i64,
     pub floor_no: i64,
     pub author: Author,
+    /// 正文原文。`body_state` 非 `Visible` 时为空串。
     pub markdown: String,
+    /// 渲染后的安全 HTML。`body_state` 非 `Visible` 时为空串。
     pub html: String,
+    /// 本次访问者看到的正文状态，决定是否渲染占位提示。
+    pub body_state: BodyState,
     pub created_at: DateTime<Utc>,
     pub edited_at: Option<DateTime<Utc>>,
     pub version: i64,

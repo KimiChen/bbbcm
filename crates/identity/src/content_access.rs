@@ -126,13 +126,20 @@ pub struct ContentAuthor {
     pub user_id: i64,
     pub public_ref: String,
     pub username: String,
+    /// PRIV-001：个人主页的主题/回帖列表是否对未登录访客可见。
+    pub profile_lists_public: bool,
+    /// PRIV-002：本人主题正文是否对未登录访客可见。
+    pub topic_body_public: bool,
 }
 impl std::fmt::Debug for ContentAuthor {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str("ContentAuthor([REDACTED])")
     }
 }
-/// Safe public author projection. No cross-domain repository access is needed by callers.
+/// 安全的公开作者投影，同时带出该作者的 PRIV-001／PRIV-002 隐私开关。
+///
+/// 调用方（内容领域）据此决定是否渲染列表与正文，从而不需要反向访问身份仓储。
+/// 这里只暴露布尔开关，不泄露邮箱、状态细节或其他资料字段。
 pub async fn content_authors(
     tx: &mut TransactionConnection<'_>,
     r: &SchemaRenderer,

@@ -263,9 +263,10 @@ impl ContentService {
             .clone();
         let fv = forum_visibility(&ctx.forums, forum.id)?;
         let author = self.author_in(tx, topic.author_id, ctx.now).await?;
-        let visibility = fv
-            .strictest(topic.state.visibility)
-            .strictest(author.default_visibility);
+        // PRIV-002（作者关闭正文公开）只扣留正文，不整体隐藏主题：标题与元信息按 DEC-054
+        // 「标题按规则保留」继续展示。因此这里的主题级可见性只由版块与主题自身决定，
+        // 作者隐私在 `post_view` 产出正文时单独生效。
+        let visibility = fv.strictest(topic.state.visibility);
         if !visibility.permits(&ctx.viewer) || !topic.state.can_read(&ctx.viewer, topic.author_id) {
             return Err(ContentError::NotFound);
         }
@@ -282,8 +283,17 @@ impl ContentService {
             .ok_or(ContentError::NotFound)?;
         let (_, _, visibility) = self.topic_visible(tx, ctx, &topic).await?;
         let author = self.author_in(tx, post.author_id, ctx.now).await?;
-        let visibility = visibility.strictest(author.default_visibility);
-        if !post.can_read(&ctx.viewer) || !visibility.permits(&ctx.viewer) {
+        // PRIV-002 只覆盖「本人主题正文」，不覆盖回复，因此这里不再折入作者隐私开关。
+        //
+        // DEC-061：删除态主题的首帖本身也带墓碑，但必须保留可读性才能渲染占位提示。
+        // 放行范围严格限定为「首帖 + 主题处于删除态 + 该帖未被审核处置且已发布」，
+        // 普通回复的删除语义完全不变。
+        let tombstoned_opening = post.floor_no == 1
+            && topic.state.deleted_at.is_some()
+            && post.moderation == Moderation::Normal
+            && post.publication == Publication::Published;
+        if (!post.can_read(&ctx.viewer) && !tombstoned_opening) || !visibility.permits(&ctx.viewer)
+        {
             return Err(ContentError::NotFound);
         }
         Ok((topic, author, visibility))
@@ -295,6 +305,16 @@ impl ContentService {
         post: &repo::Post,
     ) -> Result<PostView, ContentError> {
         let (topic, author, visibility) = self.basic_post_visible(tx, ctx, post).await?;
+        // 正文状态优先级：删除 > 作者隐私 > 正常。
+        // 只有主题首帖适用这两条扣留规则：DEC-061 的删除占位与 PRIV-002 的作者隐私都以
+        // 「主题正文」为对象，单条回复的删除仍按既有规则整体不展示。
+        let body_state = if post.floor_no == 1 && topic.state.deleted_at.is_some() {
+            BodyState::Deleted
+        } else if post.floor_no == 1 && !author.body_visibility.permits(&ctx.viewer) {
+            BodyState::WithheldByAuthor
+        } else {
+            BodyState::Visible
+        };
         let rendered = self
             .filtered_markup(tx, ctx, &post.body, Some(post.topic_id))
             .await?;
@@ -338,13 +358,20 @@ impl ContentService {
         } else {
             rendered.html().to_string()
         };
+        // 扣留发生在服务端投影阶段：正文与 HTML 一律清空，绝不交给模板去「隐藏」。
+        let (markdown, html) = if body_state.visible() {
+            (post.body.clone(), html)
+        } else {
+            (String::new(), String::new())
+        };
         Ok(PostView {
             id: post.id,
             topic_id: post.topic_id,
             floor_no: post.floor_no,
             author,
-            markdown: post.body.clone(),
+            markdown,
             html,
+            body_state,
             created_at: post.created_at,
             edited_at: post.edited_at,
             version: post.version,
@@ -392,9 +419,26 @@ impl ContentService {
                     }
                     match self.post_view(tx, ctx, &post).await {
                         Ok(view) => {
-                            count += 1;
-                            last_reply_at = Some(view.created_at);
-                            last_reply_author = Some(view.author);
+                            // DEC-054 有效回复：非主题作者本人发出、正文 ≥ 最低回复长度、
+                            // 未删除、未被判违规（后两项已由 `post_view` 的可见性过滤保证）。
+                            // 同一用户在同一主题内可重复计入，不做按人去重。
+                            // 首帖不是回复，不参与计数。
+                            let minimum = rules
+                                .as_ref()
+                                .map(|r| r.minimum_reply_chars)
+                                .unwrap_or_default();
+                            if view.floor_no != 1
+                                && view.author.user_id != topic.author_id
+                                && view.markdown.trim().chars().count() >= minimum
+                            {
+                                count += 1;
+                            }
+                            // 最后回复与有效回复是两套口径：最后回复取最新一条未删回复，
+                            // 含作者本人，也不看长度（DEC-054）。
+                            if view.floor_no != 1 {
+                                last_reply_at = Some(view.created_at);
+                                last_reply_author = Some(view.author);
+                            }
                         }
                         Err(ContentError::NotFound) => {}
                         Err(e) => return Err(e),
@@ -426,11 +470,72 @@ impl ContentService {
             globally_pinned: topic.globally_pinned,
             featured: topic.featured,
             reply_count,
-            view_count: None,
+            // NAV-003／NAV-004 的累计阅读量。计数在 SSR 成功后的独立事务里累加，
+            // 这里只读当前值，不在读路径产生写入。
+            view_count: Some(topic.view_count),
             last_reply_author,
             last_reply_at,
         })
     }
+    /// DEC-054 的浏览计数窗口：同一主体对同一主题 30 分钟内只计 1 次。
+    const VIEW_DEDUPLICATION_MINUTES: i64 = 30;
+
+    /// 在主题详情页服务端渲染成功返回 200 之后登记一次浏览。
+    ///
+    /// 触发点与边界（DEC-054）：
+    ///   * 只有 SSR 成功才调用，失败或 404 不计数；
+    ///   * 单独的短写事务，不进入读事务，也不阻塞渲染——调用方应忽略错误只记观测，
+    ///     浏览量丢一次远好过让一次统计失败把正常阅读变成错误页；
+    ///   * 排除作者本人；
+    ///   * 排除被标记为分析排除的账号（系统账号与已确认作弊流量）与已知爬虫，
+    ///     这两类由调用方在派生主体时直接返回 `None`，压根不会到达这里；
+    ///   * 同一主体 30 分钟内重复访问不累加计数，且整个事务回滚，台账时间戳保持为
+    ///     上一次真正计数的时刻，使窗口是固定窗口而非滑动窗口。
+    ///
+    /// 返回是否实际累加，供测试与观测断言。
+    pub async fn record_view(
+        &self,
+        topic_id: i64,
+        subject: &ViewSubject,
+        viewer_id: Option<i64>,
+        now: DateTime<Utc>,
+    ) -> Result<bool, ContentError> {
+        positive(topic_id)?;
+        if subject.hash.is_empty() {
+            return Err(ContentError::InvalidInput);
+        }
+        let now = canonical(now)?;
+        let window = Duration::try_minutes(Self::VIEW_DEDUPLICATION_MINUTES)
+            .ok_or(ContentError::Unavailable)?;
+        let mut tx = DbTransaction::begin(&self.pool).await?;
+        let counted = {
+            let mut c = tx.connection();
+            let topic = repo::topic(&mut c, &self.renderer, topic_id)
+                .await?
+                .ok_or(ContentError::NotFound)?;
+            // 作者本人的访问不计入自己的阅读量。
+            if viewer_id == Some(topic.author_id) {
+                false
+            } else {
+                repo::lock(&mut c, &self.renderer, "topics", topic_id).await?;
+                if repo::register_view(&mut c, &self.renderer, topic_id, &subject.hash, window, now)
+                    .await?
+                {
+                    repo::bump_view_count(&mut c, &self.renderer, topic_id).await?;
+                    true
+                } else {
+                    false
+                }
+            }
+        };
+        if counted {
+            tx.commit().await?;
+        } else {
+            tx.rollback().await?;
+        }
+        Ok(counted)
+    }
+
     pub async fn list(
         &self,
         filter: &ListFilter,
@@ -459,6 +564,21 @@ impl ContentService {
                 .any(|t| t.id == id && (!t.restricted || ctx.viewer.member))
         {
             return Err(ContentError::NotFound);
+        }
+        // PRIV-001：作者关闭「向未登录访客展示主题和回帖列表」后，个人主页的这两个集合
+        // 对访客整体不可见。判定放在取数之前，避免先查出内容再过滤——那样容易从分页
+        // 条数、游标或耗时上反推出被隐藏内容的存在。本人与登录成员不受影响。
+        if let Some(owner) = filter.owner_id {
+            let author = self
+                .authority
+                .authors(&mut c, &[owner], ctx.now)
+                .await?
+                .into_iter()
+                .next()
+                .ok_or(ContentError::NotFound)?;
+            if !author.lists_visibility.permits(&ctx.viewer) {
+                return Err(ContentError::NotFound);
+            }
         }
         let binding = list_binding(filter, &ctx.viewer)?;
         let mut position = match cursor {
@@ -1216,7 +1336,9 @@ impl ContentService {
                     .authors(tx, ids, now)
                     .await?
                     .into_iter()
-                    .map(|a| (a.user_id, a.default_visibility)),
+                    // 搜索文档按作者正文可见性收紧：正文不可公开时不进入公开检索面，
+                    // 这比读路径更严，宁可少检出也不泄露正文。
+                    .map(|a| (a.user_id, a.body_visibility)),
             );
         }
         repo::refresh_projection(

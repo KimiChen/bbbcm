@@ -144,6 +144,9 @@ impl ContentAuthority for ApplicationContentAuthority {
             Ok(Viewer {
                 user_id: Some(user.user_id()),
                 member: user.email_verified(),
+                // DEC-054：被分析排除的账号（系统账号、测试账号、已确认作弊流量）
+                // 不计入浏览量，这里把该事实带给内容领域，避免它反查身份仓储。
+                excluded: user.analytics_excluded(),
             })
         })
     }
@@ -243,7 +246,16 @@ impl ContentAuthority for ApplicationContentAuthority {
         _now: DateTime<Utc>,
     ) -> FutureResult<'a, Vec<Author>> {
         Box::pin(async move {
+            // 账号级默认值必须已装配；缺失时整体失败关闭，绝不臆造一个公开事实。
             let default_visibility = self.author_default.ok_or(ContentError::PolicyPending)?;
+            // 逐用户开关优先于账号级默认：用户关闭后取 Members，未关闭时沿用批准的默认值。
+            let axis = |allowed: bool| {
+                if allowed {
+                    default_visibility
+                } else {
+                    Visibility::Members
+                }
+            };
             identity::core::content_authors(tx, &self.renderer, ids)
                 .await
                 .map_err(failure)
@@ -254,7 +266,8 @@ impl ContentAuthority for ApplicationContentAuthority {
                             user_id: a.user_id,
                             public_id: a.public_ref,
                             username: a.username,
-                            default_visibility,
+                            body_visibility: axis(a.topic_body_public),
+                            lists_visibility: axis(a.profile_lists_public),
                         })
                         .collect()
                 })

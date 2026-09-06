@@ -809,3 +809,60 @@ async fn mail_outbox_failure_rolls_back_email_request_password_and_revocations()
         .unwrap();
     assert_eq!(f.account(f.a).await.version, 2);
 }
+
+/// DEC-054 的 PRIV-001／PRIV-002 自助入口。
+///
+/// 覆盖：批准的默认值为两项都公开；两项可独立关闭与重新开启；未勾选即显式关闭；
+/// 版本 CAS 与 CSRF 校验与其他资料命令一致；关闭不撤销会话（可见性不是凭据变更）。
+#[tokio::test]
+async fn privacy_settings_default_public_and_each_axis_toggles_independently() {
+    let f = Fixture::new().await;
+    let (session, csrf, _) = f.session(f.a, f.now).await;
+    f.enable().await;
+
+    // DEC-054 批准的默认值：两项都公开。
+    let account = f.account(f.a).await;
+    assert!(account.profile_lists_public && account.topic_body_public);
+
+    // CSRF 不匹配一律拒绝，且不改动任何取值。
+    assert!(
+        f.service
+            .update_privacy(&session, "wrong", "csrf-key", 1, false, false, f.now)
+            .await
+            .is_err()
+    );
+    assert_eq!(f.account(f.a).await.version, 1);
+
+    // 只关闭列表公开，正文公开不受影响。
+    f.service
+        .update_privacy(&session, csrf.expose(), "priv-1", 1, false, true, f.now)
+        .await
+        .unwrap();
+    let account = f.account(f.a).await;
+    assert!(!account.profile_lists_public && account.topic_body_public);
+    assert_eq!(account.version, 2);
+
+    // 只关闭正文公开，同时把列表重新打开——两轴互不牵连。
+    f.service
+        .update_privacy(&session, csrf.expose(), "priv-2", 2, true, false, f.now)
+        .await
+        .unwrap();
+    let account = f.account(f.a).await;
+    assert!(account.profile_lists_public && !account.topic_body_public);
+
+    // 过期版本触发 CAS 冲突，避免并发请求互相覆盖。
+    assert!(
+        f.service
+            .update_privacy(&session, csrf.expose(), "priv-3", 2, true, true, f.now)
+            .await
+            .is_err()
+    );
+
+    // 可见性变更不是凭据变更，不撤销会话：同一会话仍能继续操作。
+    f.service
+        .update_privacy(&session, csrf.expose(), "priv-4", 3, true, true, f.now)
+        .await
+        .unwrap();
+    let account = f.account(f.a).await;
+    assert!(account.profile_lists_public && account.topic_body_public);
+}

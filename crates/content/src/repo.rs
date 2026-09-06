@@ -52,6 +52,8 @@ pub(crate) struct Topic {
     pub last_reply_seq: i64,
     pub next_floor: i64,
     pub raw_reply_count: i64,
+    /// NAV-003／NAV-004 的累计阅读量。由浏览计数事务单独累加，读路径只读不写。
+    pub view_count: i64,
     pub last_reply_author_id: Option<i64>,
     pub last_reply_at: Option<DateTime<Utc>>,
     pub pinned: bool,
@@ -83,6 +85,89 @@ impl Post {
                 || viewer.user_id == Some(self.author_id))
     }
 }
+/// 在 DEC-054 的 30 分钟去重窗口内登记一次浏览，返回是否应当累加计数。
+///
+/// 去重台账按 (topic_id, subject_hash) 唯一：
+///   * 台账无记录 → 首次浏览，插入并返回真；
+///   * 记录存在但上次浏览已超出窗口 → 刷新时间戳并返回真；
+///   * 记录存在且仍在窗口内 → 返回假。
+///
+/// 注意：返回假时调用方会回滚整个事务，因此窗口内的重复访问**不会**刷新时间戳。
+/// 这样窗口是从「上一次真正计数的浏览」起算的固定窗口，而不是滑动窗口——否则每 29 分钟
+/// 刷新一次的访问者将永远只被计 1 次，与 DEC-054「30 分钟内只计 1 次」的读法不符。
+///
+/// `subject_hash` 是调用方派生的不可逆摘要，原始用户 ID、Cookie 与设备指纹不进入本表。
+/// 这里刻意先查后写而不是依赖唯一键冲突，因为 DEC-022 的三库交集子集禁用 `ON CONFLICT`。
+pub(crate) async fn register_view(
+    tx: &mut TransactionConnection<'_>,
+    r: &SchemaRenderer,
+    topic_id: i64,
+    subject_hash: &str,
+    window: chrono::Duration,
+    now: DateTime<Utc>,
+) -> Result<bool> {
+    let views = r
+        .table(tx.backend(), "community", "topic_views")
+        .map_err(|_| ContentError::Unavailable)?;
+    let existing = tx
+        .fetch_optional(
+            &format!(
+                "SELECT id, last_viewed_at, version FROM {views} WHERE topic_id = ? AND subject_hash = ?"
+            ),
+            &[topic_id.into(), text(subject_hash)],
+        )
+        .await?;
+    let Some(row) = existing else {
+        tx.execute(
+            &format!(
+                "INSERT INTO {views} (topic_id, subject_hash, first_viewed_at, last_viewed_at, version) VALUES (?, ?, ?, ?, ?)"
+            ),
+            &[
+                topic_id.into(),
+                text(subject_hash),
+                date(now),
+                date(now),
+                DbValue::I64(1),
+            ],
+        )
+        .await?;
+        return Ok(true);
+    };
+    let id = row.i64("id")?;
+    let last = row.time("last_viewed_at")?;
+    let version = row.i64("version")?;
+    let fresh = now
+        .checked_sub_signed(window)
+        .is_some_and(|threshold| last <= threshold);
+    tx.execute_versioned(
+        &format!(
+            "UPDATE {views} SET last_viewed_at = ?, version = version + 1 WHERE id = ? AND version = ?"
+        ),
+        &[date(now), id.into(), version.into()],
+    )
+    .await?;
+    Ok(fresh)
+}
+
+/// 累加主题的累计阅读量。
+///
+/// 单表单行更新，不带版本 CAS：阅读量是可累加的计数而不是需要防覆盖的业务状态，
+/// 并发累加彼此不冲突。刻意不改 topics.version，避免阅读量把内容版本推高、
+/// 进而让公开缓存和乐观并发校验被无意义地击穿。
+pub(crate) async fn bump_view_count(
+    tx: &mut TransactionConnection<'_>,
+    r: &SchemaRenderer,
+    topic_id: i64,
+) -> Result<()> {
+    let t = table(tx, r, "topics")?;
+    tx.execute(
+        &format!("UPDATE {t} SET view_count = view_count + 1 WHERE id = ?"),
+        &[topic_id.into()],
+    )
+    .await?;
+    Ok(())
+}
+
 fn topic_row(row: &DbRow) -> Result<Topic> {
     Ok(Topic {
         id: row.i64("id")?,
@@ -97,6 +182,7 @@ fn topic_row(row: &DbRow) -> Result<Topic> {
         last_reply_seq: row.i64("last_reply_seq")?,
         next_floor: row.i64("next_floor")?,
         raw_reply_count: row.i64("raw_reply_count")?,
+        view_count: row.i64("view_count")?,
         last_reply_author_id: optional_id(row.i64("last_reply_author_id")?),
         last_reply_at: optional_time(row, "last_reply_at")?,
         pinned: row.boolean("pinned")?,

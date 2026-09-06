@@ -32,6 +32,10 @@ pub struct OwnProfile {
     pub email_verified: bool,
     pub version: i64,
     pub username_change_after: DateTime<Utc>,
+    /// PRIV-001 当前取值，供设置页回显。仅本人可见，不进入公开投影。
+    pub profile_lists_public: bool,
+    /// PRIV-002 当前取值，供设置页回显。仅本人可见，不进入公开投影。
+    pub topic_body_public: bool,
 }
 #[derive(Clone)]
 pub struct DeviceSummary {
@@ -119,6 +123,9 @@ impl IdentityService {
             version: account.version,
             username_change_after: account.username_changed_at
                 + Duration::days(USERNAME_COOLDOWN_DAYS),
+            // 仅回显给本人，用于设置页勾选状态；公开投影不携带这两项。
+            profile_lists_public: account.profile_lists_public,
+            topic_body_public: account.topic_body_public,
         };
         tx.rollback().await?;
         Ok(profile)
@@ -159,6 +166,70 @@ impl IdentityService {
                                 .await?;
                         expect_version(&account, expected_version)?;
                         settings_repo::update_bio(tx, &service.renderer, &account, &bio).await?;
+                        Ok(response(Some(&account.public_id)))
+                    })
+                },
+            )
+            .await?,
+        )
+    }
+
+    /// 更新 PRIV-001／PRIV-002 的逐用户隐私开关。
+    ///
+    /// 两项各自独立：`profile_lists_public` 控制个人主页的主题/回帖列表是否对未登录访客
+    /// 可见，`topic_body_public` 控制本人主题正文是否对未登录访客可见。DEC-054 批准的默认
+    /// 值是两项都公开，本命令是用户主动关闭或重新开启的唯一入口。
+    ///
+    /// 与其他资料命令共用同一条安全路径：CSRF 校验、幂等键、账号根锁、版本 CAS。
+    /// 本命令不改动其他资料字段，也不撤销会话——可见性变更不属于凭据变更。
+    #[allow(clippy::too_many_arguments)]
+    pub async fn update_privacy(
+        &self,
+        identity: &SessionIdentity,
+        csrf: &str,
+        key: &str,
+        expected_version: i64,
+        profile_lists_public: bool,
+        topic_body_public: bool,
+        now: DateTime<Utc>,
+    ) -> Result<MutationResult, IdentityError> {
+        check_csrf(identity, csrf)?;
+        let now = normalized_now(now);
+        let canonical =
+            serde_json::to_vec(&(expected_version, profile_lists_public, topic_body_public))
+                .map_err(|_| IdentityError::Rejected)?;
+        let command = identity_command(
+            identity.user_id,
+            "identity.profile.privacy",
+            key,
+            &canonical,
+        );
+        let service = self.clone();
+        let identity = identity.clone();
+        mutation(
+            execute_command(
+                &self.pool,
+                &self.renderer,
+                &command,
+                &locks(identity.user_id),
+                now,
+                move |tx| {
+                    let service = service.clone();
+                    let identity = identity.clone();
+                    Box::pin(async move {
+                        assert_flags(tx, &service.renderer, &[Flag::PublicRead]).await?;
+                        let account =
+                            repo::require_session(tx, &service.renderer, &identity, now, false)
+                                .await?;
+                        expect_version(&account, expected_version)?;
+                        settings_repo::update_privacy(
+                            tx,
+                            &service.renderer,
+                            &account,
+                            profile_lists_public,
+                            topic_body_public,
+                        )
+                        .await?;
                         Ok(response(Some(&account.public_id)))
                     })
                 },
