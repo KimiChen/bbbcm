@@ -73,6 +73,7 @@ mod tests {
             last_reply: None,
             replies: None,
             views: Some(0),
+            title_parts: None,
             pinned: false,
             state: String::new(),
         });

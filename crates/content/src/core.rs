@@ -711,6 +711,85 @@ impl ContentService {
         Ok(counted)
     }
 
+    /// `SEARCH-001`～`SEARCH-004`：执行一次搜索。
+    ///
+    /// 可见性过滤在 SQL 内完成，先于高亮定位（`02` §13）。返回的 `SearchHit` 只带
+    /// 原始标题与命中区间，不带拼好的 HTML——渲染层负责转义，搜索层不接管这份责任。
+    pub async fn search(
+        &self,
+        query: &crate::search::SearchQuery,
+        session: Option<&str>,
+        now: DateTime<Utc>,
+    ) -> Result<(Viewer, Vec<crate::search::SearchHit>), ContentError> {
+        let now = canonical(now)?;
+        let mut tx = DbTransaction::begin_read(&self.pool).await?;
+        let mut c = tx.connection();
+        let ctx = self.context(&mut c, session, now).await?;
+        // 通配符转义后再包上 %：不转义的话一个 % 就能把检索变成枚举全部标题。
+        let pattern = format!("%{}%", crate::search::escape_like(&query.terms));
+        let rows = repo::search_titles(
+            &mut c,
+            &self.renderer,
+            &pattern,
+            query.forum_id.unwrap_or(0),
+            query.since.unwrap_or(DateTime::UNIX_EPOCH),
+            query.until.unwrap_or(DateTime::UNIX_EPOCH),
+            query.order == crate::search::SearchOrder::Newest,
+            ctx.viewer.member,
+            query.limit,
+        )
+        .await;
+        tx.rollback().await?;
+        let hits = rows?
+            .into_iter()
+            .map(|(topic_id, title, forum_id, created_at)| {
+                let highlight = crate::search::locate(&title, &query.terms);
+                crate::search::SearchHit {
+                    topic_id,
+                    title,
+                    highlight,
+                    forum_id,
+                    created_at,
+                }
+            })
+            .collect();
+        Ok((ctx.viewer, hits))
+    }
+
+    /// 当前搜索后端的能力，供页面明示限制（`02` §13）。
+    ///
+    /// 由数据库后端决定：SQLite 体验模式只支持标题检索。写死在这里而不是配置项，
+    /// 因为它是后端的客观能力，不该由配置声称。
+    pub fn search_capability(&self) -> crate::search::SearchCapability {
+        use crate::search::SearchBackend;
+        crate::search::SqliteTitleSearch.capability()
+    }
+
+    /// `SEO-004`／`SEO-005`：可公开索引的主题清单，供 sitemap 与 RSS 使用。
+    ///
+    /// 不接受访问者身份：它面向匿名抓取方，只返回公开内容。传入 session 反而会让
+    /// 「登录后抓到的 sitemap 更全」，那正是 `SEO-005` 要避免的。
+    pub async fn public_index(
+        &self,
+        forum_id: Option<i64>,
+        limit: i64,
+        now: DateTime<Utc>,
+    ) -> Result<Vec<(i64, String, DateTime<Utc>)>, ContentError> {
+        let _ = canonical(now)?;
+        let mut tx = DbTransaction::begin_read(&self.pool).await?;
+        let mut c = tx.connection();
+        self.flags(&mut c, None).await?;
+        let rows = repo::public_index(
+            &mut c,
+            &self.renderer,
+            forum_id.filter(|id| *id > 0).unwrap_or(0),
+            limit.clamp(1, 500),
+        )
+        .await;
+        tx.rollback().await?;
+        rows
+    }
+
     /// 版块目录，供管理侧的目标版块选择使用。
     ///
     /// 返回全部版块（含仅成员可见的），因为调用方已经通过管理授权——

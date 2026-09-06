@@ -8,4 +8,5 @@ pub mod http;
 pub mod markdown;
 pub mod policy;
 pub mod repo;
+pub mod search;
 pub mod web_view;

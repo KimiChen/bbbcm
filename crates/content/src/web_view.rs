@@ -26,6 +26,12 @@ pub struct TopicRow {
     pub replies: Option<i64>,
     /// NAV-003 主题行的浏览数。
     pub views: Option<i64>,
+    /// SEARCH-004 高亮：标题按命中区间预切成 (前, 命中, 后) 三段。
+    ///
+    /// 切分在服务端完成、三段分别交给模板输出，**每段各自走模板的自动转义**。
+    /// 常见做法是拼出 `<mark>…</mark>` 再标记为可信 HTML——那等于把整个标题
+    /// 当成可信内容，标题里任何一个 `<` 都会变成注入点。
+    pub title_parts: Option<(String, String, String)>,
     pub pinned: bool,
     pub state: String,
 }

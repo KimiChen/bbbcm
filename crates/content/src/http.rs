@@ -49,6 +49,8 @@ pub fn router<S: Clone + Send + Sync + 'static>(state: ContentWebState) -> Route
         "/new",
         "/pinned",
         "/featured",
+        // SEARCH-003：可分享的 GET URL，查询不依赖 POST 表单。
+        "/search",
         // NAV-004 首页「热门」：DEC-030 的累计阅读量降序视图。
         "/hot",
         "/forums/{slug}",
@@ -76,6 +78,11 @@ pub fn router<S: Clone + Send + Sync + 'static>(state: ContentWebState) -> Route
         router = router.route(path, get(editor).post(submit));
     }
     router
+        // SEO-004：抓取入口。三者都是匿名可读的静态投影，不经会话。
+        .route("/robots.txt", get(robots))
+        .route("/sitemap.xml", get(sitemap))
+        .route("/feed.xml", get(feed))
+        .route("/forums/{slug}/feed.xml", get(feed))
         .route("/content/operations", axum::routing::post(operation))
         .layer(DefaultBodyLimit::max(1_048_576))
         .with_state(state)
@@ -87,6 +94,12 @@ struct ReadQuery {
     theme: String,
     cursor: Option<String>,
     quote: Option<String>,
+    /// SEARCH-003：查询词走 GET，使搜索结果页可分享、可回退、可被收藏。
+    q: Option<String>,
+    /// 版块筛选（SEARCH-002）。
+    forum: Option<String>,
+    /// 排序（SEARCH-002）。取值经封闭枚举解析，未知值回落默认。
+    sort: Option<String>,
 }
 fn theme(query: &ReadQuery) -> Result<&'static str, ContentError> {
     match query.theme.as_str() {
@@ -255,7 +268,8 @@ fn link(label: impl Into<String>, href: impl Into<String>) -> view::Link {
         active: false,
     }
 }
-fn encode(value: &str) -> String {
+/// 百分号编码。对 crate 内可见，供 Canonical 构造复用同一份实现。
+pub(crate) fn encode(value: &str) -> String {
     value
         .bytes()
         .map(|b| {
@@ -412,6 +426,7 @@ fn row(topic: TopicView, theme: &str) -> view::TopicRow {
         last_reply,
         replies: topic.reply_count,
         views: topic.view_count,
+        title_parts: None,
         pinned: topic.pinned || topic.globally_pinned,
         state: state_label(&topic.state),
     }
@@ -442,6 +457,119 @@ fn post(post: PostView, viewer: Viewer, theme: &str) -> view::PostView {
             .map(|id| link("查看引用目标", format!("/posts/{id}?theme={theme}"))),
     }
 }
+/// `SEO-004`：`robots.txt`。
+///
+/// 显式禁止抓取管理后台、个人设置与搜索结果页。搜索结果页被排除是因为它是无限的
+/// 参数组合空间，放任抓取既浪费抓取预算，也会让爬虫制造大量无意义的查询负载。
+async fn robots(State(state): State<ContentWebState>) -> Response {
+    let body = "User-agent: *\n\
+        Disallow: /manage\n\
+        Disallow: /settings\n\
+        Disallow: /me\n\
+        Disallow: /search\n\
+        Sitemap: /sitemap.xml\n";
+    let mut response =
+        ([(header::CONTENT_TYPE, "text/plain; charset=utf-8")], body).into_response();
+    if gate(&state, None).await.is_err() {
+        // 站点未开放公开阅读时，不向抓取方暴露任何路径结构。
+        return (
+            [(header::CONTENT_TYPE, "text/plain; charset=utf-8")],
+            "User-agent: *\nDisallow: /\n",
+        )
+            .into_response();
+    }
+    secure_headers(&mut response);
+    response
+}
+
+/// `SEO-004`／`SEO-005`：`sitemap.xml`，只收录公开且已发布未删除的主题。
+async fn sitemap(State(state): State<ContentWebState>) -> Response {
+    let Ok(service) = gate(&state, None).await else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
+    let Ok(rows) = service.public_index(None, 500, Utc::now()).await else {
+        return StatusCode::SERVICE_UNAVAILABLE.into_response();
+    };
+    let mut body = String::from(
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">",
+    );
+    for (id, _, created) in rows {
+        // 权威永久链接不含版块段（DEC-056），因此移帖不会让 sitemap 里的条目失效。
+        body.push_str(&format!(
+            "<url><loc>/t/{id}</loc><lastmod>{}</lastmod></url>",
+            created.format("%Y-%m-%d")
+        ));
+    }
+    body.push_str("</urlset>");
+    let mut response = (
+        [(header::CONTENT_TYPE, "application/xml; charset=utf-8")],
+        body,
+    )
+        .into_response();
+    secure_headers(&mut response);
+    response
+}
+
+/// `SEO-004`：全站与版块级 RSS。
+///
+/// 标题经 XML 转义后输出。与 sitemap 一样只收录公开内容——订阅源是匿名可读的，
+/// 把成员可见内容放进去等于绕过可见性。
+async fn feed(State(state): State<ContentWebState>, OriginalUri(uri): OriginalUri) -> Response {
+    let Ok(service) = gate(&state, None).await else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
+    let parts: Vec<_> = uri.path().trim_matches('/').split('/').collect();
+    let forum = if parts.first() == Some(&"forums") {
+        let Ok(catalog) = service.catalog(Utc::now()).await else {
+            return StatusCode::SERVICE_UNAVAILABLE.into_response();
+        };
+        let Ok(slug) = decode_segment(parts.get(1).copied().unwrap_or_default()) else {
+            return StatusCode::NOT_FOUND.into_response();
+        };
+        match catalog.iter().find(|f| f.slug == slug) {
+            Some(found) => Some(found.id),
+            // 版块不存在时 404，而不是回落成全站订阅——静默换源会让订阅者
+            // 以为自己订到了那个版块。
+            None => return StatusCode::NOT_FOUND.into_response(),
+        }
+    } else {
+        None
+    };
+    let Ok(rows) = service.public_index(forum, 50, Utc::now()).await else {
+        return StatusCode::SERVICE_UNAVAILABLE.into_response();
+    };
+    let mut body = String::from(
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<rss version=\"2.0\"><channel><title>草莓论坛</title><link>/</link><description>草莓社区公开主题</description>",
+    );
+    for (id, title, created) in rows {
+        body.push_str(&format!(
+            "<item><title>{}</title><link>/t/{id}</link><guid isPermaLink=\"false\">t-{id}</guid><pubDate>{}</pubDate></item>",
+            xml_escape(&title),
+            created.format("%a, %d %b %Y %H:%M:%S +0000")
+        ));
+    }
+    body.push_str("</channel></rss>");
+    let mut response = (
+        [(header::CONTENT_TYPE, "application/rss+xml; charset=utf-8")],
+        body,
+    )
+        .into_response();
+    secure_headers(&mut response);
+    response
+}
+
+/// XML 文本转义。
+///
+/// 标题是用户可控文本，未转义会直接破坏 XML 结构，也可能把订阅源变成注入面。
+fn xml_escape(value: &str) -> String {
+    value
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&apos;")
+}
+
 async fn read(
     State(state): State<ContentWebState>,
     OriginalUri(uri): OriginalUri,
@@ -571,6 +699,63 @@ async fn read(
                     filter.order = ListOrder::Hot;
                     page.title = "热门".into()
                 }
+                // SEARCH-001/003/004：可分享的 GET 查询。
+                "search" => {
+                    page.title = "搜索".into();
+                    page.show_list = false;
+                    // 02 §13：SQLite 体验模式只支持标题检索，页面必须明示这一点，
+                    // 否则用户会把「正文里明明有却搜不到」理解成搜索坏了。
+                    page.notice = match service.search_capability() {
+                        crate::search::SearchCapability::TitleOnly => {
+                            Some("体验模式：仅支持标题搜索。")
+                        }
+                        crate::search::SearchCapability::FullText => None,
+                    };
+                    if let Some(built) = crate::search::SearchQuery::build(
+                        query.q.as_deref().unwrap_or_default(),
+                        query.forum.as_deref().and_then(|v| v.parse().ok()),
+                        None,
+                        None,
+                        query.sort.as_deref().unwrap_or_default(),
+                        50,
+                    ) {
+                        let (_, hits) = service
+                            .search(&built, session.as_deref(), Utc::now())
+                            .await?;
+                        page.empty = "没有匹配的标题。";
+                        page.show_list = true;
+                        page.topics = hits
+                            .into_iter()
+                            .map(|hit| view::TopicRow {
+                                href: page_href(&format!("/t/{}", hit.topic_id), page.theme, None),
+                                // 按命中区间预切三段，模板分别输出、各自转义。
+                                // 区间越界时整段回落原文：宁可不高亮，也不切出错位片段。
+                                title_parts: hit.highlight.and_then(|(a, b)| {
+                                    let chars: Vec<char> = hit.title.chars().collect();
+                                    (a <= b && b <= chars.len()).then(|| {
+                                        (
+                                            chars[..a].iter().collect(),
+                                            chars[a..b].iter().collect(),
+                                            chars[b..].iter().collect(),
+                                        )
+                                    })
+                                }),
+                                title: hit.title,
+                                author: String::new(),
+                                author_href: String::new(),
+                                forum: String::new(),
+                                forum_href: format!("/forums/{}", hit.forum_id),
+                                created_at: hit.created_at.format("%Y-%m-%d %H:%M UTC").to_string(),
+                                last_reply: None,
+                                replies: None,
+                                views: None,
+                                pinned: false,
+                                state: String::new(),
+                            })
+                            .collect();
+                    }
+                    return Ok(response(&state, &page, StatusCode::OK));
+                }
                 "forums" => {
                     let slug = decode_segment(parts[1])?;
                     let forum = catalog
@@ -666,6 +851,7 @@ async fn read(
                     replies: None,
                     // 回复行展示的是单条回复本身，浏览数属于主题维度，这里不重复呈现。
                     views: None,
+                    title_parts: None,
                     pinned: false,
                     state: if reply.publication == Publication::Pending {
                         "待审".into()
@@ -906,6 +1092,11 @@ async fn submit(
             theme: form.get("theme").cloned().unwrap_or_default(),
             cursor: None,
             quote: form.get("quote").filter(|s| !s.is_empty()).cloned(),
+            // 写路径不接受搜索参数：搜索是只读的 GET，混进表单只会成为一条
+            // 绕过 GET 语义的旁路。
+            q: None,
+            forum: None,
+            sort: None,
         };
         let theme = theme(&query)?;
         if form.get("intent").map(String::as_str) == Some("preview") {

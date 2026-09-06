@@ -573,6 +573,91 @@ pub(crate) async fn site_statistics(
     })
 }
 
+/// `SEARCH-001`／`SEARCH-004`：SQLite 体验模式的标题检索。
+///
+/// **可见性过滤在 SQL 里完成，先于任何摘要与高亮**（`02` §13）：只返回已发布、
+/// 未被审核处置、未删除，且主题与版块都对当前访问者可见的行。把过滤放到返回之后
+/// 再做，高亮片段会先一步带出调用者无权看到的标题。
+///
+/// `member` 为真表示访问者是登录成员，可看到 `members` 可见性的内容。
+/// 通配符已由调用方转义，这里再用 `ESCAPE` 显式声明转义符。
+#[allow(clippy::too_many_arguments)]
+pub(crate) async fn search_titles(
+    tx: &mut TransactionConnection<'_>,
+    r: &SchemaRenderer,
+    pattern: &str,
+    forum_id: i64,
+    since: DateTime<Utc>,
+    until: DateTime<Utc>,
+    newest_first: bool,
+    member: bool,
+    limit: i64,
+) -> Result<Vec<(i64, String, i64, DateTime<Utc>)>> {
+    let docs = table(tx, r, "search_documents")?;
+    let topics = table(tx, r, "topics")?;
+    // 两条完整语句，而不是把 ORDER BY 作为片段插进模板：
+    // SQL 模板占位只允许出现在表位置，值一律 bind。排序方向来自封闭枚举，
+    // 但「来自枚举」不等于可以拼接——拼接一旦成为惯例，下一处就会拼上用户输入。
+    let values = [
+        text(pattern),
+        text("published"),
+        text("normal"),
+        date(DateTime::UNIX_EPOCH),
+        DbValue::I64(i64::from(member)),
+        text("public"),
+        text("public"),
+        forum_id.into(),
+        forum_id.into(),
+        date(since),
+        date(DateTime::UNIX_EPOCH),
+        date(since),
+        date(until),
+        date(DateTime::UNIX_EPOCH),
+        date(until),
+        limit.into(),
+    ];
+    let rows = if newest_first {
+        tx.fetch_all(&format!("SELECT DISTINCT d.topic_id AS topic_id, d.title AS title, d.forum_id AS forum_id, t.created_at AS created_at FROM {docs} d JOIN {topics} t ON t.id = d.topic_id WHERE d.title_normalized LIKE ? ESCAPE '!' AND d.publication = ? AND d.moderation = ? AND d.deleted_at = ? AND (? = 1 OR (d.visibility = ? AND d.forum_visibility = ?)) AND (? = 0 OR d.forum_id = ?) AND (? = ? OR t.created_at >= ?) AND (? = ? OR t.created_at < ?) ORDER BY t.created_at DESC, d.topic_id DESC LIMIT ?"), &values).await?
+    } else {
+        tx.fetch_all(&format!("SELECT DISTINCT d.topic_id AS topic_id, d.title AS title, d.forum_id AS forum_id, t.created_at AS created_at FROM {docs} d JOIN {topics} t ON t.id = d.topic_id WHERE d.title_normalized LIKE ? ESCAPE '!' AND d.publication = ? AND d.moderation = ? AND d.deleted_at = ? AND (? = 1 OR (d.visibility = ? AND d.forum_visibility = ?)) AND (? = 0 OR d.forum_id = ?) AND (? = ? OR t.created_at >= ?) AND (? = ? OR t.created_at < ?) ORDER BY t.created_at ASC, d.topic_id ASC LIMIT ?"), &values).await?
+    };
+    rows.iter()
+        .map(|row| {
+            Ok((
+                row.i64("topic_id")?,
+                row.text("title")?,
+                row.i64("forum_id")?,
+                row.time("created_at")?,
+            ))
+        })
+        .collect()
+}
+
+/// `SEO-004`／`SEO-005`：可公开索引的主题清单，供 sitemap 与 RSS 使用。
+///
+/// 只收录**公开且已发布未删除未遮蔽**的主题：成员可见、待审、草稿、删除与被审核
+/// 处置的内容一律不出现。这条过滤与搜索共用同一组条件，但**额外排除了成员可见**——
+/// sitemap 与 RSS 面向匿名抓取方，没有「登录成员」这个概念。
+pub(crate) async fn public_index(
+    tx: &mut TransactionConnection<'_>,
+    r: &SchemaRenderer,
+    forum_id: i64,
+    limit: i64,
+) -> Result<Vec<(i64, String, DateTime<Utc>)>> {
+    let t = table(tx, r, "topics")?;
+    let f = table(tx, r, "forums")?;
+    let rows = tx.fetch_all(&format!(
+        "SELECT t.id AS id, t.title AS title, t.created_at AS created_at          FROM {t} t JOIN {f} f ON f.id = t.forum_id          WHERE t.publication = ? AND t.moderation = ? AND t.deleted_at = ?            AND t.visibility = ? AND f.visibility = ?            AND (? = 0 OR t.forum_id = ?)          ORDER BY t.created_at DESC, t.id DESC LIMIT ?"),
+        &[
+            text("published"), text("normal"), date(DateTime::UNIX_EPOCH),
+            text("public"), text("public"),
+            forum_id.into(), forum_id.into(), limit.into(),
+        ]).await?;
+    rows.iter()
+        .map(|row| Ok((row.i64("id")?, row.text("title")?, row.time("created_at")?)))
+        .collect()
+}
+
 pub(crate) async fn candidates(
     tx: &mut TransactionConnection<'_>,
     r: &SchemaRenderer,
@@ -747,9 +832,9 @@ pub(crate) async fn refresh_projection(
                 p.create_seq.into(),
                 p.id.into(),
             ];
-            let affected=tx.execute(&format!("UPDATE {t} SET topic_id = ?, forum_id = ?, title = ?, normalized_title = ?, body = ?, visibility = ?, forum_visibility = ?, publication = ?, moderation = ?, deleted_at = ?, entity_version = ?, topic_version = ?, create_seq = ? WHERE post_id = ?"),&values).await?;
+            let affected=tx.execute(&format!("UPDATE {t} SET topic_id = ?, forum_id = ?, title = ?, title_normalized = ?, body = ?, visibility = ?, forum_visibility = ?, publication = ?, moderation = ?, deleted_at = ?, entity_version = ?, topic_version = ?, create_seq = ? WHERE post_id = ?"),&values).await?;
             if affected == 0 {
-                tx.execute(&format!("INSERT INTO {t} (topic_id, forum_id, title, normalized_title, body, visibility, forum_visibility, publication, moderation, deleted_at, entity_version, topic_version, create_seq, post_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),&values).await?;
+                tx.execute(&format!("INSERT INTO {t} (topic_id, forum_id, title, title_normalized, body, visibility, forum_visibility, publication, moderation, deleted_at, entity_version, topic_version, create_seq, post_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),&values).await?;
             }
         }
     }

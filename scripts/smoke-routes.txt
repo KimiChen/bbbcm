@@ -106,3 +106,6 @@
 /manage/reports 404
 /manage/users 404
 /manage/config 404
+/robots.txt 200
+/sitemap.xml 404
+/feed.xml 404

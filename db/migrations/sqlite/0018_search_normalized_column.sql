@@ -1,0 +1,11 @@
+-- WP-MVP-C05：把 search_documents 的规范化标题列改名为约定的 `_normalized` 后缀。
+-- 与 postgres 轨同编号配对；SQLite 3.25+ 支持 RENAME COLUMN（rust-toolchain 锁定的 sqlx 自带 3.46）。
+--
+-- 项目的 SQL 静态守卫要求 `LIKE` 只能作用于以 `_normalized` 结尾的应用层规范化列
+-- （见 crates/platform/src/sql_lint.rs）。这条约定的作用是让复核者一眼就能看出
+-- 某个 LIKE 是不是打在规范化列上——0009 建表时用的是 `normalized_title`，
+-- 前缀写法不满足这条约定，而在标题检索接入前一直没有被 LIKE 使用过。
+--
+-- 这里改名而不是新增一列：同一份数据保留两个名字迟早会写歪一个。
+-- 列语义、内容与写入路径均不变，只改名字。
+ALTER TABLE {{table:community.search_documents}} RENAME COLUMN normalized_title TO title_normalized;
