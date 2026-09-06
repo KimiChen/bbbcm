@@ -121,7 +121,7 @@
 | `WP-MVP-C05` | In progress | 只借入同事务权威search_documents；搜索引擎/页面、SEO、Feed/sitemap等仍缺，见5.9。 |
 | `WP-MVP-C04` | Not started | 互动、通知与跨设备阅读位置后续。 |
 | `WP-MVP-D01..D04` | Not started | - |
-| `WP-MVP-E01` | In progress | 真实 Redis 8 合同与真实 PostgreSQL 16 双前缀集成（7 项）已通过并留证；`90` §5 其余 PostgreSQL 条目、`pg_jieba` 完整搜索、安全/并发/性能/E2E/视觉矩阵未执行，见 5.23。 |
+| `WP-MVP-E01` | In progress | 真实 Redis 8 合同与真实 PostgreSQL 16 双前缀集成（11 项）已通过并留证；`90` §5 其余 PostgreSQL 条目、`pg_jieba` 完整搜索、安全/并发/性能/E2E/视觉矩阵未执行，见 5.23。 |
 | `WP-MVP-E02/E04/E05` | Not started | - |
 | `WP-P1A-01..09` | Not started / flag closed | - |
 | `WP-P1B-*` | Not started / flag closed | - |
@@ -1261,7 +1261,7 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 | 检查 | 结果 |
 |---|---|
 | 真实 Redis 8 合同（`crates/platform/tests/redis_contract.rs`） | **通过**。在 `127.0.0.1:6399` 的隔离实例上执行（独立数据目录、关闭 RDB/AOF 持久化），覆盖原子性、命名空间隔离与恢复。测试自身强制要求显式隔离确认、回环地址与 `redis_version:8.` 大版本断言，非回环端点一律拒绝。运行版本口径见 `DEC-063`。 |
-| 真实 PostgreSQL 16 集成（`crates/platform-db/tests/postgres_contract.rs`） | **通过，7/7**。服务端为供应链锁定镜像 `postgres@sha256:421b84e0…`（`PG_VERSION=16.15`，UTF8 / C.UTF-8），一次性容器 + tmpfs 数据目录，经本机回环 `127.0.0.1:5433` 连接，取证后销毁。默认 `bcm_` 与本次运行新建的随机非默认前缀并存。运行身份 `<prefix>app_login` 仅属 `app_rw`，迁移身份 `<prefix>mig_login` 仅属 `migrator`，均为 `INHERIT FALSE` / `SET TRUE`。证据见 [`postgres-contract.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/postgres-contract.txt)，运行手册见 [`docs/development/postgres.md`](../docs/development/postgres.md)。 |
+| 真实 PostgreSQL 16 集成（`crates/platform-db/tests/postgres_contract.rs`） | **通过，11/11**。服务端为供应链锁定镜像 `postgres@sha256:421b84e0…`（`PG_VERSION=16.15`，UTF8 / C.UTF-8），一次性容器 + tmpfs 数据目录，经本机回环 `127.0.0.1:5433` 连接，取证后销毁。默认 `bcm_` 与本次运行新建的随机非默认前缀并存。运行身份 `<prefix>app_login` 仅属 `app_rw`，迁移身份 `<prefix>mig_login` 仅属 `migrator`，均为 `INHERIT FALSE` / `SET TRUE`。证据见 [`postgres-contract.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/postgres-contract.txt)，运行手册见 [`docs/development/postgres.md`](../docs/development/postgres.md)。 |
 | 开发期最小集（`./scripts/dev-check.sh`） | **通过**，七步：格式化、Clippy `-D warnings`、333 项单元测试、真实 SQLite 冒烟 100 条路由、`git diff --check`、暂存区复核、静态守卫。新增的 7 项 PostgreSQL 合同在默认运行中正确保持 ignored。证据见 [`dev-check.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/dev-check.txt)。 |
 
 **运行版本口径（`DEC-063`）**：本机 `redis-server` 为 **8.8.0**。按 2026-09-07 批准的 `DEC-063`，合同运行时只锁 Redis **大版本 8.x**，不要求与 `supply-chain/lock.json` 镜像基线 8.2.9-bookworm 的小版本一致，因此本次结果按正式结果计入 E01 的 Redis 一项，无需在锁定镜像上重跑。`supply-chain/lock.json` 的镜像摘要锁与 `scripts/supply-chain.py` 的 tag 校验不受影响——那是可复现构建与 SBOM 溯源的约束，与合同跑在哪个 8.x 服务端上是两件事。
@@ -1270,7 +1270,9 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 
 | 检查 | 阻塞原因 |
 |---|---|
-| `90` §5 的其余 PostgreSQL 条目 | 本载体**不含**：未来对象默认权限、未知提交（`CommitUnknown`）、`40001`/`40P01` 受控重试与固定锁顺序的并发验证、Outbox/审计/搜索权限状态与业务事实同事务提交。载体已就位，补齐是后续工作而非环境阻塞。 |
+| 未知提交（`CommitUnknown`） | 触发需 `command.rs` 内 `#[cfg(test)]` 的 `simulate_lost_ack` 钩子，crate 外的集成测试拿不到；只能由 crate 内单元测试覆盖。 |
+| `40001`/`40P01` 受控重试 | 压出序列化失败或死锁必须**故意违反**固定锁顺序，而平台层会先一步拒绝（已由 `lock_order_is_frozen_…` 正面验证）。需另建绕过平台层的夹具，或承认该故障被设计挡在发生之前。 |
+| 审计与搜索权限状态的同事务提交 | 本轮只验证了 Outbox 一侧。 |
 | `pg_jieba` / `pg_trgm` 搜索完整模式 | 扩展需按 `M0-03` 的 Dockerfile 从锁定 commit 源码编译镜像，本轮未构建。 |
 | 并发、性能与容量基线（`WP-MVP-E02`） | 载体未编写。 |
 | 安全套件、跨平台矩阵、SBOM 与漏洞全量扫描 | 依赖 Docker 与扫描工具链（`syft`/`trivy`/`gitleaks`，见 `supply-chain/lock.json`）。 |
@@ -1278,7 +1280,7 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 
 #### 状态影响
 
-**没有任何需求或工作包因本节推进为 `Verified`。** `DEC-020` 规定 `Verified` 只能在统一硬化阶段凭**完整矩阵**证据授予。本轮完成的是矩阵中的 Redis 合同、PostgreSQL 集成的七项，以及开发期最小集；安全、并发、性能、E2E 与视觉矩阵仍未执行，`90` §5 的 PostgreSQL 条目也只覆盖了一部分（未覆盖清单见上表与 [`docs/development/postgres.md`](../docs/development/postgres.md)）。`WP-MVP-E01` 由 `Not started` 转 `In progress`——它的退出条件是整套矩阵，跑通若干项不等于包完成。
+**没有任何需求或工作包因本节推进为 `Verified`。** `DEC-020` 规定 `Verified` 只能在统一硬化阶段凭**完整矩阵**证据授予。本轮完成的是矩阵中的 Redis 合同、PostgreSQL 集成的十一项，以及开发期最小集；安全、并发、性能、E2E 与视觉矩阵仍未执行，`90` §5 的 PostgreSQL 条目也只覆盖了一部分（未覆盖清单见上表与 [`docs/development/postgres.md`](../docs/development/postgres.md)）。`WP-MVP-E01` 由 `Not started` 转 `In progress`——它的退出条件是整套矩阵，跑通若干项不等于包完成。
 
 #### 环境阻塞已解除
 

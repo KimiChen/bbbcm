@@ -94,10 +94,19 @@ cargo test -p platform-db --test postgres_contract -- --ignored
 | `rollback_leaves_no_trace` | 事务回滚，且换连接回读确认是数据库级别 |
 | `version_conflict_prevents_lost_update` | 版本防覆盖，冲突分支无部分生效 |
 | `idempotency_replays_same_payload_and_rejects_different_payload` | 同键同载荷重放返回原结果、同键异载荷冲突、行数不增 |
+| `outbox_event_and_business_fact_commit_together_or_not_at_all` | Outbox 事件与业务事实同事务提交：提交后都在、回滚后都不在 |
+| `future_objects_grant_nothing_to_runtime_roles_by_default` | 未来对象默认权限失败关闭；函数必须留下显式条目以撤销 PUBLIC 的 EXECUTE |
+| `lock_order_is_frozen_and_append_phase_forbids_further_locks` | `DEC-052` 固定锁顺序：升序放行、乱序拒绝、追加段内不得补锁 |
+| `concurrent_same_key_commands_produce_exactly_one_row` | 8 路并发同幂等键：恰好一路首写，业务事实只有一条 |
 
 ## 尚未覆盖
 
-以下 `90` §5 条目**本载体不含**，不得据本手册宣称已验证：未来对象默认权限、未知提交（`CommitUnknown`）、`40001`/`40P01` 受控重试与固定锁顺序的并发验证、Outbox/审计/搜索权限状态与业务事实同事务提交、`pg_jieba`/`pg_trgm` 完整搜索模式。
+以下 `90` §5 条目**本载体不含**，不得据本手册宣称已验证：
+
+- **未知提交（`CommitUnknown`）**：触发它需要 `command.rs` 里 `#[cfg(test)]` 的 `simulate_lost_ack` 钩子，集成测试在 crate 外拿不到，只能由 crate 内单元测试覆盖。
+- **`40001`/`40P01` 的受控重试**：要压出序列化失败或死锁，必须**故意违反**固定锁顺序，而平台层会先一步拒绝（见 `lock_order_is_frozen_…`）。这条要么另建绕过平台层的夹具，要么承认它被设计挡在了发生之前。
+- **审计与搜索权限状态的同事务提交**：本载体只验证了 Outbox 一侧。
+- **`pg_jieba`/`pg_trgm` 完整搜索模式**：需按 `M0-03` 的 Dockerfile 构建扩展镜像。
 
 ## 五、销毁
 

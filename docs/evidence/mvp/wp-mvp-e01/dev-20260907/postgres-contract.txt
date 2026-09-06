@@ -5,19 +5,24 @@
 - 前缀：默认 `bcm_` 与本次运行新建的随机非默认前缀并存
 - 身份：运行 `<prefix>app_login`（仅 app_rw，INHERIT FALSE / SET TRUE）；迁移 `<prefix>mig_login`（仅 migrator）
 - 命令：`cargo test -p platform-db --test postgres_contract -- --ignored`
+- 覆盖与未覆盖清单见 [`docs/development/postgres.md`](../../../../development/postgres.md)
 
 ```
      Running tests/postgres_contract.rs (target/debug/deps/postgres_contract-029be1c556c75a03)
 
-running 7 tests
+running 11 tests
+test future_objects_grant_nothing_to_runtime_roles_by_default ... ok
 test app_role_cannot_write_reference_tables_but_can_read_them ... ok
-test version_conflict_prevents_lost_update ... ok
+test outbox_event_and_business_fact_commit_together_or_not_at_all ... ok
 test idempotency_replays_same_payload_and_rejects_different_payload ... ok
 test rollback_leaves_no_trace ... ok
-test database_constraints_reject_invalid_rows ... ok
 test trusted_identifiers_are_whitelisted_and_values_are_always_bound ... ok
+test database_constraints_reject_invalid_rows ... ok
+test lock_order_is_frozen_and_append_phase_forbids_further_locks ... ok
 test migrations_apply_once_then_skip_and_two_prefixes_stay_isolated ... ok
+test concurrent_same_key_commands_produce_exactly_one_row ... ok
+test version_conflict_prevents_lost_update ... ok
 
-test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.99s
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.30s
 
 ```

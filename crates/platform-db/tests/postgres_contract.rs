@@ -684,3 +684,334 @@ async fn idempotency_replays_same_payload_and_rejects_different_payload() {
     assert_eq!(count, 1, "重放与冲突都不得产生第二行");
     pool.close().await;
 }
+
+// ---------------------------------------------------------------------------
+// 8. Outbox 与业务事实同事务提交
+// ---------------------------------------------------------------------------
+
+/// `90` §5：Outbox 事件与业务事实在**同一个事务**里提交，要么都在，要么都不在。
+///
+/// 这是「不可靠双写」的根治点：若事件走独立连接或提交后补写，进程在两次写之间
+/// 崩溃就会产生「业务已变更但事件永远不发」或「事件已发但业务没变」。因此两条
+/// 路径都要断言——提交后两者都在，回滚后两者都不在——只测提交侧证明不了原子性。
+#[tokio::test]
+#[ignore = "需要显式隔离的 PostgreSQL 16 端点；见 docs/development/postgres.md"]
+async fn outbox_event_and_business_fact_commit_together_or_not_at_all() {
+    let (pool, renderer) = prepared().await;
+    let users = renderer
+        .table(Backend::Postgres, "identity", "users")
+        .expect("表名");
+    let events = renderer
+        .table(Backend::Postgres, "platform", "outbox_events")
+        .expect("表名");
+    let deliveries = renderer
+        .table(Backend::Postgres, "platform", "sink_deliveries")
+        .expect("表名");
+
+    // 两轮：第一轮提交，第二轮回滚；断言完全对称。
+    for commit in [true, false] {
+        let m = marker();
+        let event_id = new_operation_id();
+        let mut tx = DbTransaction::begin(&pool).await.expect("事务");
+        {
+            let mut c = tx.connection();
+            write_user(&mut c, &renderer, &m)
+                .await
+                .expect("写入业务事实");
+            let user_id = c.last_insert_id().await.expect("回读主键");
+            let event = platform::outbox::OutboxEvent {
+                event_id: event_id.clone(),
+                aggregate_type: "identity.user".into(),
+                aggregate_id: user_id.to_string(),
+                event_type: "identity.user.created".into(),
+                version: 1,
+                occurred_at: chrono::Utc::now(),
+                payload: platform::outbox::SafePayload::empty(),
+                trace_id: String::new(),
+            };
+            // enqueue 内部会 enter_append_phase：事件属于追加段，之后不得再补取领域锁。
+            platform_db::outbox_repo::enqueue(&mut c, &renderer, &event, &["cache.invalidate"])
+                .await
+                .expect("入队事件");
+        }
+        if commit {
+            tx.commit().await.expect("提交");
+        } else {
+            tx.rollback().await.expect("回滚");
+        }
+
+        let mut tx = DbTransaction::begin_read(&pool).await.expect("事务");
+        let (user_rows, event_rows, delivery_rows) = {
+            let mut c = tx.connection();
+            let u = c
+                .fetch_all(
+                    &format!("SELECT id FROM {users} WHERE public_id = ?"),
+                    &[DbValue::Text(format!("pub-{m}"))],
+                )
+                .await
+                .expect("查业务事实")
+                .len();
+            let e = c
+                .fetch_all(
+                    &format!("SELECT event_id FROM {events} WHERE event_id = ?"),
+                    &[DbValue::Text(event_id.clone())],
+                )
+                .await
+                .expect("查事件")
+                .len();
+            let d = c
+                .fetch_all(
+                    &format!("SELECT sink FROM {deliveries} WHERE event_id = ?"),
+                    &[DbValue::Text(event_id.clone())],
+                )
+                .await
+                .expect("查投递")
+                .len();
+            (u, e, d)
+        };
+        tx.rollback().await.expect("回滚");
+
+        let expected = usize::from(commit);
+        assert_eq!(user_rows, expected, "commit={commit} 时业务事实行数不符");
+        assert_eq!(event_rows, expected, "commit={commit} 时事件行数不符");
+        assert_eq!(delivery_rows, expected, "commit={commit} 时投递行数不符");
+    }
+    pool.close().await;
+}
+
+// ---------------------------------------------------------------------------
+// 9. 未来对象默认权限
+// ---------------------------------------------------------------------------
+
+/// `90` §5：未来对象的默认权限必须失败关闭。
+///
+/// 迁移里 `ALTER DEFAULT PRIVILEGES FOR ROLE migrator REVOKE ALL …` 的作用是：
+/// 以后由 migrator 新建的任何表/序列/函数，运行角色**默认拿不到任何权限**，必须
+/// 由迁移显式授予。若这条失效，新加的表就会悄悄对运行角色敞开——而且不会有任何
+/// 报错提示。这里直接读 `pg_default_acl` 目录做断言，不依赖建表副作用。
+#[tokio::test]
+#[ignore = "需要显式隔离的 PostgreSQL 16 端点；见 docs/development/postgres.md"]
+async fn future_objects_grant_nothing_to_runtime_roles_by_default() {
+    let (pool, renderer) = prepared().await;
+    let runtime_roles: Vec<String> = ["app_rw", "worker_rw", "report_ro"]
+        .iter()
+        .map(|r| renderer.role(r).expect("角色名"))
+        .collect();
+    let migrator = renderer.role("migrator").expect("角色名");
+
+    let mut tx = DbTransaction::begin_read(&pool).await.expect("事务");
+    let rows = {
+        let mut c = tx.connection();
+        // defaclacl 展开成文本后逐条检查；`grantee=privs/grantor` 形式，
+        // 空 grantee 表示 PUBLIC。
+        c.fetch_all(
+            "SELECT d.defaclobjtype::text AS objtype, COALESCE(a.acl::text, '') AS acl \
+             FROM pg_default_acl d \
+             JOIN pg_roles r ON r.oid = d.defaclrole \
+             LEFT JOIN LATERAL unnest(d.defaclacl) AS a(acl) ON TRUE \
+             WHERE r.rolname = ?",
+            &[DbValue::Text(migrator.clone())],
+        )
+        .await
+        .expect("读默认权限目录")
+    };
+    tx.rollback().await.expect("回滚");
+    assert!(
+        !rows.is_empty(),
+        "迁移必须为 {migrator} 登记默认权限条目；一条都没有说明 ALTER DEFAULT PRIVILEGES 没生效"
+    );
+    // 函数是 PostgreSQL 唯一默认就把 EXECUTE 授予 PUBLIC 的对象类型，因此它必须
+    // 留下一条显式条目——没有条目就等于 PUBLIC 仍可执行任何新函数。表和序列的
+    // 内建默认本就是「只有属主」，没有条目即为失败关闭，属正常。
+    assert!(
+        rows.iter()
+            .any(|row| row.text("objtype").expect("objtype") == "f"),
+        "函数必须留下显式默认权限条目，否则 PUBLIC 仍持有新函数的 EXECUTE"
+    );
+    for row in &rows {
+        let acl = row.text("acl").expect("acl");
+        let objtype = row.text("objtype").expect("objtype");
+        // 空 grantee（以 '=' 开头）即 PUBLIC，同样不允许出现在默认授权里。
+        assert!(
+            !acl.starts_with('='),
+            "对象类型 {objtype} 的默认权限授予了 PUBLIC：{acl}"
+        );
+        for role in &runtime_roles {
+            assert!(
+                !acl.starts_with(&format!("{role}=")),
+                "对象类型 {objtype} 的默认权限授予了运行角色 {role}：{acl}"
+            );
+        }
+    }
+    pool.close().await;
+}
+
+// ---------------------------------------------------------------------------
+// 10. 固定锁顺序
+// ---------------------------------------------------------------------------
+
+/// `DEC-052`／`90` §5：领域锁只能按冻结总序升序获取，且进入追加段后不得再补锁。
+///
+/// 固定锁顺序是死锁预防的**唯一**手段——事务一旦允许乱序取锁，就总能构造出
+/// 互相等待的两条路径。所以违反顺序必须在平台层直接失败，而不是留给数据库
+/// 在运行时偶发地报 `40P01`：后者是概率问题，前者是确定性的。
+#[tokio::test]
+#[ignore = "需要显式隔离的 PostgreSQL 16 端点；见 docs/development/postgres.md"]
+async fn lock_order_is_frozen_and_append_phase_forbids_further_locks() {
+    let (pool, renderer) = prepared().await;
+    let low = insert_user(&pool, &renderer, &marker()).await;
+    let high = insert_user(&pool, &renderer, &marker()).await;
+    assert!(high > low, "自增主键应递增，否则本测试的序关系不成立");
+
+    let low_target = LockTarget::new("identity", "users", low).expect("锁目标");
+    let high_target = LockTarget::new("identity", "users", high).expect("锁目标");
+
+    // 升序取锁：允许。
+    let mut tx = DbTransaction::begin(&pool).await.expect("事务");
+    {
+        let mut c = tx.connection();
+        c.lock(&renderer, &low_target).await.expect("升序第一把");
+        c.lock(&renderer, &high_target).await.expect("升序第二把");
+    }
+    tx.rollback().await.expect("回滚");
+
+    // 降序取锁：必须被平台层拒绝。
+    let mut tx = DbTransaction::begin(&pool).await.expect("事务");
+    let out_of_order = {
+        let mut c = tx.connection();
+        c.lock(&renderer, &high_target).await.expect("先取较大");
+        c.lock(&renderer, &low_target).await
+    };
+    tx.rollback().await.expect("回滚");
+    assert_eq!(
+        out_of_order,
+        Err(TransactionError::LockOrder),
+        "乱序取锁必须被拒绝"
+    );
+
+    // 进入追加段后，任何补锁都不再允许——哪怕顺序本身是对的。
+    let mut tx = DbTransaction::begin(&pool).await.expect("事务");
+    let after_append = {
+        let mut c = tx.connection();
+        c.enter_append_phase();
+        c.lock(&renderer, &low_target).await
+    };
+    tx.rollback().await.expect("回滚");
+    assert_eq!(
+        after_append,
+        Err(TransactionError::LockOrder),
+        "追加段内不得再补取领域锁"
+    );
+    pool.close().await;
+}
+
+// ---------------------------------------------------------------------------
+// 11. 真实并发下的幂等唯一性
+// ---------------------------------------------------------------------------
+
+/// `90` §5：同一幂等键的并发重复提交，只能产生一条业务事实。
+///
+/// 顺序重放证明的是「读到已有记录就返回」，并发才会走到「两条事务同时认为自己是
+/// 第一个」的分支——那里靠的是唯一约束加受控重试，而不是先查后写。SQLite 单写者
+/// 下这条路径基本走不到，只有真实 PostgreSQL 的多连接能压出来。
+#[tokio::test]
+#[ignore = "需要显式隔离的 PostgreSQL 16 端点；见 docs/development/postgres.md"]
+async fn concurrent_same_key_commands_produce_exactly_one_row() {
+    let (pool, renderer) = prepared().await;
+    let m = marker();
+    let users = renderer
+        .table(Backend::Postgres, "identity", "users")
+        .expect("表名");
+    let insert = format!(
+        "INSERT INTO {users} (public_id, analytics_pseudonym, analytics_excluded, username, \
+         username_key, email, email_key, status, email_verified, bio, created_at, \
+         username_changed_at, credential_version, version) \
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, 1, 1)"
+    );
+    let now = chrono::Utc::now();
+    let params = vec![
+        DbValue::Text(format!("pub-{m}")),
+        DbValue::Text(format!("anon-{m}")),
+        DbValue::Bool(false),
+        DbValue::Text(format!("u{m}")),
+        DbValue::Text(format!("u{m}")),
+        DbValue::Text(format!("{m}@example.invalid")),
+        DbValue::Text(format!("{m}@example.invalid")),
+        DbValue::Bool(false),
+        DbValue::Text(String::new()),
+        DbValue::Time(now),
+        DbValue::Time(now),
+    ];
+    let hash = request_hash(b"concurrent");
+    let body = platform::outbox::SafePayload::empty()
+        .to_json()
+        .expect("载荷");
+
+    // 池上限为 8，取 8 路并发把连接打满，确保真的并行而不是排队。
+    let mut tasks = Vec::new();
+    for _ in 0..8 {
+        let pool = pool.clone();
+        let renderer = renderer.clone();
+        let insert = insert.clone();
+        let params = params.clone();
+        let body = body.clone();
+        let ident = CommandIdentity {
+            scope: "integration.user.create".into(),
+            actor_id: 1,
+            idempotency_key: format!("concurrent-{m}"),
+            request_hash: hash.clone(),
+            operation_id: new_operation_id(),
+        };
+        tasks.push(tokio::spawn(async move {
+            let plan = LockPlan::new(Vec::<LockTarget>::new());
+            execute_command(&pool, &renderer, &ident, &plan, now, move |c| {
+                let insert = insert.clone();
+                let params = params.clone();
+                let body = body.clone();
+                Box::pin(async move {
+                    c.execute(&insert, &params).await?;
+                    Ok(StoredResponse {
+                        status_code: 201,
+                        body,
+                    })
+                })
+            })
+            .await
+        }));
+    }
+
+    let mut committed = 0_usize;
+    let mut first_writers = 0_usize;
+    for task in tasks {
+        match task.await.expect("任务不应 panic") {
+            Ok(CommitOutcome::Committed(result)) => {
+                committed += 1;
+                if !result.replayed {
+                    first_writers += 1;
+                }
+            }
+            // 并发下未取得幂等预留的一方回滚或报可重试冲突，都是允许的结果；
+            // 唯一不允许的是「写成功了两次」，那由下面的行数断言兜底。
+            Ok(CommitOutcome::RolledBack) | Ok(CommitOutcome::Unknown { .. }) | Err(_) => {}
+        }
+    }
+    assert!(committed > 0, "至少要有一路成功");
+    assert_eq!(first_writers, 1, "只能有一路是真正的首写者，其余必须是重放");
+
+    let mut tx = DbTransaction::begin_read(&pool).await.expect("事务");
+    let count = {
+        let mut c = tx.connection();
+        c.fetch_optional(
+            &format!("SELECT count(*) AS n FROM {users} WHERE public_id = ?"),
+            &[DbValue::Text(format!("pub-{m}"))],
+        )
+        .await
+        .expect("查询")
+        .expect("聚合必有行")
+        .i64("n")
+        .expect("计数")
+    };
+    tx.rollback().await.expect("回滚");
+    assert_eq!(count, 1, "并发重复提交只能产生一条业务事实");
+    pool.close().await;
+}
