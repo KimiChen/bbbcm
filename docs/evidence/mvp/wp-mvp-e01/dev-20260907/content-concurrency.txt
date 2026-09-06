@@ -1,0 +1,24 @@
+# WP-MVP-E01 并发矩阵：主题楼层（2026-09-07）
+
+- 服务端：PostgreSQL 16.15（自建 pg_jieba 镜像），一次性容器，本机回环
+- 规模：8 路 Worker × 每路 5 条 = 40 条并发回复，各用独立账号避免撞上 DEC-060 的每小时预算
+- 断言：楼层不重复、从 2 起连续、主题 next_floor 与 raw_reply_count 与实际行数一致
+
+```
+
+running 1 test
+test concurrent_replies_allocate_unique_contiguous_floors ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.45s
+
+```
+
+## 本轮修复的缺陷（DEC-064）
+
+首次执行时建主题即失败：`community.forums` 只授予运行角色 `SELECT`，而 `lock_forum`
+执行 `SELECT id FROM forums WHERE id = ? FOR UPDATE`，PostgreSQL 的 `FOR UPDATE` 需要
+`UPDATE`/`DELETE` 权限。影响面是完整模式下建主题、回复、编辑、删除、移帖全部失败，
+与并发无关。SQLite 侧不可见（`lock_sql` 对 SQLite 不加 `FOR UPDATE`，且无表级授权），
+因此 333 项单元测试与 100 条 SQLite 冒烟长期全绿也没能发现它。
+
+按用户裁决去掉版块行锁，校验（可见性、启用状态、父链环检测）全部保留，ACL 不放宽。

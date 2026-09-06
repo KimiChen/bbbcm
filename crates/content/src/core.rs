@@ -560,13 +560,14 @@ impl ContentService {
             // 移到原版块没有任何状态变化，直接拒绝而不是写一条空审计。
             return Err(ContentError::InvalidInput);
         }
-        // DEC-052 锁序：community 根锁必须早于版块与主题锁，同时取得新的排序水位。
+        // DEC-052/DEC-064 锁序：community 根锁必须早于主题锁，同时取得新的排序水位。
         let seq = repo::lock_root(tx, &self.renderer).await?;
-        // 两个版块按 ID 升序加锁，保证并发的反向移动不会互相死锁。
+        // 两个版块链都要校验（`DEC-064` 后不再加锁）。仍按 ID 升序遍历：顺序不再影响
+        // 死锁，但保持确定的校验次序，让失败信息在并发下也可复现。
         let mut forums = [source.forum_id, target_forum_id];
         forums.sort_unstable();
         for id in forums {
-            lock_forum(tx, &self.renderer, &ctx.forums, id).await?;
+            check_forum_chain(&ctx.forums, id)?;
         }
         repo::lock(tx, &self.renderer, "topics", topic_id).await?;
         let mut topic = repo::topic(tx, &self.renderer, topic_id)
@@ -1340,7 +1341,7 @@ impl ContentService {
                     rendered.external_link_count(),
                     facts.tier,
                 )?;
-                let fv = lock_forum(tx, &self.renderer, &ctx.forums, new.forum_id).await?;
+                let fv = check_forum_chain(&ctx.forums, new.forum_id)?;
                 if !fv.permits(&ctx.viewer) {
                     return Err(ContentError::Forbidden);
                 }
@@ -1378,7 +1379,7 @@ impl ContentService {
                 let mut topic = repo::topic(tx, &self.renderer, new.topic_id)
                     .await?
                     .ok_or(ContentError::NotFound)?;
-                lock_forum(tx, &self.renderer, &ctx.forums, topic.forum_id).await?;
+                check_forum_chain(&ctx.forums, topic.forum_id)?;
                 repo::lock(tx, &self.renderer, "topics", topic.id).await?;
                 topic = repo::topic(tx, &self.renderer, topic.id)
                     .await?
@@ -1453,7 +1454,7 @@ impl ContentService {
                 let mut topic = repo::topic(tx, &self.renderer, post.topic_id)
                     .await?
                     .ok_or(ContentError::NotFound)?;
-                lock_forum(tx, &self.renderer, &ctx.forums, topic.forum_id).await?;
+                check_forum_chain(&ctx.forums, topic.forum_id)?;
                 repo::lock(tx, &self.renderer, "topics", topic.id).await?;
                 repo::lock(tx, &self.renderer, "posts", post.id).await?;
                 let mut post = repo::post(tx, &self.renderer, post.id)
@@ -1533,7 +1534,7 @@ impl ContentService {
                 let mut topic = repo::topic(tx, &self.renderer, post.topic_id)
                     .await?
                     .ok_or(ContentError::NotFound)?;
-                lock_forum(tx, &self.renderer, &ctx.forums, topic.forum_id).await?;
+                check_forum_chain(&ctx.forums, topic.forum_id)?;
                 repo::lock(tx, &self.renderer, "topics", topic.id).await?;
                 repo::lock(tx, &self.renderer, "posts", post.id).await?;
                 let mut post = repo::post(tx, &self.renderer, post.id)
@@ -1974,16 +1975,23 @@ fn forum_visibility(forums: &[Forum], id: i64) -> Result<Visibility, ContentErro
         }
     }
 }
-async fn lock_forum(
-    tx: &mut TransactionConnection<'_>,
-    r: &SchemaRenderer,
-    forums: &[Forum],
-    id: i64,
-) -> Result<Visibility, ContentError> {
+/// 校验版块链并返回目标版块的可见性：整条父链都必须存在且 `active`，且不得成环。
+///
+/// **不加锁**（`DEC-064`）。这里原本对链上每个版块取 `SELECT … FOR UPDATE`，但那与
+/// `0001_init.sql` 只授予运行角色 `SELECT ON community.forums` 的最小权限 ACL 直接
+/// 冲突——PostgreSQL 的 `FOR UPDATE` 需要 `UPDATE`/`DELETE` 权限，结果是完整模式下
+/// 所有内容写入必然失败。SQLite 侧看不到：`lock_sql` 对 SQLite 返回不带 `FOR UPDATE`
+/// 的原始 SELECT，SQLite 也没有表级授权。
+///
+/// 去掉行锁是安全的：版块是迁移/种子维护的参照数据，运行角色本就无权改写，运行期
+/// 不存在并发修改；而调用方已经先取得 `community.commit_state` 根锁，所有社区写都
+/// 已被串行化，版块行锁不提供额外互斥。校验本身一条不少地保留。
+fn check_forum_chain(forums: &[Forum], id: i64) -> Result<Visibility, ContentError> {
     let visibility = forum_visibility(forums, id)?;
     let mut ids = BTreeSet::new();
     let mut current = id;
     loop {
+        // 父链成环会让下面的遍历永不终止；见到重复 ID 直接判为数据损坏。
         if !ids.insert(current) {
             return Err(ContentError::Unavailable);
         }
@@ -1998,9 +2006,6 @@ async fn lock_forum(
             Some(id) => current = id,
             None => break,
         }
-    }
-    for id in ids {
-        repo::lock(tx, r, "forums", id).await?;
     }
     Ok(visibility)
 }

@@ -199,6 +199,26 @@ NAV-009最近浏览的保存数量与清理期限仍未定，继续留缺口。D
 
 同步 `90` 第 1 节与 `docs/development/redis.md` 的验证入口说明。
 
+### `DEC-064` 内容写路径不再锁版块行（2026-09-07 批准，修订 `DEC-052` 锁序）
+
+`WP-MVP-E01` 在真实 PostgreSQL 上执行内容写入时暴露一处**事实源互相冲突**，两条都写在计划里，但在 PostgreSQL 上不可能同时成立：
+
+| 事实源 | 内容 |
+|---|---|
+| `02` 第 386 节、`DEC-052` | 写锁序为 幂等 → `identity.users` → `identity.sessions` → `trust.identity_snapshots` → `community.commit_state` → **`forums`** → `topics` → `posts` |
+| `db/migrations/postgres/0001_init.sql:120` | 运行角色对 `community.forums` 只有 `GRANT SELECT` |
+
+PostgreSQL 的 `SELECT … FOR UPDATE` 需要 `UPDATE` 或 `DELETE` 权限，只有 `SELECT` 会直接报 `permission denied for table forums`。后果是**完整模式下建主题、回复、编辑、删除、移帖全部失败**，且不限于并发，单请求也必然失败。SQLite 侧看不到：`lock_sql` 对 SQLite 返回不带 `FOR UPDATE` 的原始 SELECT，SQLite 也没有表级授权。
+
+项目所有者批准的解决方向：**去掉版块行锁**，保留 ACL 不变。
+
+- **锁序修订**：新的写锁序为 幂等 → `identity.users` → `identity.sessions` → `trust.identity_snapshots` → `community.commit_state` → `topics` → `posts`，`forums` 不再参与加锁。`02` 第 386 节同步改写。
+- **为什么安全**：版块是迁移/种子维护的参照数据，运行角色本就没有写权限，运行期不存在并发改写；而 `community.commit_state` 根锁已经把所有社区写串行化，版块行锁不提供额外互斥。
+- **保留的部分**：版块链的校验（可见性、`status = 'active'`、父链环检测）**全部保留**，只是不再对链上每个版块取行锁。函数据此更名，避免一个叫 `lock_forum` 的函数实际不加锁。
+- **最小权限不放宽**：`community.forums` 的 `GRANT SELECT` 保持原样，`app_role_cannot_write_reference_tables_but_can_read_them` 断言继续成立，不做任何修改。
+
+被否决的替代方案：给 `app_rw` 增授 `forums` 的 `UPDATE`。它改动最小，但会让运行角色获得改写参照数据的能力，削弱最小权限，并与上述断言直接冲突。
+
 ### `DEC-055` Unicode 折算与自然周起点（2026-09-06 批准，补齐 `DEC-049`）
 
 项目所有者（用户）批准：字符计量按 Unicode 标量，1 标量 = 1 字符，中日韩字符不做宽度折算；自然周按 ISO-8601 从周一 00:00 UTC 开始。`DEC-049` 遗留的两项计算分支自此解除等待，长度校验与 WAU/MAU、果农指数窗口可按此实现。同步 `01` §1.3、`DATA-002`、`02` §17。批准口径不等于统计已实现。

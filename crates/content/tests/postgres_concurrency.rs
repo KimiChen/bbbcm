@@ -61,6 +61,10 @@ fn at() -> DateTime<Utc> {
 /// 免得这个放行实现被顺手接到管理动作上。
 struct AllowAll {
     default_user: i64,
+    /// 每个账号一个稳定的分析化名。必须是合法的操作 ID（UUIDv7）——
+    /// `platform::analytics` 会校验它的格式，随手拼个 `pseudo-3` 会让
+    /// 整条写路径在构造分析事实时失败，且失败被归一成 `Unavailable`。
+    pseudonyms: std::collections::BTreeMap<i64, String>,
 }
 
 impl AllowAll {
@@ -74,7 +78,11 @@ impl AllowAll {
             allowed: true,
             default_visibility: Visibility::Public,
             publication: Publication::Published,
-            analytics_pseudonym: format!("pseudo-{user_id}"),
+            analytics_pseudonym: self
+                .pseudonyms
+                .get(&user_id)
+                .cloned()
+                .unwrap_or_else(new_operation_id),
             analytics_exclusions: platform::analytics::TrustedExclusions::from_authority(
                 false, true, false, false,
             ),
@@ -306,7 +314,10 @@ async fn fixture(workers: u32) -> Fixture {
     let service = ContentService::new(
         pool.clone(),
         renderer.clone(),
-        Arc::new(AllowAll { default_user }),
+        Arc::new(AllowAll {
+            default_user,
+            pseudonyms: users.iter().map(|id| (*id, new_operation_id())).collect(),
+        }),
         Arc::new(ApprovedContentPolicy::new().expect("已批准政策")),
         CursorKey::new(vec![7; 32]).expect("游标密钥"),
     );
@@ -354,24 +365,17 @@ async fn seeded_forum(f: &Fixture) -> i64 {
 /// 每个 Worker 用**不同账号**：同账号连发会先撞上 `DEC-060` 的每小时回复预算，
 /// 那样测的就成了限流而不是楼层分配。
 ///
-/// # 当前状态：因产品缺陷而失败，不是本测试的问题
+/// # 首次执行发现的缺陷（`DEC-064`，已修复）
 ///
-/// 2026-09-07 首次执行即在建主题一步失败（`ContentError::Unavailable`）。根因是
-/// **`community.forums` 的 ACL 与内容写路径的加锁方式互相矛盾**：
+/// 本载体第一次在真实 PostgreSQL 上运行时，在建主题一步就失败：
+/// `community.forums` 的 ACL 只授予运行角色 `SELECT`，而 `lock_forum` 执行
+/// `SELECT id FROM forums WHERE id = ? FOR UPDATE`——PostgreSQL 的 `FOR UPDATE`
+/// 需要 `UPDATE`/`DELETE` 权限。影响面是完整模式下所有内容写入必然失败，
+/// 与并发无关，单请求也一样。SQLite 侧看不到：`lock_sql` 对 SQLite 返回不带
+/// `FOR UPDATE` 的原始 SELECT，SQLite 也没有表级授权，所以单元测试与冒烟全绿。
 ///
-/// - `db/migrations/postgres/0001_init.sql` 只授予运行角色 `GRANT SELECT ON forums`；
-/// - 但 `lock_forum`（`core.rs`，建主题/回复/编辑/删除/移帖五处都调用）执行
-///   `SELECT id FROM forums WHERE id = ? FOR UPDATE`；
-/// - PostgreSQL 的 `FOR UPDATE` 需要 `UPDATE` 或 `DELETE` 权限，只有 `SELECT` 会被拒绝：
-///   `ERROR: permission denied for table forums`。
-///
-/// 影响面是**完整模式下所有内容写入全部失败**。SQLite 体验模式看不到它——
-/// `lock_sql` 对 SQLite 返回不带 `FOR UPDATE` 的原始 SELECT，且 SQLite 没有表级授权，
-/// 所以既有单元测试与 SQLite 冒烟全绿。这正是 `90` §5 要求用真实 PostgreSQL 验证的理由。
-///
-/// 修复属设计决策（要么放宽 ACL，要么改加锁策略），须先更新事实源，
-/// 因此本测试暂时保持失败并如实登记，不通过降低断言或授予权限来「修绿」。
-/// 详见 `99` 第 5.23 节。
+/// 按 `DEC-064` 的裁决去掉了版块行锁（校验全部保留），ACL 保持最小权限不放宽。
+/// 这条注释保留下来，是为了记住「SQLite 全绿」不能替代真实 PostgreSQL 验证。
 #[tokio::test(flavor = "multi_thread", worker_threads = 8)]
 #[ignore = "需要显式隔离的 PostgreSQL 16 端点；见 docs/development/postgres.md"]
 async fn concurrent_replies_allocate_unique_contiguous_floors() {
