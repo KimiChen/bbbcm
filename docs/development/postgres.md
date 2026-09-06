@@ -106,7 +106,7 @@ cargo test -p platform-db --test postgres_contract -- --ignored
 - **未知提交（`CommitUnknown`）**：触发它需要 `command.rs` 里 `#[cfg(test)]` 的 `simulate_lost_ack` 钩子，集成测试在 crate 外拿不到，只能由 crate 内单元测试覆盖。
 - **`40001`/`40P01` 的受控重试**：要压出序列化失败或死锁，必须**故意违反**固定锁顺序，而平台层会先一步拒绝（见 `lock_order_is_frozen_…`）。这条要么另建绕过平台层的夹具，要么承认它被设计挡在了发生之前。
 - **审计与搜索权限状态的同事务提交**：本载体只验证了 Outbox 一侧。
-- **`pg_jieba`/`pg_trgm` 完整搜索模式**：需按 `M0-03` 的 Dockerfile 构建扩展镜像。
+- **应用的完整搜索模式**：扩展镜像与 `pg_jieba` 1.1.1 / `pg_trgm` 1.6 本身已验证可用，且该镜像通过了本文件全部合同；缺的是应用侧——`crates/content/src/search.rs` 尚无 `pg_jieba + pg_trgm` 的 `SearchBackend` 实现（`WP-MVP-C05`）。
 
 ## 五、销毁
 

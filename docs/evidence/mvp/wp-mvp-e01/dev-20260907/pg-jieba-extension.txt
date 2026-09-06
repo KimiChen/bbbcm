@@ -1,0 +1,34 @@
+# WP-MVP-E01 pg_jieba / pg_trgm 扩展验证（2026-09-07）
+
+## 构建
+
+按 `supply-chain/postgres/Dockerfile` 与 `M0-03` 预备的离线构建上下文（35 个文件 SHA-256 全部校验通过），
+以 `docker build --network=none --platform linux/amd64` 构建，基底为锁定摘要 `postgres@sha256:606bf82e…`。
+构建全程无网络，源码取自锁定 commit 的本地归档。
+
+## 扩展可用性与实际行为
+
+```
+PostgreSQL 16.15 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
+   name   | default_version | installed_version 
+----------+-----------------+-------------------
+ pg_jieba | 1.1.1           | 1.1.1
+ pg_trgm  | 1.6             | 1.6
+(2 rows)
+
+-- 中文分词（jiebacfg）
+'全文检索':7 '指数':5 '果农':4 '社区':2 '草莓':1
+-- 分词匹配与三元组相似度
+t|0.25
+```
+
+## 该镜像可直接承载本项目
+
+同一套 `postgres_contract` 11 项在此镜像上全部通过（默认 `bcm_` 与随机非默认前缀并存），
+说明自建扩展镜像是标准镜像的直接替换，不需要额外适配。
+
+## 尚未验证：应用的完整搜索模式
+
+扩展本身已验证可用，但 **`crates/content/src/search.rs` 目前只有 `SqliteTitleSearch` 一个 `SearchBackend` 实现**，
+`pg_jieba + pg_trgm` 的 PostgreSQL 后端尚未编写。因此「完整搜索模式」无法验证——
+阻塞原因已从「缺少扩展环境」变为「功能未实现」，属 `WP-MVP-C05` 范围，不是 E01 的环境问题。

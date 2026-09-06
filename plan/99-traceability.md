@@ -1273,7 +1273,7 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 | 未知提交（`CommitUnknown`） | 触发需 `command.rs` 内 `#[cfg(test)]` 的 `simulate_lost_ack` 钩子，crate 外的集成测试拿不到；只能由 crate 内单元测试覆盖。 |
 | `40001`/`40P01` 受控重试 | 压出序列化失败或死锁必须**故意违反**固定锁顺序，而平台层会先一步拒绝（已由 `lock_order_is_frozen_…` 正面验证）。需另建绕过平台层的夹具，或承认该故障被设计挡在发生之前。 |
 | 审计与搜索权限状态的同事务提交 | 本轮只验证了 Outbox 一侧。 |
-| `pg_jieba` / `pg_trgm` 搜索完整模式 | 扩展需按 `M0-03` 的 Dockerfile 从锁定 commit 源码编译镜像，本轮未构建。 |
+| 应用的完整搜索模式 | **阻塞性质已改变**：扩展镜像本轮已按 `M0-03` 的 Dockerfile 离线构建成功，`pg_jieba` 1.1.1 与 `pg_trgm` 1.6 实测可用（中文分词、`@@` 匹配、`similarity` 均正确），同一套合同 11 项在该镜像上亦全部通过。真正缺的是应用侧——`crates/content/src/search.rs` 目前只有 `SqliteTitleSearch` 一个 `SearchBackend` 实现，`pg_jieba + pg_trgm` 的 PostgreSQL 后端尚未编写。这属 `WP-MVP-C05` 的实现缺口，不再是 E01 的环境问题。证据见 [`pg-jieba-extension.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/pg-jieba-extension.txt)。 |
 | 并发、性能与容量基线（`WP-MVP-E02`） | 载体未编写。 |
 | 安全套件、跨平台矩阵、SBOM 与漏洞全量扫描 | 依赖 Docker 与扫描工具链（`syft`/`trivy`/`gitleaks`，见 `supply-chain/lock.json`）。 |
 | 浏览器与视觉矩阵（`WP-MVP-E04`） | 需 `05` 规定的固定浏览器、字体、缩放与视口环境。 |
@@ -1295,10 +1295,13 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 
 另有一条运行前置：官方镜像默认 `datctype=C`，会被 `prepare_postgres` 的 locale 校验拒绝，必须以 `--locale=C.UTF-8` 初始化。三条都已写入运行手册。
 
+此外，`M0-03` 的 `pg_jieba` 离线构建上下文本轮首次真实执行：35 个文件 SHA-256 全部校验通过，`docker build --network=none` 构建成功，产出的镜像通过了同一套 11 项合同——该构建链路自此不再是纸面配置。
+
 #### 仍需的能力
 
-1. **`pg_jieba` 扩展镜像**，按 `M0-03` 的 Dockerfile 从锁定 commit 构建，用于搜索完整模式。
+1. **PostgreSQL 的 `SearchBackend` 实现**（`WP-MVP-C05`）。扩展镜像与扩展本身已验证可用，缺的是应用代码。
 2. **并发、性能、安全与视觉矩阵的载体**，目前尚未编写。
+3. **SBOM、许可证、漏洞与 Secret 的全量扫描**（`syft`/`trivy`/`gitleaks`），本轮未执行。
 
 当前所有需求的状态天花板仍是 `Implemented`：完整矩阵未跑完之前，`Verified` 不授予。
 
