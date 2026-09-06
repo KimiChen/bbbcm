@@ -1442,6 +1442,8 @@ dependencies = [
  "chrono",
  "platform",
  "platform-db",
+ "sha2",
+ "thiserror",
  "tokio",
 ]
 
