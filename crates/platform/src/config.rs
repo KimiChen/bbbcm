@@ -55,6 +55,8 @@ pub struct SecretOverrides {
     pub redis_url: Option<SecretString>,
     pub identity_token_keys: Option<SecretString>,
     pub identity_risk_key: Option<SecretString>,
+    /// MFA 包裹密钥（DEC-062），与邮件、风险密钥彼此独立。
+    pub identity_mfa_key: Option<SecretString>,
     pub content_cursor_key: Option<SecretString>,
 }
 impl SecretOverrides {
@@ -75,6 +77,10 @@ impl SecretOverrides {
                 .map(Into::into),
             identity_risk_key: variables
                 .get("BBBCM_IDENTITY_RISK_KEY")
+                .cloned()
+                .map(Into::into),
+            identity_mfa_key: variables
+                .get("BBBCM_IDENTITY_MFA_KEY")
                 .cloned()
                 .map(Into::into),
         }
@@ -257,6 +263,7 @@ impl Config {
         config.redis.url = secrets.redis_url;
         config.identity.token_keys = secrets.identity_token_keys;
         config.identity.risk_key = secrets.identity_risk_key;
+        config.identity.mfa_key = secrets.identity_mfa_key;
         config.content.cursor_key = secrets.content_cursor_key;
         config.validate()?;
         Ok(config)

@@ -61,6 +61,45 @@ pub async fn open_case(
         .transpose()
 }
 
+/// 案件队列行：比 `Case` 多带目标信息，供 `/manage` 队列渲染。
+#[derive(Debug, Clone)]
+pub struct QueueRow {
+    pub id: i64,
+    pub target_kind: String,
+    pub target_id: i64,
+    pub status: CaseStatus,
+    pub priority: i64,
+    pub escalated: bool,
+    pub report_count: i64,
+}
+
+/// 未关闭案件队列，按优先级升序（1 最高）、再按 ID。
+///
+/// 只返回未关闭案件：已关闭的属历史，不占工作队列。排序把高危顶到最前，
+/// 这与 `MOD-012` 「拖延本身就是伤害」的分流意图一致。
+pub async fn queue(
+    tx: &mut TransactionConnection<'_>,
+    r: &SchemaRenderer,
+    limit: i64,
+) -> Result<Vec<QueueRow>, ModerationError> {
+    let t = table(tx, r, "cases")?;
+    let rows = tx.fetch_all(&format!("SELECT id, target_kind, target_id, status, priority, escalated, report_count FROM {t} WHERE closed_at = ? ORDER BY priority, id LIMIT ?"),
+        &[never(), limit.into()]).await?;
+    rows.iter()
+        .map(|row| {
+            Ok(QueueRow {
+                id: row.i64("id")?,
+                target_kind: row.text("target_kind")?,
+                target_id: row.i64("target_id")?,
+                status: CaseStatus::parse(&row.text("status")?)?,
+                priority: row.i64("priority")?,
+                escalated: row.boolean("escalated")?,
+                report_count: row.i64("report_count")?,
+            })
+        })
+        .collect()
+}
+
 pub async fn case(
     tx: &mut TransactionConnection<'_>,
     r: &SchemaRenderer,

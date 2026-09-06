@@ -20,6 +20,12 @@ pub struct IdentityConfig {
     pub token_keys: Option<SecretString>,
     #[serde(skip)]
     pub risk_key: Option<SecretString>,
+    /// MFA 共享密钥的包裹密钥（`DEC-062`）。
+    ///
+    /// 与邮件、风险密钥彼此独立：任何一处泄露都不应横向解开另一处，
+    /// 因此校验里显式拒绝三者取值相同。未注入时 TOTP 绑定与验签一律失败关闭。
+    #[serde(skip)]
+    pub mfa_key: Option<SecretString>,
 }
 impl Default for IdentityConfig {
     fn default() -> Self {
@@ -32,6 +38,7 @@ impl Default for IdentityConfig {
             mail_base_url: None,
             token_keys: None,
             risk_key: None,
+            mfa_key: None,
         }
     }
 }
@@ -125,12 +132,29 @@ impl IdentityConfig {
                 "identity risk key must be 32 random bytes encoded as lowercase hex",
             ));
         }
+        if let Some(key) = &self.mfa_key
+            && !valid_hex(key)
+        {
+            return Err(ConfigError::Invalid(
+                "identity mfa key must be 32 random bytes encoded as lowercase hex",
+            ));
+        }
         let keys = self.token_keyring()?;
         if let Some(risk) = &self.risk_key
             && keys.values().any(|key| **key == **risk)
         {
             return Err(ConfigError::Invalid(
                 "identity mail and risk keys must be independent",
+            ));
+        }
+        // DEC-062：MFA 包裹密钥必须与邮件、风险密钥彼此独立。
+        // 取值相同等于「看起来隔离、实际同根」，比不隔离更容易误判安全性。
+        if let Some(mfa) = &self.mfa_key
+            && (self.risk_key.as_ref().is_some_and(|risk| **risk == **mfa)
+                || keys.values().any(|key| **key == **mfa))
+        {
+            return Err(ConfigError::Invalid(
+                "identity mfa key must be independent of mail and risk keys",
             ));
         }
         if self.active_token_version.is_some()

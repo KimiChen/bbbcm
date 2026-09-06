@@ -33,7 +33,10 @@ pub fn router(state: Arc<AppState>) -> Router {
         .merge(moderation::http::router())
         .merge(support::http::router())
         .merge(trust::http::router())
-        .merge(privacy::http::router());
+        .merge(privacy::http::router())
+        // `/manage` 只挂载 `03` 第 2 节中本轮开放的路由；其余管理路由不注册，
+        // 因此由框架直接 404，符合「服务端必须返回 404，不能只依赖前端隐藏」。
+        .merge(manage::console::http::router(state.console.clone()));
 
     // 正向环境白名单；staging/production 完全不挂载夹具与源资产。
     // 不依赖业务 Feature Flag，也不会因路径或查询参数而扩大可达范围。

@@ -1,0 +1,64 @@
+{# /manage 控制台。沿用 A00 冻结的模板结构与 CSS 类名，不新增类名、不引入脚本。 #}
+{% extends "layout/base.html" %}
+{% block attributes %}data-theme="light"{% endblock %}
+{% block title %}{{ page.title }} · 草莓论坛{% endblock %}
+{% block assets %}
+{# 管理后台不进搜索引擎索引，也不需要 OG/分享元信息。 #}
+<meta name="robots" content="noindex, nofollow, noarchive" />
+<link rel="icon" type="image/svg+xml" href="{{ "img/brand-symbol.svg"|asset_url }}" />
+<link rel="stylesheet" href="{{ "css/fonts.css"|asset_url }}" />
+<link rel="stylesheet" href="{{ "css/site.css"|asset_url }}" />
+<link rel="stylesheet" href="{{ "css/pages.css"|asset_url }}" />
+{% endblock %}
+{% block header %}
+<header class="site-header"><div class="header-inner">
+<a class="brand" href="/manage"><span class="brand-text">草莓论坛</span></a>
+{% if !page.nav.is_empty() %}<nav class="header-nav" aria-label="管理导航">{% for item in page.nav %}<a class="nav-link{% if item.active %} active{% endif %}" href="{{ item.href }}">{{ item.label }}</a>{% endfor %}</nav>{% endif %}
+{% if let Some(operator) = page.operator %}<span class="script-toggle">{{ operator }}</span>{% endif %}
+</div></header>
+{% endblock %}
+{% block content %}
+<div class="layout"><main class="main-col">
+<section class="main-panel" aria-labelledby="manage-heading">
+<div class="reply-head"><h1 id="manage-heading">{{ page.title }}</h1></div>
+
+{% if let Some(error) = page.error %}<p class="list-empty" role="alert">{{ error }}</p>{% endif %}
+{% if let Some(notice) = page.notice %}<p class="list-empty">{{ notice }}</p>{% endif %}
+
+{% if !page.recovery_codes.is_empty() %}
+<ul class="post-list">{% for code in page.recovery_codes %}<li class="post-item"><code>{{ code }}</code></li>{% endfor %}</ul>
+{% endif %}
+
+{% if let Some(totp) = page.totp %}
+<dl class="stats-grid"><div><dt>密钥</dt><dd><code>{{ totp.0 }}</code></dd></div><div><dt>otpauth</dt><dd><code>{{ totp.1 }}</code></dd></div></dl>
+{% endif %}
+
+{% if !page.cases.is_empty() %}
+<ul class="post-list">{% for row in page.cases %}<li class="post-item"><div class="post-body">
+<div class="post-title-row">{% if row.escalated %}<span class="topic-badge pinned">升级</span>{% endif %}<a class="post-title" href="{{ row.href }}">#{{ row.id }} {{ row.target }}</a></div>
+<div class="post-meta"><span>{{ row.status }}</span><span>{{ row.priority }}</span><span aria-label="举报数">{{ row.reports }}</span></div>
+</div></li>{% endfor %}</ul>
+{% endif %}
+
+{% if let Some(case) = page.case %}
+<dl class="stats-grid"><div><dt>目标</dt><dd>{{ case.target }}</dd></div><div><dt>状态</dt><dd>{{ case.status }}</dd></div><div><dt>优先级</dt><dd>{{ case.priority }}</dd></div><div><dt>举报数</dt><dd>{{ case.reports }}</dd></div></dl>
+{% if !case.evidence.is_empty() %}<ul class="post-list">{% for item in case.evidence %}<li class="post-item"><div class="post-meta"><code>{{ item.0 }}</code><time>{{ item.1 }}</time></div></li>{% endfor %}</ul>{% endif %}
+{% if !case.transitions.is_empty() %}<nav class="post-meta" aria-label="状态推进">{% for t in case.transitions %}<a href="{{ t.href }}">{{ t.label }}</a>{% endfor %}</nav>{% endif %}
+{% endif %}
+
+{% if !page.action.is_empty() %}
+<form method="post" action="{{ page.action }}">
+<input type="hidden" name="csrf" value="{{ page.csrf }}" />
+{% for field in page.fields %}
+{% if field.kind == "hidden" %}<input type="hidden" name="{{ field.name }}" value="{{ field.value }}" />
+{% else %}<label class="grid"><span>{{ field.label }}</span>
+{% if field.kind == "textarea" %}<textarea name="{{ field.name }}"{% if field.required %} required{% endif %}>{{ field.value }}</textarea>
+{% else %}<input type="{{ field.kind }}" name="{{ field.name }}" value="{{ field.value }}"{% if field.required %} required{% endif %} autocomplete="off" />{% endif %}</label>{% endif %}
+{% endfor %}
+<button class="auth-submit" type="submit">{{ page.submit }}</button>
+</form>
+{% endif %}
+</section>
+</main></div>
+{% endblock %}
+{% block footer %}<footer class="footer"><div class="footer-inner"><p class="footer-legal">© 2026 草莓论坛 · 管理后台</p></div></footer>{% endblock %}

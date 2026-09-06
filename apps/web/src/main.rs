@@ -16,6 +16,9 @@ mod fixtures;
 mod identity_services;
 mod identity_web;
 mod jobs;
+#[cfg(test)]
+mod manage_runtime_tests;
+mod manage_web;
 mod management_gate;
 mod middleware;
 mod moderation_authority;
@@ -70,6 +73,8 @@ async fn run() -> Result<(), String> {
     state.runtime = Some(runtime.clone());
     identity_web::connect(&mut state).await?;
     content_authority::connect(&mut state).await?;
+    // /manage 控制台在内容与治理授权之后装配：它依赖两者已就绪的服务句柄。
+    manage_web::connect(&mut state).await;
     let state = Arc::new(state);
 
     // 内嵌任务循环与 HTTP 服务共享同一取消令牌：优雅退出时先停任务循环再落地。

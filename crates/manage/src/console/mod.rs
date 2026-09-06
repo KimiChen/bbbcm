@@ -1,1 +1,4 @@
 //! `/manage` 页面与数据端点，按路由区域拆分子模块。随 WP-MVP-D04 接入。
+
+pub mod http;
+pub mod view;
