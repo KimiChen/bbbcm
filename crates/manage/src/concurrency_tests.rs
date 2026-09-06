@@ -7,20 +7,17 @@
 //! 「同一条审批只能被批准一次」和「操作者不能给自己开绿灯」这两条在**并发下**
 //! 依然成立。SQLite 单写者会把并发批准串行化，永远走不到竞态分支。
 //!
-//! # 当前状态：两个用例都卡在同一个产品缺陷上，不是测试的问题
+//! # 首次执行发现的缺陷（`DEC-065`，已修复）
 //!
-//! 2026-09-07 首次执行，两个用例都在**建审批**这一步就失败（`IamError::Unavailable`），
-//! 数据库报 `permission denied for schema <prefix>iam`。根因是
-//! `0016_iam.sql` 建了 `iam` schema 并逐表授了 `SELECT, INSERT, UPDATE`，
-//! 却**没有授 `GRANT USAGE ON SCHEMA iam`**——而 0001／0002／0004／0005／0007
-//! 每一个建 schema 的迁移都授了。PostgreSQL 里没有 schema USAGE，表级授权一律无效。
+//! 本载体第一次运行时，两个用例都在**建审批**这一步就失败，数据库报
+//! `permission denied for schema <prefix>iam`：`0016_iam.sql` 建了 `iam` schema
+//! 并逐表授了 `SELECT, INSERT, UPDATE`，却漏了 `GRANT USAGE ON SCHEMA iam`。
+//! PostgreSQL 里没有 schema USAGE，表级授权一律无效——后果是完整模式下
+//! **整个 `/manage` 不可用**：角色分配、撤销、审批、十步授权的事实读取全部失败。
+//! SQLite 没有 schema 级权限概念，因此看不到。
 //!
-//! 影响面：**完整模式下整个 `/manage` 不可用**——角色分配、撤销、审批申请与批准、
-//! 以及十步授权的 `collect_facts` 事实读取，全部落在 `iam` schema 上。
-//! SQLite 侧看不到：SQLite 没有 schema 级权限概念。
-//!
-//! 修复需要一条新的前向迁移（迁移不可改历史文件），而 N 轨编号必须跨 postgres／
-//! sqlite 对齐，纯 ACL 修复在 SQLite 轨没有对应语句可写。待用户裁决，详见 `99` §5.23。
+//! 修复是新增前向迁移 `0019_iam_schema_usage.sql` 补授。这条注释保留下来，
+//! 是为了记住「SQLite 全绿」不能替代真实 PostgreSQL 验证。
 use crate::iam::{commands, repo};
 use chrono::{DateTime, Duration, Utc};
 use platform::config::{Config, DatabaseConfig, SecretString};

@@ -273,6 +273,7 @@ manage → 全部领域
 - `db/migrations/{postgres,sqlite,mysql8}/` 三套有序文件，同一编号代表同一批结构变更；`mysql8/` 现在只放占位，结构规范先行（`DEC-022`／`DEC-033`）。
 - `bbbcm-cli db migrate --backend <postgres|sqlite>` 选择集合执行；`--backend mysql8` 为预留值，未实现时拒绝执行并提示。
 - `platform_db::migrations::verify_alignment` 做多集合编号对齐校验：已填充的迁移集合编号必须一一对齐；`mysql8/` 占位目录在真实迁移落地前不参与对齐。
+- 纯 ACL 迁移的配对形式（`DEC-065`）：某一轨确实无对应语义时（典型是 PostgreSQL 专有的 `GRANT`／`REVOKE`，SQLite 没有 schema 与角色级权限），该轨文件仍须存在且编号对齐，但首行写声明标记 `-- BBBCM-TRACK-NOOP:` 并说明原因，此时豁免「至少含一条可执行 SQL」的要求。该标记只用于本轨确实无事可做的情形，不得用来跳过本应实现的结构变更。
 - SQLite 连接统一 `journal_mode=WAL`、`busy_timeout=5000ms`、`foreign_keys=ON`（连接池建立时自动启用）。
 - 迁移执行器规范：迁移一律在专用单连接上执行，不经业务连接池；经 `SchemaRenderer` 渲染的迁移元数据表（PostgreSQL `bcm_platform.schema_migrations`，SQLite/MySQL `bcm_platform_schema_migrations`）以编号幂等判定作为并发防护第一道，重复应用必须被拒绝。
   - PostgreSQL：每个迁移在其事务内调用 `pg_advisory_xact_lock(hashtext(<schema 前缀>))`。用事务级（`xact`）而非会话级，锁随事务自动释放；锁键含 schema 前缀，避免同库双前缀测试互相阻塞。
@@ -383,7 +384,7 @@ SiteOwner 与唯一权限 registry 已由 `DEC-058` 批准（关闭 `DEC-016`／
 
 锁定用户和版块状态，校验邮箱验证、限制、可见性、速率、幂等和附件终态；创建主题/回复、稳定楼层、修订、权威搜索文档和 Outbox 后提交。
 
-DEC-052内容切片的受信装配：`content::contract::ContentAuthority` 由 apps 实现，接受发起方当前事务连接，调用 identity/moderation/trust 的受限 core 服务；content 不反向依赖这些领域、不访问他域 repo，platform 子包不增加横向依赖。新写锁序为幂等、identity.users、identity.sessions、trust.identity_snapshots、community.commit_state、topics、posts；所有可变锁结束后追加风险、分析和 Outbox。版块不参与加锁（`DEC-064`）：它是迁移/种子维护的参照数据，运行角色只有 `SELECT`，且 `community.commit_state` 根锁已把所有社区写串行化；版块链的可见性、启用状态与父链环检测仍在根锁之后校验，只是不取行锁。限制变更的未来受控命令必须使用同一 identity.users 根锁。风险四维预检查在这些数据库锁之前执行，其 opaque context 在写事务内再次绑定当前账号、动作和规则版本；它不能代替邮箱、会话或信任重读。
+DEC-052内容切片的受信装配：`content::contract::ContentAuthority` 由 apps 实现，接受发起方当前事务连接，调用 identity/moderation/trust 的受限 core 服务；content 不反向依赖这些领域、不访问他域 repo，platform 子包不增加横向依赖。新写锁序为幂等、identity.users、identity.sessions、trust.identity_snapshots、community.commit_state、topics、posts、moderation 案件顾问锁（`DEC-066`，按 `(target_kind, target_id)`）；所有可变锁结束后追加风险、分析和 Outbox。版块不参与加锁（`DEC-064`）：它是迁移/种子维护的参照数据，运行角色只有 `SELECT`，且 `community.commit_state` 根锁已把所有社区写串行化；版块链的可见性、启用状态与父链环检测仍在根锁之后校验，只是不取行锁。限制变更的未来受控命令必须使用同一 identity.users 根锁。风险四维预检查在这些数据库锁之前执行，其 opaque context 在写事务内再次绑定当前账号、动作和规则版本；它不能代替邮箱、会话或信任重读。
 
 内容、修订、永久楼层、严格发布消费事实、权威搜索投影、幂等结果共同提交。TopicPublished 的资源 ID 为主题 ID，ReplyPublished 为回复 post ID；只表示原始成功发布，不表示首次行为或有效贡献。作者隐私、发布参数及计数按DEC-054：作者列表与正文对未登录访客默认公开且用户可关闭；标题5–120、正文10–50000、回复2–10000、标签≤5，均按Unicode标量；本人编辑/删除窗口默认30分钟；严格配额在本事务内消费，UTC零点分日，成功与待审均计入、本人删除不返还。内容动作四维反滥用预算与外链门槛按DEC-060，令牌桶语义沿用DEC-051且与严格配额并存。普通编辑只能保留原发布/审核/讨论/归档状态并按权限调整主题选择；本人软删除仅在显式批准的删除政策下设置墓碑；删除态主题按DEC-061继续可读并保留在列表与搜索投影中，仅首帖正文以占位呈现，moderation轴的隐藏语义不变，审核、锁定、恢复和移动命令不在本切片开放。
 

@@ -123,23 +123,16 @@ async fn fixture(reporters: u32) -> Option<Fixture> {
 /// 2. **全部挂到同一案件**——返回的 `case_id` 去重后只有一个；
 /// 3. **数据库侧复核**——该目标在库里确实只有一行案件，返回值可能骗人，行数不会。
 ///
-/// # 当前状态：因产品缺陷而失败，不是本测试的问题
+/// # 首次执行发现的缺陷（`DEC-066`，已修复）
 ///
-/// 2026-09-07 首次执行：8 路并发在同一目标上开出了 **8 个案件**。根因是合并逻辑
-/// 既没有序列化点，也没有唯一约束兜底：
+/// 本载体第一次运行时，8 路并发在同一目标上开出了 **8 个案件**：`open_case` 是不带
+/// `FOR UPDATE` 的普通 `SELECT`，`submit_report` 读到 `None` 即建案，而
+/// `case_target_idx` 是普通索引不是唯一索引——整条路径没有任何序列化点。
+/// SQLite 单写者会把「两次读到 None」串行成「读到 None」+「读到已有」，所以合并
+/// 在 SQLite 上恒成立，长期没被发现。
 ///
-/// - `case_repo::open_case` 是不带 `FOR UPDATE` 的普通 `SELECT`；
-/// - `submit_report` 读到 `None` 就 `insert_case`，8 路同时读到 `None`；
-/// - `moderation.case_target_idx`（`0014_reports_and_cases.sql:29`）是**普通索引**，
-///   不是唯一索引，数据库不会挡下重复建案。
-///
-/// 影响面：同一条内容被多人同时举报时，审核队列会被同一件事刷屏，且每个案件
-/// 各自独立处置，结论可能互相矛盾——这正是 `MOD-002` 合并语义要防的。
-/// SQLite 侧看不到：单写者会把两次「读到 None」串行成「读到 None」+「读到已有」。
-///
-/// 修复触及事实源，须先取得用户批准：唯一偏索引受 `DEC-022` 三库交集子集限制
-/// （MySQL 8.0 不支持偏索引），加锁则会改动 `02` 第 386 节冻结的锁序。
-/// 因此本测试暂时保持失败并如实登记，不通过降低断言把它「修绿」。详见 `99` §5.23。
+/// 按 `DEC-066` 改为在读取前取事务级顾问锁。这条注释保留下来，是为了记住
+/// 「SQLite 全绿」不能替代真实 PostgreSQL 验证。
 #[tokio::test(flavor = "multi_thread", worker_threads = 8)]
 #[ignore = "需要显式隔离的 PostgreSQL 16 端点；见 docs/development/postgres.md"]
 async fn concurrent_reports_on_one_target_merge_into_a_single_case() {

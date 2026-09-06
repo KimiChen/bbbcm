@@ -1,0 +1,11 @@
+-- WP-MVP-E01 修复：补授 iam schema 的 USAGE（DEC-065 登记的缺陷）。
+--
+-- 0016_iam.sql 建了 iam schema 并逐表授了 SELECT/INSERT/UPDATE、逐序列授了
+-- USAGE/SELECT，却漏了 schema 本身的 USAGE。PostgreSQL 中没有 schema USAGE，
+-- 其下所有表级授权一律无效——后果是完整模式下角色分配、撤销、审批申请与批准、
+-- 以及十步授权的事实读取全部失败，即整个 /manage 不可用。
+--
+-- 0001/0002/0004/0005/0007 每个建 schema 的迁移都授了 schema USAGE，本条把 iam
+-- 补齐到同一水位。只补 app_rw：worker_rw 与 report_ro 在 0016 里就被显式 REVOKE，
+-- 不在此处放宽。这不扩大任何既定权限边界，只是让 0016 已经授予的表级权限生效。
+GRANT USAGE ON SCHEMA {{schema:iam}} TO {{role:app_rw}};

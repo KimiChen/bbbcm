@@ -187,18 +187,32 @@ fn tokens(sql: &str) -> Result<Vec<String>, ()> {
     Ok(result)
 }
 
+/// `DEC-065`：声明本轨确实无对应语义的迁移标记，必须位于文件首行。
+///
+/// 只有带此标记的文件才豁免「至少含一条可执行 SQL」。用**显式标记**而不是
+/// 「允许某一轨缺号」，是因为文件不存在时无从检查它为何缺席，而 `DEC-065`
+/// 要求这条豁免可被机器挡住、不被拿来跳过本应实现的结构变更。
+const TRACK_NOOP_MARKER: &str = "-- BBBCM-TRACK-NOOP:";
+
 fn validate_content(number: i64, sql: &str) -> Result<(), MigrationError> {
     let fail = |reason| MigrationError::InvalidContent { number, reason };
     if !sql.ends_with('\n') || sql.contains('\r') {
         return Err(fail("必须使用 UTF-8、LF 和末尾换行"));
     }
+    // 标记必须在首行且写明原因，避免它被塞在文件中间当成普通注释混过去。
+    let declared_noop = sql.lines().next().is_some_and(|line| {
+        line.starts_with(TRACK_NOOP_MARKER) && line.len() > TRACK_NOOP_MARKER.len()
+    });
     let tokens = tokens(sql).map_err(|_| fail("未闭合文本、非法引号或非受信 SQL 字面形式"))?;
     let statements: Vec<_> = tokens
         .split(|t| t == ";")
         .filter(|s| !s.is_empty())
         .collect();
-    if statements.is_empty() {
+    if statements.is_empty() && !declared_noop {
         return Err(fail("迁移必须包含可执行 SQL"));
+    }
+    if !statements.is_empty() && declared_noop {
+        return Err(fail("声明为本轨无操作的迁移不得再含可执行 SQL"));
     }
     for statement in statements {
         if matches!(

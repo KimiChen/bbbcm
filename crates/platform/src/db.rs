@@ -174,6 +174,37 @@ pub fn decode_time(text: &str) -> Result<chrono::DateTime<chrono::Utc>, chrono::
     Ok(chrono::DateTime::parse_from_rfc3339(text)?.with_timezone(&chrono::Utc))
 }
 
+/// 事务级顾问锁的方言入口（`DEC-066`）。
+///
+/// 用途：为「先查再决定建不建」这类没有可锁行的合并逻辑提供序列化点。典型是
+/// 举报合并——同一目标还没有案件时无行可锁，八路并发会同时读到「没有」。
+///
+/// - PostgreSQL：`pg_advisory_xact_lock`，随事务结束自动释放，无需显式解锁。
+/// - SQLite：返回 `None`。SQLite 是单写者，写事务天然互斥，不需要也没有顾问锁。
+///
+/// 键由调用方在应用侧算出并以 bind 参数传入，**不使用 `hashtext`**——它不保证
+/// 跨 PostgreSQL 版本稳定，升级后同一目标可能落到不同的键上，锁就失效了。
+pub fn advisory_lock_sql(backend: Backend) -> Option<&'static str> {
+    match backend {
+        Backend::Postgres => Some("SELECT pg_advisory_xact_lock(?) AS locked"),
+        // MySQL 的 GET_LOCK 是会话级不是事务级，语义不同；接入时再单独设计。
+        Backend::Sqlite | Backend::Mysql8 => None,
+    }
+}
+
+/// 把一个受信命名空间与整数标识折算成稳定的 64 位顾问锁键。
+///
+/// 命名空间参与哈希，避免不同领域用同一个整数 ID 撞到同一把锁。
+pub fn advisory_lock_key(namespace: &str, id: i64) -> i64 {
+    use sha2::{Digest, Sha256};
+    let mut hasher = Sha256::new();
+    hasher.update(namespace.as_bytes());
+    hasher.update(b":");
+    hasher.update(id.to_be_bytes());
+    let digest = hasher.finalize();
+    i64::from_be_bytes(digest[..8].try_into().expect("SHA-256 至少 8 字节"))
+}
+
 /// 方言入口：Repository 只提供共享 SELECT；SQLite 依赖 IMMEDIATE 单写者。
 pub fn lock_sql(backend: Backend, select: &str, skip_locked: bool) -> String {
     match backend {

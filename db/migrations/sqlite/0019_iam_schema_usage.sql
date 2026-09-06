@@ -1,0 +1,5 @@
+-- BBBCM-TRACK-NOOP: SQLite 没有 schema 与角色级权限，本轨无对应语义（DEC-065）。
+--
+-- 与 postgres 轨同编号配对。postgres 轨补授 iam schema 的 USAGE，修复 0016 遗漏
+-- 导致的「完整模式下 /manage 整体不可用」。SQLite 体验模式不存在 GRANT/REVOKE，
+-- 也没有 schema 级权限概念，因此本轨确实无事可做——这不是省略结构变更。

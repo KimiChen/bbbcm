@@ -1262,6 +1262,8 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 |---|---|
 | 真实 Redis 8 合同（`crates/platform/tests/redis_contract.rs`） | **通过**。在 `127.0.0.1:6399` 的隔离实例上执行（独立数据目录、关闭 RDB/AOF 持久化），覆盖原子性、命名空间隔离与恢复。测试自身强制要求显式隔离确认、回环地址与 `redis_version:8.` 大版本断言，非回环端点一律拒绝。运行版本口径见 `DEC-063`。 |
 | 真实 PostgreSQL 16 集成（`crates/platform-db/tests/postgres_contract.rs`） | **通过，11/11**。服务端为供应链锁定镜像 `postgres@sha256:421b84e0…`（`PG_VERSION=16.15`，UTF8 / C.UTF-8），一次性容器 + tmpfs 数据目录，经本机回环 `127.0.0.1:5433` 连接，取证后销毁。默认 `bcm_` 与本次运行新建的随机非默认前缀并存。运行身份 `<prefix>app_login` 仅属 `app_rw`，迁移身份 `<prefix>mig_login` 仅属 `migrator`，均为 `INHERIT FALSE` / `SET TRUE`。证据见 [`postgres-contract.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/postgres-contract.txt)，运行手册见 [`docs/development/postgres.md`](../docs/development/postgres.md)。 |
+| 并发矩阵：举报合并 | **通过**。8 路并发举报同一目标，恰好建一个案件、全部挂到同一案件，并回读库中该目标只有一行案件、每位举报人各留一条工单。本项首次执行即暴露并修复了 `DEC-066` 的缺陷。证据见 [`governance-concurrency.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/governance-concurrency.txt)。 |
+| 并发矩阵：治理命令 | **通过，2/2**。并发批准恰好生效一次且落库批准人正是成功那一路、版本恰好 +1；操作者自批 8 路并发全部失败、状态与版本纹丝不动、`approval_satisfied` 仍为假。本项首次执行即暴露并修复了 `DEC-065` 的缺陷。证据同上。 |
 | 并发矩阵：identity 三项 | **通过**。邮箱验证、密码恢复、邀请码消费/额度，各 8 路并发。邮箱验证除断言恰好一次成功外，还回读 `consumed` 标志——只看返回值排除不了「第二次也写了、只是返回幂等重放」；密码恢复在并发结束后再单独试一次并要求失败，把一次性验到底；邀请码额外核对实际只新增一个账号。证据见 [`identity-concurrency.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/identity-concurrency.txt)。 |
 | 并发矩阵：主题楼层 | **通过**。8 路 Worker × 每路 5 条 = 40 条并发回复，各用独立账号以避开 `DEC-060` 的每小时预算。断言楼层不重复、从 2 起连续（2–41）、主题 `next_floor` 与 `raw_reply_count` 与实际行数一致。本项首次执行即暴露并修复了 `DEC-064` 的 `forums` ACL 缺陷。证据见 [`content-concurrency.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/content-concurrency.txt)。 |
 | 并发矩阵：Outbox lease | **通过**。120 条事件 / 8 路 Worker 并发 `claim`，四层断言：反空转（八路全部领到，非单线程退化）、至多一次（无重复租约）、不饿死（120 条全部领走）、两两不相交。数据库侧复核状态全为 `leased` 且计数相符。证据见 [`postgres-concurrency.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/postgres-concurrency.txt)。**只覆盖 `90` §5 并发九项中的一项**，其余见下表。 |
@@ -1280,9 +1282,7 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 | `40001`/`40P01` 受控重试 | 压出序列化失败或死锁必须**故意违反**固定锁顺序，而平台层会先一步拒绝（已由 `lock_order_is_frozen_…` 正面验证）。需另建绕过平台层的夹具，或承认该故障被设计挡在发生之前。 |
 | 审计与搜索权限状态的同事务提交 | 本轮只验证了 Outbox 一侧。 |
 | 应用的完整搜索模式 | **阻塞性质已改变**：扩展镜像本轮已按 `M0-03` 的 Dockerfile 离线构建成功，`pg_jieba` 1.1.1 与 `pg_trgm` 1.6 实测可用（中文分词、`@@` 匹配、`similarity` 均正确），同一套合同 11 项在该镜像上亦全部通过。真正缺的是应用侧——`crates/content/src/search.rs` 目前只有 `SqliteTitleSearch` 一个 `SearchBackend` 实现，`pg_jieba + pg_trgm` 的 PostgreSQL 后端尚未编写。这属 `WP-MVP-C05` 的实现缺口，不再是 E01 的环境问题。证据见 [`pg-jieba-extension.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/pg-jieba-extension.txt)。 |
-| 并发矩阵：举报合并 | 载体已编写（`crates/moderation/src/concurrency_tests.rs`），**当前失败**——8 路并发在同一目标上开出 8 个案件，根因见上节缺陷登记。裁决并修复后方可通过。 |
-| 并发矩阵：治理命令 | 载体已编写（`crates/manage/src/concurrency_tests.rs`，2 个用例：并发批准只生效一次、操作者自批并发下也必须全败），**当前失败**——两个用例都卡在上节的 `iam` schema `USAGE` 缺失上，连审批都建不出来。裁决并修复后方可通过。 |
-| 并发矩阵：互动唯一性、通知去重 | 属 `WP-MVP-C04`（`Not started`），**功能尚不存在**，不是载体问题。 |
+| 并发矩阵：互动唯一性、通知去重 | 属 `WP-MVP-C04`（`Not started`），**功能尚不存在**，不是载体问题。`90` §5 并发九项中的其余七项本轮全部通过。 |
 | 性能与容量基线（`WP-MVP-E02`） | 载体未编写。 |
 | 安全套件与跨平台矩阵 | 载体未编写；SBOM/许可证/漏洞/Secret 扫描已单独完成，见上表。 |
 | 浏览器与视觉矩阵（`WP-MVP-E04`） | 需 `05` 规定的固定浏览器、字体、缩放与视口环境。 |
@@ -1325,7 +1325,7 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 1. **唯一偏索引**（如 `UNIQUE … WHERE closed_at = <哨兵>`）。语义最贴切，但 `DEC-022` 要求 SQL 落在 PostgreSQL 16／SQLite 3.25+／MySQL 8.0 的**交集子集**内，而 MySQL 8.0 不支持偏索引。若采用需先修订 `DEC-022` 或明确 MySQL 接入时的替代方案。
 2. **加序列化点**（对 `(target_kind, target_id)` 取 advisory lock，或引入案件根锁）。不受三库子集限制，但会改动 `02` 第 386 节冻结的锁序，需要与 `DEC-052`／`DEC-064` 一并复核。
 
-在裁决前，该载体保持**失败**并如实登记，不通过降低断言把它「修绿」。
+**用户已于 2026-09-07 裁决：采用选项 2（加序列化点），登记为 `DEC-066`。** 事实源先行更新（`06` 新增 `DEC-066`、`02` 第 386 节锁序补入 moderation 顾问锁），随后实施：`platform::db` 新增 `advisory_lock_sql`／`advisory_lock_key` 方言入口，`submit_report` 在读取既有案件前按 `(target_kind, target_id)` 取事务级顾问锁；键在应用侧用 SHA-256 算出并以 bind 参数传入，不用 `hashtext`（它不保证跨版本稳定）。SQLite 返回 `None`，单写者天然互斥。修复后载体通过。
 
 #### 缺陷：`iam` schema 缺 `USAGE` 授权，完整模式下整个 `/manage` 不可用（2026-09-07 发现）
 
@@ -1341,11 +1341,13 @@ PostgreSQL 中没有 schema `USAGE`，其下所有表级授权一律无效。**�
 
 这一条与前两个缺陷不同：**没有事实源冲突**。`0016` 自己的注释写明「分配与审批授必要写权限」，意图明确，只是漏了让这些授权生效的前置 schema USAGE。补授不扩大任何既定权限边界。
 
-**待裁决的是修复形式，不是要不要修**：迁移不可改历史文件，必须新增前向迁移；而 N 轨编号要求 postgres 与 sqlite 的编号集合完全一致（`migrations/discovery.rs` 的 `verify_alignment`，只有 mysql8 允许整轨为空），纯 ACL 修复在 SQLite 轨没有对应语句可写，而 `validate_content` 又要求每个迁移至少含一条可执行 SQL。
+**用户已于 2026-09-07 裁决：放宽对齐规则，登记为 `DEC-065`。** 落地形式是显式标记而非缺号——批准意见要求「缺号必须是纯 ACL」的约束可被检查，而文件不存在时无从检查任何东西。因此文件仍配对存在、编号集合不变，SQLite 轨首行写 `-- BBBCM-TRACK-NOOP:` 并说明原因，`validate_content` 仅对带标记的文件豁免「至少一条可执行 SQL」，且带标记的文件**不得再含可执行 SQL**（防止拿它跳过本应实现的结构变更）。
+
+修复为新增前向迁移 `0019_iam_schema_usage.sql`：postgres 轨 `GRANT USAGE ON SCHEMA iam TO app_rw`，只补 `app_rw`——`worker_rw`／`report_ro` 在 0016 已被显式 REVOKE，不在此放宽。修复后 `manage` 的两个并发用例通过。
 
 #### 状态影响
 
-**没有任何需求或工作包因本节推进为 `Verified`。** `DEC-020` 规定 `Verified` 只能在统一硬化阶段凭**完整矩阵**证据授予。本轮完成的是矩阵中的 Redis 合同、PostgreSQL 集成的十一项、并发九项中的六项（Outbox lease、主题楼层、邮箱验证、密码恢复、邀请码消费/额度）、`pg_jieba` 扩展镜像的离线构建与实测、SBOM/许可证/漏洞/Secret 全量扫描，以及开发期最小集；安全、并发、性能、E2E 与视觉矩阵仍未执行，`90` §5 的 PostgreSQL 条目也只覆盖了一部分（未覆盖清单见上表与 [`docs/development/postgres.md`](../docs/development/postgres.md)）。`WP-MVP-E01` 由 `Not started` 转 `In progress`——它的退出条件是整套矩阵，跑通若干项不等于包完成。
+**没有任何需求或工作包因本节推进为 `Verified`。** `DEC-020` 规定 `Verified` 只能在统一硬化阶段凭**完整矩阵**证据授予。本轮完成的是矩阵中的 Redis 合同、PostgreSQL 集成的十一项、并发九项中的七项（Outbox lease、主题楼层、邮箱验证、密码恢复、邀请码消费/额度、举报合并、治理命令）、`pg_jieba` 扩展镜像的离线构建与实测、SBOM/许可证/漏洞/Secret 全量扫描，以及开发期最小集；安全、并发、性能、E2E 与视觉矩阵仍未执行，`90` §5 的 PostgreSQL 条目也只覆盖了一部分（未覆盖清单见上表与 [`docs/development/postgres.md`](../docs/development/postgres.md)）。`WP-MVP-E01` 由 `Not started` 转 `In progress`——它的退出条件是整套矩阵，跑通若干项不等于包完成。
 
 #### 环境阻塞已解除
 

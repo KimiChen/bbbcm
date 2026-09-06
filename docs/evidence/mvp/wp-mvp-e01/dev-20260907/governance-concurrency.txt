@@ -1,0 +1,26 @@
+# WP-MVP-E01 并发矩阵：举报合并与治理命令（2026-09-07）
+
+- 服务端：PostgreSQL 16.15（自建 pg_jieba 镜像），一次性容器，本机回环
+- 两项在首次执行时都失败，各自暴露一个生产缺陷；按 DEC-065／DEC-066 修复后通过
+
+```
+test concurrency_tests::concurrent_reports_on_one_target_merge_into_a_single_case ... ok
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 8 filtered out; finished in 1.28s
+test concurrency_tests::concurrent_approvals_take_effect_exactly_once ... ok
+test concurrency_tests::operator_cannot_self_approve_even_concurrently ... ok
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 2.56s
+```
+
+## 修复的两个缺陷
+
+**举报合并（DEC-066）**：`open_case` 是不带 `FOR UPDATE` 的普通 SELECT，`submit_report`
+读到 None 即建案，`case_target_idx` 又是普通索引——8 路并发在同一目标上开出 8 个案件。
+改为在读取前按 `(target_kind, target_id)` 取事务级顾问锁。选顾问锁而非唯一偏索引，
+是因为 MySQL 8.0 不支持偏索引，与 DEC-022 的三库交集子集冲突。
+
+**iam schema USAGE（DEC-065）**：`0016_iam.sql` 逐表授了权限却漏了 `GRANT USAGE ON SCHEMA iam`，
+PostgreSQL 下表级授权因此全部无效，整个 `/manage` 不可用。新增前向迁移 0019 补授。
+配对的 SQLite 轨用 `-- BBBCM-TRACK-NOOP:` 标记声明本轨无对应语义，
+而不是塞一条占位语句——这条豁免由 `validate_content` 强制，且带标记的文件不得再含可执行 SQL。
+
+两者都只在真实 PostgreSQL 上可见：SQLite 没有 schema／表级授权，单写者又把竞态串行化掉了。

@@ -198,6 +198,18 @@ pub async fn submit_report(
         return Err(ModerationError::InvalidInput);
     }
     let now = canonical(now)?;
+    // `DEC-066` 序列化点：同一目标还没有案件时无行可锁，并发的多路会同时读到
+    // 「没有」，各自建案——`MOD-002` 的合并语义就此失效。这里先按
+    // `(target_kind, target_id)` 取一把事务级顾问锁，把「查—建」整段串起来。
+    //
+    // 用顾问锁而不是唯一偏索引：偏索引语义更贴切，但 MySQL 8.0 不支持，
+    // 与 `DEC-022` 的三库交集子集冲突。锁随事务结束自动释放，无需显式解锁。
+    // SQLite 返回 `None`：单写者天然互斥，不需要也没有顾问锁。
+    if let Some(sql) = platform::db::advisory_lock_sql(tx.backend()) {
+        let key = platform::db::advisory_lock_key(kind.as_str(), target_id);
+        tx.fetch_optional(sql, &[platform_db::transaction::DbValue::I64(key)])
+            .await?;
+    }
     let existing = crate::case_repo::open_case(tx, r, kind, target_id).await?;
     let (case_id, created_case) = match existing {
         Some(case) => {
