@@ -1278,10 +1278,32 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 | `40001`/`40P01` 受控重试 | 压出序列化失败或死锁必须**故意违反**固定锁顺序，而平台层会先一步拒绝（已由 `lock_order_is_frozen_…` 正面验证）。需另建绕过平台层的夹具，或承认该故障被设计挡在发生之前。 |
 | 审计与搜索权限状态的同事务提交 | 本轮只验证了 Outbox 一侧。 |
 | 应用的完整搜索模式 | **阻塞性质已改变**：扩展镜像本轮已按 `M0-03` 的 Dockerfile 离线构建成功，`pg_jieba` 1.1.1 与 `pg_trgm` 1.6 实测可用（中文分词、`@@` 匹配、`similarity` 均正确），同一套合同 11 项在该镜像上亦全部通过。真正缺的是应用侧——`crates/content/src/search.rs` 目前只有 `SqliteTitleSearch` 一个 `SearchBackend` 实现，`pg_jieba + pg_trgm` 的 PostgreSQL 后端尚未编写。这属 `WP-MVP-C05` 的实现缺口，不再是 E01 的环境问题。证据见 [`pg-jieba-extension.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/pg-jieba-extension.txt)。 |
-| 并发矩阵其余八项 | 邀请码消费/额度、邮箱验证、密码恢复、主题楼层、举报合并、治理命令属领域 crate，`platform-db` 在依赖图下游无法反向依赖，需在各自 crate 内另建载体；互动唯一性与通知去重属 `WP-MVP-C04`（`Not started`），**功能尚不存在**。 |
+| 并发矩阵「主题楼层」 | 载体已编写（`crates/content/tests/postgres_concurrency.rs`），但**当前失败**——被上节的 `forums` ACL 缺陷阻断，写路径在建主题一步即返回 `Unavailable`。缺陷修复后方可执行。 |
+| 并发矩阵其余七项 | 邀请码消费/额度、邮箱验证、密码恢复、举报合并、治理命令属领域 crate，`platform-db` 在依赖图下游无法反向依赖，需在各自 crate 内另建载体；互动唯一性与通知去重属 `WP-MVP-C04`（`Not started`），**功能尚不存在**。 |
 | 性能与容量基线（`WP-MVP-E02`） | 载体未编写。 |
 | 安全套件与跨平台矩阵 | 载体未编写；SBOM/许可证/漏洞/Secret 扫描已单独完成，见上表。 |
 | 浏览器与视觉矩阵（`WP-MVP-E04`） | 需 `05` 规定的固定浏览器、字体、缩放与视口环境。 |
+
+#### 缺陷：完整模式下所有内容写入必然失败（2026-09-07 发现）
+
+编写领域层并发载体（`crates/content/tests/postgres_concurrency.rs`）时，首次在真实 PostgreSQL 上执行内容写入即失败，根因是 **ACL 与加锁策略互相矛盾**：
+
+| 事实 | 位置 |
+|---|---|
+| 运行角色对版块只有 `GRANT SELECT ON TABLE community.forums` | `db/migrations/postgres/0001_init.sql:120` |
+| 内容写路径执行 `SELECT id FROM forums WHERE id = ? FOR UPDATE` | `crates/content/src/core.rs` 的 `lock_forum`，被建主题、回复、编辑、删除、移帖五处调用（`core.rs:569/1343/1381/1456/1536`） |
+| PostgreSQL 的 `FOR UPDATE` 需要 `UPDATE` 或 `DELETE` 权限 | 实测报错 `ERROR: permission denied for table forums` |
+
+**影响面**：完整模式（PostgreSQL）下建主题、回复、编辑、删除、移帖**全部失败**，返回 `ContentError::Unavailable`。这不是并发问题，单请求也必然失败。
+
+**为什么此前没被发现**：`platform::db::lock_sql` 对 SQLite 返回不带 `FOR UPDATE` 的原始 SELECT，且 SQLite 没有表级授权，因此既有单元测试与 SQLite 冒烟全部通过。这正是 `90` §5 要求用真实 PostgreSQL 验证的理由，也是 `DEC-020` 把完整验证后置到硬化阶段的已知代价。
+
+**未自行修复**：两条候选路径都触及事实源，属设计决策，须先取得用户批准并更新计划再实施——
+
+1. **放宽 ACL**：给 `app_rw` 增授 `community.forums` 的 `UPDATE`。代价是运行角色获得改写参照数据的能力，削弱最小权限，与 `app_role_cannot_write_reference_tables_but_can_read_them` 断言的边界直接冲突。
+2. **改加锁策略**：内容写路径不再对版块行取 `FOR UPDATE`。版块是迁移/种子维护的参照数据，运行期不会被并发修改，`lock_root`（`community.commit_state`）已经把所有社区写串行化了，版块行锁可能本就是多余的。代价是需要复核 `DEC-052` 的锁序假设是否依赖这把锁。
+
+倾向选项 2，但需用户裁决。在裁决前，`crates/content/tests/postgres_concurrency.rs` 保持**失败**并如实登记，不通过降低断言或临时授权把它「修绿」。
 
 #### 状态影响
 

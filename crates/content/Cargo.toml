@@ -24,3 +24,8 @@ url.workspace = true
 [dev-dependencies]
 tokio.workspace = true
 tower.workspace = true
+# 集成测试看不到普通依赖；同版本重复声明，不新增 registry 包。
+url.workspace = true
+chrono.workspace = true
+platform.workspace = true
+platform-db.workspace = true
