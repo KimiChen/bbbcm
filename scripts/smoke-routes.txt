@@ -29,6 +29,7 @@
 /featured 404
 /forums/practice 404
 /tags/synthetic 404
+/t/1 404
 /topics/1 404
 /topics/new 404
 /topics/1/reply 404

@@ -477,6 +477,169 @@ impl ContentService {
             last_reply_at,
         })
     }
+    /// CAT-014／DEC-056：把主题移动到另一个版块。
+    ///
+    /// 语义要点（与 DEC-056 逐条对应）：
+    ///   * **同一对象换版块**：只改 `forum_id`。主题 ID、楼层号、回复、修订、发布回执
+    ///     全部原样保留，不克隆、不新建 ID、不建别名表——权威永久链接 `/t/{id}` 不含
+    ///     版块段，因此移动根本不会让旧链接失效，`CR-012` 的 ID 冲突不复存在。
+    ///   * **权限随新版块重算**：移动后按目标版块的可见性刷新权威搜索投影（`CAT-015`），
+    ///     移到成员可见版块后，访客即刻看不到。
+    ///   * **必须审计**：同事务追加一条带操作者、前后版块与操作 ID 的审计事实。
+    ///
+    /// 授权由应用装配层按 DEC-058 的权限 registry 判定；未装配时整体失败关闭。
+    /// 锁序沿用 DEC-052：先源与目标版块（按 ID 升序，避免两次移动互相死锁），
+    /// 再主题行，最后才进入审计与 Outbox 追加段。
+    pub async fn move_topic(
+        &self,
+        credentials: &Credentials,
+        topic_id: i64,
+        target_forum_id: i64,
+        expected_version: i64,
+        now: DateTime<Utc>,
+    ) -> Result<MutationResult, ContentError> {
+        positive(topic_id)?;
+        positive(target_forum_id)?;
+        let now = canonical(now)?;
+        let mut tx = DbTransaction::begin(&self.pool).await?;
+        let result = self
+            .move_topic_in(
+                &mut tx.connection(),
+                credentials,
+                topic_id,
+                target_forum_id,
+                expected_version,
+                now,
+            )
+            .await;
+        match result {
+            Ok(moved) => {
+                tx.commit().await?;
+                Ok(moved)
+            }
+            Err(e) => {
+                tx.rollback().await?;
+                Err(e)
+            }
+        }
+    }
+
+    async fn move_topic_in(
+        &self,
+        tx: &mut TransactionConnection<'_>,
+        credentials: &Credentials,
+        topic_id: i64,
+        target_forum_id: i64,
+        expected_version: i64,
+        now: DateTime<Utc>,
+    ) -> Result<MutationResult, ContentError> {
+        self.flags(tx, None).await?;
+        let actor = self
+            .authority
+            .authorize_management(tx, credentials, ManagementCapability::MoveTopic, now)
+            .await?;
+        let ctx = self
+            .context(tx, Some(credentials.session_token.expose()), now)
+            .await?;
+        let source = repo::topic(tx, &self.renderer, topic_id)
+            .await?
+            .ok_or(ContentError::NotFound)?;
+        if source.forum_id == target_forum_id {
+            // 移到原版块没有任何状态变化，直接拒绝而不是写一条空审计。
+            return Err(ContentError::InvalidInput);
+        }
+        // DEC-052 锁序：community 根锁必须早于版块与主题锁，同时取得新的排序水位。
+        let seq = repo::lock_root(tx, &self.renderer).await?;
+        // 两个版块按 ID 升序加锁，保证并发的反向移动不会互相死锁。
+        let mut forums = [source.forum_id, target_forum_id];
+        forums.sort_unstable();
+        for id in forums {
+            lock_forum(tx, &self.renderer, &ctx.forums, id).await?;
+        }
+        repo::lock(tx, &self.renderer, "topics", topic_id).await?;
+        let mut topic = repo::topic(tx, &self.renderer, topic_id)
+            .await?
+            .ok_or(ContentError::NotFound)?;
+        if topic.version != expected_version {
+            return Err(ContentError::Conflict);
+        }
+        // 目标版块必须存在且可写；已归档或已删除的主题不移动。
+        let target_visibility = forum_visibility(&ctx.forums, target_forum_id)?;
+        if !topic.state.permits_write() {
+            return Err(ContentError::Forbidden);
+        }
+        let previous_forum = topic.forum_id;
+        topic.forum_id = target_forum_id;
+        topic.current_seq = seq;
+        repo::move_topic(tx, &self.renderer, &topic).await?;
+        topic.version += 1;
+        repo::history(tx, &self.renderer, &topic).await?;
+
+        // CAT-015：同事务把新版块的可见性推进权威搜索投影，避免移动后出现
+        // 「列表已按新版块收紧、搜索还按旧版块可见」的窗口。
+        let mut author_ids = BTreeSet::from([topic.author_id]);
+        let mut floor = 0;
+        loop {
+            let batch = repo::posts(tx, &self.renderer, topic.id, i64::MAX, floor, 100).await?;
+            if batch.is_empty() {
+                break;
+            }
+            for row in batch {
+                floor = row.floor_no;
+                author_ids.insert(row.author_id);
+            }
+        }
+        let ids = author_ids.into_iter().collect::<Vec<_>>();
+        let mut authors = BTreeMap::new();
+        for chunk in ids.chunks(256) {
+            authors.extend(
+                self.authority
+                    .authors(tx, chunk, now)
+                    .await?
+                    .into_iter()
+                    .map(|a| (a.user_id, a.body_visibility)),
+            );
+        }
+        repo::refresh_projection(tx, &self.renderer, &topic, target_visibility, &authors).await?;
+
+        // 以下为追加段：审计与缓存失效，不再获取任何领域锁。
+        tx.enter_append_phase();
+        let operation_id = new_operation_id();
+        self.authority
+            .append_move_audit(
+                tx,
+                &actor,
+                topic.id,
+                previous_forum,
+                target_forum_id,
+                &operation_id,
+                now,
+            )
+            .await?;
+        let event = OutboxEvent {
+            event_id: new_operation_id(),
+            aggregate_type: "topic".into(),
+            aggregate_id: topic.id.to_string(),
+            event_type: "cache.invalidate".into(),
+            version: 1,
+            occurred_at: now,
+            payload: SafePayload::empty()
+                .with_reference("resource_id", &topic.id.to_string())
+                .map_err(|_| ContentError::Unavailable)?,
+            trace_id: String::new(),
+        };
+        platform_db::outbox_repo::enqueue(tx, &self.renderer, &event, &["cache.invalidate"])
+            .await
+            .map_err(|_| ContentError::Unavailable)?;
+        Ok(MutationResult {
+            topic_id: topic.id,
+            post_id: 0,
+            floor_no: 1,
+            version: topic.version,
+            replayed: false,
+        })
+    }
+
     /// DEC-054 的浏览计数窗口：同一主体对同一主题 30 分钟内只计 1 次。
     const VIEW_DEDUPLICATION_MINUTES: i64 = 30;
 

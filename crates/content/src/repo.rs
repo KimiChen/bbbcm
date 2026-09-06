@@ -351,6 +351,32 @@ pub(crate) async fn watermark(
         .ok_or(ContentError::Unavailable)?
         .i64("sequence_no")?)
 }
+/// CAT-014／DEC-056：把主题移动到另一个版块。
+///
+/// 只更新 `forum_id` 与排序水位 `current_seq`，其余列一概不动——主题 ID、楼层、
+/// 回复、修订与发布回执必须原样保留，这正是「同对象换版块」与「克隆到新 ID」的区别。
+/// 带版本 CAS，避免与并发编辑互相覆盖。
+pub(crate) async fn move_topic(
+    tx: &mut TransactionConnection<'_>,
+    r: &SchemaRenderer,
+    topic: &Topic,
+) -> Result<()> {
+    let t = table(tx, r, "topics")?;
+    tx.execute_versioned(
+        &format!(
+            "UPDATE {t} SET forum_id = ?, current_seq = ?, version = version + 1 WHERE id = ? AND version = ?"
+        ),
+        &[
+            topic.forum_id.into(),
+            topic.current_seq.into(),
+            topic.id.into(),
+            topic.version.into(),
+        ],
+    )
+    .await?;
+    Ok(())
+}
+
 pub(crate) async fn lock_root(
     tx: &mut TransactionConnection<'_>,
     r: &SchemaRenderer,

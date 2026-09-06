@@ -23,6 +23,8 @@ pub enum AuditAction {
     SensitiveRead,
     OutboxReplay,
     Correction,
+    /// CAT-014：管理员把主题移动到另一个版块（DEC-056）。
+    ContentMoved,
 }
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -31,6 +33,8 @@ pub enum AuditReason {
     SupportCase,
     Recovery,
     Correction,
+    /// 日常内容治理动作，例如把发错版块的主题移回正确版块。
+    Moderation,
 }
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -45,6 +49,8 @@ pub enum TargetKind {
     Synthetic,
     Audit,
     Outbox,
+    /// 社区主题。目标 ID 使用主题的数据库 ID，与权威永久链接 `/t/{id}` 一致。
+    Topic,
 }
 
 /// 类型化目标，当前仅引擎和合成测试；未来领域在本注册中显式扩展。

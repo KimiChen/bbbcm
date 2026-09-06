@@ -259,6 +259,35 @@ pub struct Author {
     pub lists_visibility: Visibility,
 }
 
+/// 一项管理能力。按 DEC-058，具体角色到能力的映射由权限 registry 决定，
+/// 内容领域只声明自己需要哪一项，不关心谁持有它。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ManagementCapability {
+    /// CAT-013／CAT-014：把主题移动到另一个版块。
+    MoveTopic,
+}
+impl ManagementCapability {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::MoveTopic => "move_topic",
+        }
+    }
+}
+
+/// 已通过授权的管理操作者，仅携带审计所需的最小事实。
+///
+/// 刻意不带角色名、权限集合或会话信息：内容领域拿到它只是为了把「谁做的」写进审计，
+/// 不应该、也无法据此推导出更多权限。
+#[derive(Clone, PartialEq, Eq)]
+pub struct ManagementActor {
+    pub user_id: i64,
+}
+impl std::fmt::Debug for ManagementActor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("ManagementActor([REDACTED])")
+    }
+}
+
 /// DEC-054 的浏览去重主体。
 ///
 /// `hash` 是应用装配层用用途隔离 HMAC 派生出的不可逆摘要，原始用户 ID、会话 Cookie 与
@@ -405,6 +434,37 @@ pub trait ContentAuthority: Send + Sync {
         user_ids: &'a [i64],
         now: DateTime<Utc>,
     ) -> FutureResult<'a, Vec<Author>>;
+    /// 校验当前请求是否被授权执行一次管理动作，并返回可用于审计的操作者事实。
+    ///
+    /// 领域边界：内容领域只知道「需要某项管理能力」，具体由哪个角色、按哪条权限规则放行，
+    /// 完全由应用装配层依据 DEC-058 批准的权限 registry 判定。内容领域不持有角色枚举，
+    /// 也不接受任何来自 HTTP 的角色声明。
+    ///
+    /// 未装配时必须整体失败关闭（返回 `PolicyPending`），绝不退化成「放行」。
+    fn authorize_management<'a>(
+        &'a self,
+        tx: &'a mut TransactionConnection<'_>,
+        credentials: &'a Credentials,
+        capability: ManagementCapability,
+        now: DateTime<Utc>,
+    ) -> FutureResult<'a, ManagementActor>;
+
+    /// 追加一条移帖审计事实（`CAT-014` 要求移动必须审计）。
+    ///
+    /// 由应用装配层落到平台审计表，内容领域不直接依赖审计存储。调用发生在追加段，
+    /// 实现方不得再获取任何领域锁。
+    #[allow(clippy::too_many_arguments)]
+    fn append_move_audit<'a>(
+        &'a self,
+        tx: &'a mut TransactionConnection<'_>,
+        actor: &'a ManagementActor,
+        topic_id: i64,
+        from_forum_id: i64,
+        to_forum_id: i64,
+        operation_id: &'a str,
+        now: DateTime<Utc>,
+    ) -> FutureResult<'a, ()>;
+
     /// 记录或撤销一条 DEC-054 定义的有效贡献，供信任等级规则统计。
     ///
     /// 职责边界：**是否构成有效贡献由 content 判定**（长度、发布状态、回复者是否为主题

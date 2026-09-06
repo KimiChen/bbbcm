@@ -7,6 +7,28 @@ use platform::{analytics::TrustedExclusions, identifiers::SchemaRenderer};
 use platform_db::transaction::TransactionConnection;
 use std::sync::Arc;
 
+/// 管理权限判定的最小载体。
+///
+/// DEC-058 批准的完整方案是「仓库内单一 TOML registry 构建期生成 Rust 枚举与数据库种子」，
+/// 那属于 `WP-MVP-D01`。本类型只是内容领域调用管理命令时的判定接口占位实现所需的形状，
+/// 当前唯一构造入口是显式标注的合成测试；生产装配保持 `None`，管理命令整体失败关闭。
+#[derive(Clone, Copy)]
+pub struct ManagementRegistry {
+    /// 合成测试中被授予全部管理能力的账号。真实 registry 落地后本字段整体替换。
+    synthetic_operator: i64,
+}
+impl ManagementRegistry {
+    #[cfg(test)]
+    pub fn synthetic(operator: i64) -> Self {
+        Self {
+            synthetic_operator: operator,
+        }
+    }
+    fn permits(&self, user_id: i64, _capability: ManagementCapability) -> bool {
+        self.synthetic_operator > 0 && self.synthetic_operator == user_id
+    }
+}
+
 pub struct ApplicationContentAuthority {
     renderer: SchemaRenderer,
     /// 已批准的内容风控规则版本。
@@ -20,6 +42,8 @@ pub struct ApplicationContentAuthority {
     /// 逐用户的隐私设置入口属于后续波次，因此当前这里承载的是账号级默认值；
     /// 取 `None` 时相应投影一律关闭，绝不臆造一个 Public 事实。
     author_default: Option<Visibility>,
+    /// 管理权限判定。`None` 表示权限 registry 尚未装配，所有管理命令失败关闭。
+    management: Option<ManagementRegistry>,
 }
 impl ApplicationContentAuthority {
     /// 按 DEC-054／DEC-060 已批准事实装配的正常构造入口。
@@ -32,6 +56,8 @@ impl ApplicationContentAuthority {
             renderer,
             risk_rule_version: Some(crate::content_risk::APPROVED_RATE_VERSION),
             author_default: Some(Visibility::Public),
+            // 权限 registry 属 WP-MVP-D01，本轮未装配：管理命令失败关闭。
+            management: None,
         }
     }
     /// 未装配的授权对象，仅测试使用。
@@ -44,6 +70,7 @@ impl ApplicationContentAuthority {
             renderer,
             risk_rule_version: None,
             author_default: None,
+            management: None,
         }
     }
     #[cfg(test)]
@@ -52,6 +79,7 @@ impl ApplicationContentAuthority {
             renderer,
             risk_rule_version: Some(1),
             author_default: Some(Visibility::Public),
+            management: Some(ManagementRegistry::synthetic(1)),
         }
     }
 }
@@ -77,6 +105,96 @@ impl ContentAuthority for ApplicationContentAuthority {
     ///
     /// 这是 content 与 trust 之间唯一的受信接线点：content 不直接依赖 trust，
     /// 由应用装配层在这里完成跨域调用，且只做纯追加，不获取新锁。
+    /// 管理授权入口。
+    ///
+    /// DEC-058 已批准以仓库内单一 registry 作为角色与权限的唯一事实源，但 registry 与
+    /// `/manage` 属于后续工作包：本轮生产装配里 `management` 为 `None`，任何管理命令
+    /// 一律 `PolicyPending` 整体失败关闭。这不是占位，而是显式的未装配态——绝不允许
+    /// 「找不到权限规则就放行」。
+    fn authorize_management<'a>(
+        &'a self,
+        tx: &'a mut TransactionConnection<'_>,
+        credentials: &'a Credentials,
+        capability: ManagementCapability,
+        now: DateTime<Utc>,
+    ) -> FutureResult<'a, ManagementActor> {
+        Box::pin(async move {
+            let registry = self.management.ok_or(ContentError::PolicyPending)?;
+            // 与内容写路径同一条身份校验：重读会话、校验 CSRF、要求邮箱已验证，
+            // 并在同事务内取得身份根锁，避免用事务外快照冒充当前权限。
+            let user = identity::core::authorize_content_identity(
+                tx,
+                &self.renderer,
+                credentials.session_token.expose(),
+                credentials.csrf.expose(),
+                now,
+            )
+            .await
+            .map_err(failure)?;
+            if !registry.permits(user.user_id(), capability) {
+                return Err(ContentError::Forbidden);
+            }
+            Ok(ManagementActor {
+                user_id: user.user_id(),
+            })
+        })
+    }
+
+    /// 把移帖审计事实落到平台审计表。
+    ///
+    /// 内容领域不依赖审计存储，由这里完成跨域接线。审计详情只记录不敏感的结构化事实
+    /// （前后版块 ID），不写入标题、正文或任何用户可控文本。
+    fn append_move_audit<'a>(
+        &'a self,
+        tx: &'a mut TransactionConnection<'_>,
+        actor: &'a ManagementActor,
+        topic_id: i64,
+        from_forum_id: i64,
+        to_forum_id: i64,
+        operation_id: &'a str,
+        now: DateTime<Utc>,
+    ) -> FutureResult<'a, ()> {
+        Box::pin(async move {
+            use platform::audit::{
+                AuditAction, AuditDetails, AuditEvent, AuditReason, AuditResult, AuditSummary,
+                AuditTarget, Classification, TargetKind,
+            };
+            let event = AuditEvent {
+                event_id: platform::transaction::new_operation_id(),
+                actor_id: actor.user_id,
+                action: AuditAction::ContentMoved,
+                target: AuditTarget {
+                    kind: TargetKind::Topic,
+                    id: topic_id.to_string(),
+                },
+                reason: AuditReason::Moderation,
+                ticket_id: None,
+                occurred_at: platform::db::encode_time(now),
+                result: AuditResult::Succeeded,
+                operation_id: operation_id.to_owned(),
+                trace_id: None,
+                version: 1,
+                details: AuditDetails {
+                    approval_ids: Vec::new(),
+                    // 版块 ID 是 C0 级非敏感结构化事实，按摘要形式登记；
+                    // 审计表按设计只接受摘要或 redacted 标志，不存任意原文。
+                    before: Some(AuditSummary::from_value(
+                        Classification::C0,
+                        from_forum_id.to_string().as_bytes(),
+                    )),
+                    after: Some(AuditSummary::from_value(
+                        Classification::C0,
+                        to_forum_id.to_string().as_bytes(),
+                    )),
+                },
+                correction_of: None,
+            };
+            platform_db::audit_repo::append_audit(tx, &self.renderer, &event)
+                .await
+                .map_err(|_| ContentError::Unavailable)
+        })
+    }
+
     fn record_contribution<'a>(
         &'a self,
         tx: &'a mut TransactionConnection<'_>,

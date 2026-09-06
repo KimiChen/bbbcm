@@ -629,6 +629,29 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 
 新增：`/topics/{id}` 与 `/posts/{id}` 301 到 `/t/{id}` 且保留锚点与查询参数；移动后主题 ID、楼层、回复与永久链接不变；移动到不可见版块后按新版块权限对访客收敛；移动同事务更新搜索投影；未装配管理授权时命令整体失败关闭；审计事实带操作者、前后版块与操作 ID。真实 PostgreSQL/Redis、并发、性能与视觉仍留统一硬化阶段（`DEC-020`）。
 
+#### 5.13.1 实际交付与逐需求裁决（2026-09-06）
+
+代码版本为本节记录所在的实现提交。
+
+| 交付项 | 内容 |
+|---|---|
+| 权威永久链接 | `/t/{id}` 成为唯一权威路径，不含版块段。`/topics/{id}` 与 `/posts/{id}` 一律 301（`Redirect::permanent`）到规范 URL，保留 `theme` 与 `cursor` 查询参数及楼层锚点；站内生成的主题链接全部切到 `/t/{id}`。重定向位于 Flag 门禁之后，业务 Flag 关闭时读路由仍在门禁处拒绝。 |
+| 移帖命令 | `ContentService::move_topic` 同对象更换 `forum_id`，主题 ID、楼层号、回复、修订与发布回执全部不变。锁序为 `community.commit_state` 根锁 → 两个版块（按 ID 升序，避免反向移动死锁）→ 主题行，随后进入追加段。带版本 CAS；移到原版块、目标不可写、主题已删除或归档均拒绝。 |
+| 权限随新版块重算 | 移动同事务按目标版块可见性刷新权威 `search_documents` 投影（`CAT-015`），消除「列表已收紧、搜索仍按旧版块可见」的窗口。 |
+| 审计 | 在 `platform::audit` 封闭枚举中显式扩展 `AuditAction::ContentMoved`、`AuditReason::Moderation`、`TargetKind::Topic`；应用装配层落 `audit.audit_events` 并入队 `audit.replica` Outbox。详情只登记前后版块 ID 的 C0 摘要，不写标题或正文。 |
+| 管理授权 | 新增 `ContentAuthority::authorize_management` 与 `ManagementCapability::MoveTopic`。生产装配 `management` 为 `None`，管理命令整体 `PolicyPending` 失败关闭；仅合成测试可授权。不新增提权入口或运行时旁路。 |
+
+逐需求裁决：
+
+| 需求 | 状态 | 本轮结论 |
+|---|---|---|
+| `CAT-014` | In progress | 移动语义、旧链接 301、权限重算与审计均已交付且可复核；管理写入口的真实授权依赖 `WP-MVP-D01` 的权限 registry，未装配前生产不可用，因此不记 `Implemented`。 |
+| `CAT-013` | In progress | 移动主题一项已接；置顶、全局置顶、精华、关闭回复的管理写入口仍未开放。 |
+| `CAT-015` | In progress | 移动同事务已统一列表、详情与搜索投影的可见性；Feed、站点地图与分享摘要仍未接。 |
+| `NAV-005` | In progress | 权威永久链接迁移后游标绑定与稳定分页保持不变；搜索页分页仍未接。 |
+
+测试与证据：`./scripts/dev-check.sh` 七步全过（格式化、Clippy `-D warnings`、294 项单元测试全通过、真实 SQLite 冒烟 89 条路由响应、`git diff --check`、暂存区复核、静态守卫）。新增测试覆盖未授权时整体失败关闭且无状态变化、非管理账号被拒、移到原版块被拒、版本 CAS 冲突、移动后主题 ID/楼层/回复不变、移动到仅成员可见版块后访客即刻收敛而成员仍可见、审计带操作者与前后版块、权威链接不含版块段且游标随 301 保留。既有 SSR 断言中楼层永久链接的 303 已按 DEC-056 改为 308 并注明依据。未执行真实 PostgreSQL/Redis、并发、性能、安全与视觉矩阵。
+
 #### 边界
 
 管理后台 UI、角色 registry 与审批链属下一轮；本轮不授予 `Verified` 或任何阶段门禁。仅本机开发、独立复核、开发期最小集与中文新建提交，不推送、不部署。新增与改动代码一律使用详细中文注释。

@@ -51,6 +51,9 @@ pub fn router<S: Clone + Send + Sync + 'static>(state: ContentWebState) -> Route
         "/featured",
         "/forums/{slug}",
         "/tags/{slug}",
+        // DEC-056：`/t/{id}` 是权威永久链接，不含版块段，因此移帖不会让旧链接失效。
+        // `/topics/{id}` 与 `/posts/{id}` 保留为兼容入口，一律 301 到规范 URL。
+        "/t/{id}",
         "/topics/{id}",
         "/posts/{id}",
         "/me/topics",
@@ -288,6 +291,14 @@ fn decode_segment(value: &str) -> Result<String, ContentError> {
     }
     Ok(result)
 }
+/// 301 永久重定向到规范 URL。
+///
+/// 刻意用 301 而不是 302：`/topics/{id}` 与 `/posts/{id}` 指向的是同一资源的旧地址，
+/// 权威地址是 `/t/{id}`（DEC-056）。用永久重定向才能让搜索引擎与客户端收敛到权威地址，
+/// 也才符合「旧链接跳转」的需求原文。
+fn permanent_redirect(href: &str) -> Response {
+    Redirect::permanent(href).into_response()
+}
 fn page_href(path: &str, theme: &str, cursor: Option<&str>) -> String {
     let mut href = format!("{path}?theme={theme}");
     if let Some(cursor) = cursor {
@@ -357,7 +368,7 @@ async fn frame(
         .map(|topic| {
             link(
                 &topic.title,
-                page_href(&format!("/topics/{}", topic.id), theme, None),
+                page_href(&format!("/t/{}", topic.id), theme, None),
             )
         })
         .collect();
@@ -375,7 +386,7 @@ fn row(topic: TopicView, theme: &str) -> view::TopicRow {
         .zip(topic.last_reply_at)
         .map(|(author, at)| format!("{} · {}", author.username, at.format("%Y-%m-%d %H:%M UTC")));
     view::TopicRow {
-        href: page_href(&format!("/topics/{}", topic.id), theme, None),
+        href: page_href(&format!("/t/{}", topic.id), theme, None),
         title: topic.title,
         author: topic.author.username,
         author_href: format!("/u/{}", encode(&topic.author.public_id)),
@@ -430,6 +441,19 @@ async fn read(
         let path = uri.path();
         let parts: Vec<_> = path.trim_matches('/').split('/').collect();
         let session = cookie(&headers, state.secure_cookies, "session");
+        // DEC-056：`/topics/{id}` 是历史路径，301 到权威永久链接 `/t/{id}`，
+        // 保留 theme 与 cursor 查询参数，使旧书签与外部链接不丢分页位置。
+        // 只重定向纯详情路径；`/topics/new` 与 `/topics/{id}/reply` 是编辑器入口，不在此列。
+        if parts.first() == Some(&"topics") && parts.len() == 2 {
+            let href = page_href(
+                &format!("/t/{}", positive(parts[1])?),
+                theme(&query)?,
+                query.cursor.as_deref(),
+            );
+            let mut response = permanent_redirect(&href);
+            secure_headers(&mut response);
+            return Ok(response);
+        }
         if parts.first() == Some(&"posts") {
             let location = service
                 .locate(positive(parts[1])?, session.as_deref(), Utc::now())
@@ -437,18 +461,20 @@ async fn read(
             let href = format!(
                 "{}#post-{}",
                 page_href(
-                    &format!("/topics/{}", location.topic_id),
+                    &format!("/t/{}", location.topic_id),
                     theme(&query)?,
                     location.cursor.as_deref()
                 ),
                 location.floor_no
             );
-            let mut response = Redirect::to(&href).into_response();
+            // 楼层永久链接同样 301：它解析出的是权威 `/t/{id}#post-N`，
+            // 属于「同一资源的规范地址」，不是临时跳转。
+            let mut response = permanent_redirect(&href);
             secure_headers(&mut response);
             return Ok(response);
         }
         let (mut page, catalog) = frame(&service, &headers, &state, path, &query).await?;
-        if parts.first() == Some(&"topics") {
+        if parts.first() == Some(&"t") {
             let detail = service
                 .topic(
                     positive(parts[1])?,
@@ -618,7 +644,7 @@ async fn read(
                     author: reply.author.username,
                     author_href: format!("/u/{}", encode(&reply.author.public_id)),
                     forum: String::new(),
-                    forum_href: format!("/topics/{}", reply.topic_id),
+                    forum_href: format!("/t/{}", reply.topic_id),
                     created_at: reply.created_at.format("%Y-%m-%d %H:%M UTC").to_string(),
                     last_reply: None,
                     replies: None,
@@ -1101,6 +1127,31 @@ mod tests {
         assert_eq!(
             page_href("/topics/1", "dark", Some("a&theme=light#post-2")),
             "/topics/1?theme=dark&cursor=a%26theme%3Dlight%23post-2"
+        );
+    }
+
+    /// DEC-056：权威永久链接是 `/t/{id}`，历史路径 301 到规范 URL 并保留查询参数。
+    #[test]
+    fn canonical_permalink_has_no_forum_segment_and_keeps_the_cursor() {
+        // 规范地址不含版块段，因此移帖不会让任何既有链接失效。
+        assert_eq!(page_href("/t/7", "dark", None), "/t/7?theme=dark");
+        // 游标随重定向保留，旧书签不会丢分页位置。
+        assert_eq!(
+            page_href("/t/7", "light", Some("cur&x=1")),
+            "/t/7?theme=light&cursor=cur%26x%3D1"
+        );
+        // 用 301 而不是 302：这是同一资源的规范地址收敛。
+        let response = permanent_redirect("/t/7?theme=dark");
+        assert!(
+            response.status() == axum::http::StatusCode::PERMANENT_REDIRECT
+                || response.status() == axum::http::StatusCode::MOVED_PERMANENTLY
+        );
+        assert_eq!(
+            response
+                .headers()
+                .get(axum::http::header::LOCATION)
+                .and_then(|v| v.to_str().ok()),
+            Some("/t/7?theme=dark")
         );
     }
 

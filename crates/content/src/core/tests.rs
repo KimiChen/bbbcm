@@ -16,6 +16,8 @@ struct SyntheticAuthority {
     /// 让测试可以直接断言「哪些发布构成有效贡献」，而不必反向读 trust 的仓储，
     /// 从而把内容领域的判定逻辑与信任领域的存储实现分开验证。
     contributions: std::sync::Mutex<Vec<(i64, Contribution)>>,
+    /// 观察到的移帖审计调用：(操作者, 主题, 原版块, 新版块)。
+    moves: std::sync::Mutex<Vec<(i64, i64, i64, i64)>>,
 }
 impl SyntheticAuthority {
     fn facts(&self, id: i64) -> AuthorityFacts {
@@ -60,6 +62,49 @@ impl SyntheticAuthority {
     }
 }
 impl ContentAuthority for SyntheticAuthority {
+    /// 合成管理授权：只有账号 1 被授予管理能力，其余一律拒绝。
+    /// `deny` 打开时连账号 1 也被拒，用于验证失败关闭路径。
+    fn authorize_management<'a>(
+        &'a self,
+        _tx: &'a mut TransactionConnection<'_>,
+        credentials: &'a Credentials,
+        _capability: ManagementCapability,
+        _now: DateTime<Utc>,
+    ) -> FutureResult<'a, ManagementActor> {
+        Box::pin(async move {
+            if self.deny.load(Ordering::SeqCst) {
+                return Err(ContentError::PolicyPending);
+            }
+            let user_id: i64 = credentials
+                .session_token
+                .expose()
+                .parse()
+                .map_err(|_| ContentError::Forbidden)?;
+            if user_id != 1 {
+                return Err(ContentError::Forbidden);
+            }
+            Ok(ManagementActor { user_id })
+        })
+    }
+    /// 合成审计：只记录调用事实，供测试断言移帖确实写了审计。
+    fn append_move_audit<'a>(
+        &'a self,
+        _tx: &'a mut TransactionConnection<'_>,
+        actor: &'a ManagementActor,
+        topic_id: i64,
+        from_forum_id: i64,
+        to_forum_id: i64,
+        _operation_id: &'a str,
+        _now: DateTime<Utc>,
+    ) -> FutureResult<'a, ()> {
+        Box::pin(async move {
+            self.moves
+                .lock()
+                .map_err(|_| ContentError::Unavailable)?
+                .push((actor.user_id, topic_id, from_forum_id, to_forum_id));
+            Ok(())
+        })
+    }
     fn record_contribution<'a>(
         &'a self,
         _tx: &'a mut TransactionConnection<'_>,
@@ -194,6 +239,8 @@ struct Fixture {
     authority: Arc<SyntheticAuthority>,
     service: ContentService,
     forum: i64,
+    /// 仅登录成员可见的版块，用于移帖后的权限收紧断言。
+    members_forum: i64,
     tag: i64,
 }
 impl Drop for Fixture {
@@ -230,6 +277,9 @@ impl Fixture {
         let forums = repo::table(&c, &renderer, "forums").unwrap();
         c.execute(&format!("INSERT INTO {forums} (slug, name, position, status, version) VALUES ('synthetic', '合成版块', 1, 'active', 1)"),&[]).await.unwrap();
         let forum = c.last_insert_id().await.unwrap();
+        // 移帖测试需要第二个版块：一个公开、一个仅成员可见，用于验证移动后权限随新版块收紧。
+        c.execute(&format!("INSERT INTO {forums} (slug, name, position, status, visibility, version) VALUES ('synthetic-members', '合成成员版块', 2, 'active', 'members', 1)"),&[]).await.unwrap();
+        let members_forum = c.last_insert_id().await.unwrap();
         let tags = repo::table(&c, &renderer, "tags").unwrap();
         c.execute(&format!("INSERT INTO {tags} (slug, name, description, restricted, merged_into, version) VALUES ('fixture', '合成标签', '仅供测试', ?, 0, 1)"),&[DbValue::Bool(false)]).await.unwrap();
         let tag = c.last_insert_id().await.unwrap();
@@ -252,6 +302,7 @@ impl Fixture {
             fail_append: AtomicBool::new(false),
             pseudonym: new_operation_id(),
             contributions: std::sync::Mutex::new(Vec::new()),
+            moves: std::sync::Mutex::new(Vec::new()),
         });
         let service = ContentService::new(
             pool.clone(),
@@ -267,6 +318,7 @@ impl Fixture {
             authority,
             service,
             forum,
+            members_forum,
             tag,
         }
     }
@@ -1416,5 +1468,117 @@ async fn author_privacy_withholds_body_and_lists_from_guests_only() {
             .list(&owner_filter, None, Some("2"), at())
             .await
             .is_ok()
+    );
+}
+
+/// CAT-014／DEC-056：移帖是同对象换版块，主题 ID、楼层与回复全部不变。
+///
+/// 覆盖：未授权时整体失败关闭；移到原版块被拒；移动后 ID/楼层/回复不变、版本递增；
+/// 移到仅成员可见版块后访客即刻看不到、登录成员仍可见；审计带操作者与前后版块。
+#[tokio::test]
+async fn moving_a_topic_keeps_its_identity_and_reapplies_the_target_forum_permissions() {
+    let f = Fixture::new().await;
+    let created = f.create("移帖").await;
+    let reply = f.reply(created.topic_id, "移动前的回复").await;
+    let before = f.topic(created.topic_id).await;
+
+    // 未获管理授权时整体失败关闭，不产生任何状态变化。
+    f.authority.deny.store(true, Ordering::SeqCst);
+    assert_eq!(
+        f.service
+            .move_topic(
+                &f.credentials(1),
+                created.topic_id,
+                f.members_forum,
+                before.topic.version,
+                at(),
+            )
+            .await
+            .unwrap_err(),
+        ContentError::PolicyPending
+    );
+    f.authority.deny.store(false, Ordering::SeqCst);
+    assert!(f.authority.moves.lock().unwrap().is_empty());
+
+    // 非管理账号被拒。
+    assert_eq!(
+        f.service
+            .move_topic(
+                &f.credentials(2),
+                created.topic_id,
+                f.members_forum,
+                before.topic.version,
+                at(),
+            )
+            .await
+            .unwrap_err(),
+        ContentError::Forbidden
+    );
+
+    // 移到原版块没有状态变化，直接拒绝而不是写一条空审计。
+    assert_eq!(
+        f.service
+            .move_topic(
+                &f.credentials(1),
+                created.topic_id,
+                f.forum,
+                before.topic.version,
+                at(),
+            )
+            .await
+            .unwrap_err(),
+        ContentError::InvalidInput
+    );
+
+    // 过期版本触发 CAS 冲突。
+    assert_eq!(
+        f.service
+            .move_topic(
+                &f.credentials(1),
+                created.topic_id,
+                f.members_forum,
+                before.topic.version + 99,
+                at(),
+            )
+            .await
+            .unwrap_err(),
+        ContentError::Conflict
+    );
+
+    let moved = f
+        .service
+        .move_topic(
+            &f.credentials(1),
+            created.topic_id,
+            f.members_forum,
+            before.topic.version,
+            at(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(moved.topic_id, created.topic_id, "主题 ID 必须不变");
+    assert_eq!(moved.version, before.topic.version + 1);
+
+    // 审计事实带操作者与前后版块。
+    assert_eq!(
+        f.authority.moves.lock().unwrap().as_slice(),
+        &[(1, created.topic_id, f.forum, f.members_forum)]
+    );
+
+    // 登录成员视角：ID、楼层、回复与永久链接全部不变，只有版块变了。
+    let after = f.topic(created.topic_id).await;
+    assert_eq!(after.topic.id, before.topic.id);
+    assert_eq!(after.topic.forum.id, f.members_forum);
+    assert_eq!(after.replies.len(), before.replies.len());
+    assert_eq!(after.replies[0].id, reply.post_id);
+    assert_eq!(after.replies[0].floor_no, 2);
+
+    // 访客视角：新版块仅成员可见，移动后即刻收敛。
+    assert_eq!(
+        f.service
+            .topic(created.topic_id, None, None, at())
+            .await
+            .unwrap_err(),
+        ContentError::NotFound
     );
 }

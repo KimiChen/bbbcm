@@ -601,7 +601,9 @@ async fn real_content_ssr_form_submission_preview_and_member_filter_need_no_java
         )
         .await
         .unwrap();
-    assert_eq!(located.status(), StatusCode::SEE_OTHER);
+    // DEC-056：楼层永久链接解析出的是权威 `/t/{id}#post-N`，属于同一资源的规范地址，
+    // 因此改用 308 永久重定向（保留请求方法），而不是原先的 303。
+    assert_eq!(located.status(), StatusCode::PERMANENT_REDIRECT);
     let target = located.headers()["location"]
         .to_str()
         .unwrap()
