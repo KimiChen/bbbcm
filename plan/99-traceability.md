@@ -1042,6 +1042,48 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 
 `C01`／`C02` 整包仍为 `In progress`：搜索、Feed、站点地图、管理路由、媒体与互动均未交付。本轮不授予 `Verified` 或任何阶段门禁——`Verified` 只能在统一硬化阶段凭完整矩阵证据授予（`DEC-020`）。
 
+### 5.20 `/manage` 最小可用控制台（2026-09-07，`WP-MVP-D04` 波次三实施前登记）
+
+产品决策与最终批准：项目所有者（用户）；实现、开发期验证与本机中文提交：Claude。用户明确指示在第 3 项复核后开始本轮。
+
+`/manage` 一个页面都没有，是当前最大的单一阻塞：`CAT-014`、`TOPIC-004` 的状态推进被它卡住，`D01`／`D02` 的全部治理能力也处于「写好了但按不下去」的状态。本轮交付让治理真正可操作的最小路由集。
+
+#### 精确范围与需求 ID
+
+按 `03` 第 2 节的路由地图，本轮只开放下列路由；**未列入的路由服务端必须返回 404，不能只靠前端隐藏**（`03` §1）：
+
+| 路由 | 本轮用途 | 最低能力 |
+|---|---|---|
+| `/manage/login` | 独立管理登录（密码 + TOTP） | 有效 staff principal |
+| `/manage/mfa` | 首次登录强制绑定 TOTP 与领取恢复码 | 处于 `BindingRequired` 的管理会话 |
+| `/manage` | 工作队列摘要 | 按角色裁剪 |
+| `/manage/cases` | 案件队列与详情、分派、备注、状态推进 | `moderation.cases.read/write` |
+| `/manage/content` | 内容治理动作：移帖 | `community.content.move` |
+
+对应需求：`ADMIN-001`（用户查询部分不在本轮）、`ADMIN-002` 的移帖部分、`CAT-013`／`CAT-014` 的管理写入口、`MOD-003`／`MOD-004` 的队列与案件操作、`AUTH-011`／`AUTH-014` 的登录与绑定流程。
+
+本轮**不**包含：`/manage/users`、`/manage/reports` 独立队列、`/manage/support`、`/manage/privacy`、`/manage/invites`、`/manage/config`、`/manage/jobs`、`/manage/analytics`、`/manage/audit`、`/manage/approvals`、`/manage/system`，以及批量操作与 `/manage/_api/v1/` 数据端点。这些路由本轮一律 404。
+
+#### 接口与实现路径
+
+- **独立会话**：管理 cookie 名与路径与普通用户完全隔离（`03` §6），路径限定 `/manage`。登录成功后按 `AUTH-014` 判定进入 `BindingRequired` 或 `Ready`。
+- **绑定流程门禁**：处于 `BindingRequired` 的会话访问除 `/manage/mfa` 外的任何管理路由一律拒绝——服务端拒绝，不是前端隐藏。
+- **授权**：每个页面与动作都经既有 `management_gate`（独立会话 → 管理侧 CSRF → TOTP 已绑定 → 十步授权）。不新增第二条判定路径。
+- **无 JavaScript**：沿用 `05` 冻结的模板结构与 CSS 类名，全部动作为 SSR 表单提交，不引入前端脚本。
+- **敏感数据**：案件详情不返回证据正文（C2），只显示摘要与时间；`/manage` 永不返回 C3。
+
+#### 数据、权限、事务与 Outbox
+
+不新增表、不新增迁移：本轮只是把已交付的命令接到 HTTP。管理动作沿用各自命令内既有的事务、审计与 Outbox 路径。不新增 Feature Flag。
+
+#### 测试设计
+
+新增：未登录访问任一管理路由被拒；普通用户会话不能进入管理路由；`BindingRequired` 会话只能访问 `/manage/mfa`；未列入 `03` 的管理路由返回 404；无权角色看不到也调不动对应动作；移帖表单端到端改变版块并留审计；案件队列按优先级排序且证据正文不出现在响应中。真实 PostgreSQL/Redis、并发、性能与视觉仍留统一硬化阶段（`DEC-020`）。
+
+#### 边界
+
+本轮不授予 `Verified` 或任何阶段门禁；`D04` 整包继续 `In progress`。仅本机开发、独立复核、开发期最小集与中文新建提交，不推送、不部署。新增与改动代码一律使用详细中文注释。
+
 ## 6. 门禁状态
 
 | 门禁 | 当前状态 | 原因 |
