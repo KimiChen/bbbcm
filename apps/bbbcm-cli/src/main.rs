@@ -175,8 +175,97 @@ async fn run(cli: Cli) -> Result<(), String> {
             UserCommand::Create { username } => {
                 not_implemented(&format!("user create（{username}），随 WP-MVP-B04 接入"));
             }
+            // AUTH-014：首个站点所有者的一次性提权。
+            //
+            // 只有在系统尚无任何 staff principal 时才允许执行；已存在时必须拒绝，
+            // 否则这条命令就变成一条常驻的本地提权后门。提权与拒绝都写追加式审计，
+            // 并在标准错误上打印告警行，供运维侧采集。
+            //
+            // 本命令**只**建立 staff principal，不授予任何角色或权限——角色到能力的
+            // 映射属 WP-MVP-D04 的权限 registry。提权后的账号首次管理登录会被强制
+            // 进入 TOTP 绑定流程，未完成前管理会话只能访问绑定流程。
             UserCommand::Promote { username } => {
-                not_implemented(&format!("user promote（{username}），随 WP-MVP-D04 接入"));
+                use platform::audit::{
+                    AuditAction, AuditDetails, AuditEvent, AuditReason, AuditResult, AuditSummary,
+                    AuditTarget, Classification, TargetKind,
+                };
+                let pool = platform_db::Pool::connect_existing(&config.database)
+                    .await
+                    .map_err(|err| err.to_string())?;
+                let renderer =
+                    platform::identifiers::SchemaRenderer::new(&config.database.schema_prefix)
+                        .map_err(|err| err.to_string())?;
+                let now = chrono::Utc::now();
+                let mut tx = platform_db::transaction::DbTransaction::begin(&pool)
+                    .await
+                    .map_err(|err| err.to_string())?;
+                let outcome = async {
+                    let mut c = tx.connection();
+                    let account_id =
+                        identity::management::account_id_by_username(&mut c, &renderer, &username)
+                            .await
+                            .map_err(|err| err.to_string())?
+                            .ok_or_else(|| "账号不存在".to_owned())?;
+                    let granted = identity::management::bootstrap_first_owner(
+                        &mut c, &renderer, account_id, now,
+                    )
+                    .await
+                    .is_ok();
+                    let event = AuditEvent {
+                        event_id: platform::transaction::new_operation_id(),
+                        actor_id: account_id,
+                        action: AuditAction::OwnerBootstrapped,
+                        target: AuditTarget {
+                            kind: TargetKind::StaffPrincipal,
+                            id: account_id.to_string(),
+                        },
+                        reason: AuditReason::Recovery,
+                        ticket_id: None,
+                        occurred_at: platform::db::encode_time(now),
+                        result: if granted {
+                            AuditResult::Succeeded
+                        } else {
+                            AuditResult::Denied
+                        },
+                        operation_id: platform::transaction::new_operation_id(),
+                        trace_id: None,
+                        version: 1,
+                        details: AuditDetails {
+                            approval_ids: Vec::new(),
+                            before: None,
+                            after: Some(AuditSummary::from_value(
+                                Classification::C0,
+                                account_id.to_string().as_bytes(),
+                            )),
+                        },
+                        correction_of: None,
+                    };
+                    platform_db::audit_repo::append_audit(&mut c, &renderer, &event)
+                        .await
+                        .map_err(|err| err.to_string())?;
+                    Ok::<bool, String>(granted)
+                }
+                .await;
+                match outcome {
+                    Ok(granted) => {
+                        tx.commit().await.map_err(|err| err.to_string())?;
+                        // 无论成功与否都告警：一次成功的首账号提权与一次被拒的尝试，
+                        // 都是需要人工复盘的高危事件。
+                        eprintln!(
+                            "[ALERT] AUTH-014 首账号提权 {}：{username}",
+                            if granted { "已执行" } else { "被拒绝" }
+                        );
+                        if !granted {
+                            return Err("系统已存在特权账号，提权路径已关闭".to_owned());
+                        }
+                        println!("已创建首个站点所有者的 staff principal：{username}");
+                        println!("首次管理登录将强制绑定 TOTP，未完成前只能访问绑定流程。");
+                    }
+                    Err(err) => {
+                        tx.rollback().await.map_err(|e| e.to_string())?;
+                        return Err(err);
+                    }
+                }
             }
             UserCommand::ResetPassword { username } => {
                 not_implemented(&format!(

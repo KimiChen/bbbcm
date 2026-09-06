@@ -25,6 +25,8 @@ pub enum AuditAction {
     Correction,
     /// CAT-014：管理员把主题移动到另一个版块（DEC-056）。
     ContentMoved,
+    /// AUTH-014：首个站点所有者的一次性 CLI 提权。成功与被拒都记录。
+    OwnerBootstrapped,
 }
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -51,6 +53,8 @@ pub enum TargetKind {
     Outbox,
     /// 社区主题。目标 ID 使用主题的数据库 ID，与权威永久链接 `/t/{id}` 一致。
     Topic,
+    /// staff principal。目标 ID 为对应账号的数据库 ID。
+    StaffPrincipal,
 }
 
 /// 类型化目标，当前仅引擎和合成测试；未来领域在本注册中显式扩展。

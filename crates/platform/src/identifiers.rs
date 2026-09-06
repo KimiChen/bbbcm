@@ -253,6 +253,31 @@ pub const TABLES: &[TableRegistration] = &[
         identity_column: None,
     },
     TableRegistration {
+        schema: "identity",
+        table: "staff_principals",
+        identity_column: Some("id"),
+    },
+    TableRegistration {
+        schema: "identity",
+        table: "mfa_credentials",
+        identity_column: Some("id"),
+    },
+    TableRegistration {
+        schema: "identity",
+        table: "mfa_recovery_codes",
+        identity_column: Some("id"),
+    },
+    TableRegistration {
+        schema: "identity",
+        table: "management_sessions",
+        identity_column: Some("id"),
+    },
+    TableRegistration {
+        schema: "identity",
+        table: "mfa_assertions",
+        identity_column: Some("id"),
+    },
+    TableRegistration {
         schema: "community",
         table: "topic_views",
         identity_column: Some("id"),
@@ -290,6 +315,8 @@ pub const INDEXES: &[(&str, &str)] = &[
     ("trust", "risk_actor_idx"),
     ("trust", "contribution_owner_idx"),
     ("community", "topic_view_subject_idx"),
+    ("identity", "recovery_owner_idx"),
+    ("identity", "management_owner_idx"),
     ("platform", "mail_recipient_idx"),
     ("platform", "mail_observed_idx"),
     ("platform", "mail_feedback_time_idx"),

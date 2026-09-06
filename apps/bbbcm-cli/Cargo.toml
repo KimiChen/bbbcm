@@ -10,6 +10,8 @@ publish.workspace = true
 clap.workspace = true
 platform.workspace = true
 platform-db.workspace = true
+identity.workspace = true
+chrono.workspace = true
 tokio.workspace = true
 
 [dev-dependencies]
