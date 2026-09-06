@@ -252,6 +252,71 @@ pub fn transaction_setup_sql(backend: Backend) -> Option<&'static str> {
 }
 
 /// SQLite 租约三步算法与 PG 批量行锁共用显式 ID 列表；不产生 IN 子查询 LIMIT。
+/// 完整模式全文检索语句（`02` §13，`WP-MVP-C05`）。
+///
+/// 只有 PostgreSQL 有这条方言实现，其他后端返回 `None`——调用方据此降级为标题检索。
+///
+/// **为什么在这里而不是 `repo.rs`**：这条语句用 `@@` 与 `to_tsvector`，都是
+/// PostgreSQL 专有语法，共享 SQL 静态守卫会（正确地）拒绝它们。方言 SQL 的既定
+/// 归处就是本模块，与 `lock_sql`、`advisory_lock_sql`、`outbox_claim_update_sql`
+/// 同一处理方式：`repo.rs` 只负责绑定值，不持有方言字面量。
+///
+/// **为什么用 `plainto_tsquery` 而不是 `to_tsquery`**：`to_tsquery` 会把输入当成
+/// 查询表达式解析，用户输入里的 `&`、`|`、`!`、`:*` 会变成运算符——轻则报错，
+/// 重则被用来构造代价极高的查询。`plainto_tsquery` 把整段输入当纯文本分词后取
+/// 合取，用户写什么就搜什么。
+///
+/// **为什么标题与正文分开匹配**：共享 SQL 禁止 `||` 字符串拼接（拼接必须在应用层
+/// 完成），因此不把两列并成一个文档，而是各自 `to_tsvector` 后取并集。语义上等价，
+/// 且两列将来可以各自建索引。
+///
+/// **为什么索引侧用 `jiebaqry`、查询侧用 `jiebacfg`**：`pg_jieba` 的两种模式粒度不同。
+/// `jiebacfg` 是精确模式，「梧桐树下的公开主题」只切出 `梧桐树`；`jiebaqry` 是检索模式，
+/// 会切出 `梧桐`／`桐树`／`梧桐树` 三个重叠词元。若两侧都用 `jiebacfg`，用户搜「梧桐」
+/// 就搜不到「梧桐树」——中文里这种「查询词是索引词的前缀」极其常见，等于搜索大面积失灵。
+/// 因此索引侧取高召回的 `jiebaqry`，查询侧取精确的 `jiebacfg`，实测短词、全词、正文词与
+/// 多词查询均命中，不相关词不命中。
+///
+/// **为什么写 `public.jiebacfg` 而不是 `jiebacfg`**：运行连接的 `search_path` 被固定为
+/// `pg_catalog`（`prepare_postgres` 刻意如此，强制所有标识符显式限定），不限定就会
+/// 报 `text search configuration "jiebacfg" does not exist`。能力探测同样只认装在
+/// `public` 的 `pg_jieba`，装在别处会被判为缺失并降级——两处必须一致，否则会出现
+/// 「声称支持全文但每次查询都报错」。
+///
+/// 排序方向由布尔选择两条完整语句，不做片段插值——理由同 `repo::search_titles`。
+pub fn full_text_search_sql(
+    renderer: &crate::identifiers::SchemaRenderer,
+    backend: Backend,
+    newest_first: bool,
+) -> Result<Option<String>, crate::identifiers::SchemaError> {
+    if backend != Backend::Postgres {
+        return Ok(None);
+    }
+    let docs = renderer.table(backend, "community", "search_documents")?;
+    let topics = renderer.table(backend, "community", "topics")?;
+    // 过滤条件与 `repo::search_titles` 逐条对齐：已发布、未被处置、未删除、
+    // 可见性、版块、时间范围。全文检索**不放宽任何一条**——放宽等于用搜索
+    // 把权限过滤绕过去。
+    let filters = concat!(
+        " AND d.publication = ? AND d.moderation = ? AND d.deleted_at = ?",
+        " AND (? = 1 OR (d.visibility = ? AND d.forum_visibility = ?))",
+        " AND (? = 0 OR d.forum_id = ?)",
+        " AND (? = ? OR t.created_at >= ?) AND (? = ? OR t.created_at < ?)"
+    );
+    let head = format!(
+        "SELECT DISTINCT d.topic_id AS topic_id, d.title AS title, d.forum_id AS forum_id, \
+         t.created_at AS created_at FROM {docs} d JOIN {topics} t ON t.id = d.topic_id \
+         WHERE (to_tsvector('public.jiebaqry', d.title) @@ plainto_tsquery('public.jiebacfg', ?) \
+         OR to_tsvector('public.jiebaqry', d.body) @@ plainto_tsquery('public.jiebacfg', ?))"
+    );
+    let tail = if newest_first {
+        " ORDER BY t.created_at DESC, d.topic_id DESC LIMIT ?"
+    } else {
+        " ORDER BY t.created_at ASC, d.topic_id ASC LIMIT ?"
+    };
+    Ok(Some(format!("{head}{filters}{tail}")))
+}
+
 pub fn outbox_claim_update_sql(
     renderer: &crate::identifiers::SchemaRenderer,
     backend: Backend,

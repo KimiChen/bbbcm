@@ -143,13 +143,21 @@ impl Pool {
                 caps
             }
             Pool::Postgres(pool, _) => {
-                let installed: Vec<String> = sqlx::query_scalar("SELECT extname FROM pg_extension")
-                    .fetch_all(pool)
-                    .await
-                    .unwrap_or_else(|_| {
-                        tracing::warn!("查询 pg_extension 失败，按扩展缺失处理");
-                        Vec::new()
-                    });
+                // 连同**安装 schema**一起查。运行连接的 `search_path` 被固定为
+                // `pg_catalog`（见 `prepare_postgres`），因此检索配置名必须限定
+                // 到 schema。项目只支持装在 `public` 的常规位置；装在别处时这里
+                // 按「扩展缺失」处理——降级为标题检索并如实告知，比在每次查询时
+                // 抛 `text search configuration does not exist` 好得多。
+                let installed: Vec<String> = sqlx::query_scalar(
+                    "SELECT e.extname FROM pg_extension e \
+                     JOIN pg_namespace n ON n.oid = e.extnamespace WHERE n.nspname = 'public'",
+                )
+                .fetch_all(pool)
+                .await
+                .unwrap_or_else(|_| {
+                    tracing::warn!("查询 pg_extension 失败，按扩展缺失处理");
+                    Vec::new()
+                });
                 let caps = Capabilities {
                     sqlite_fts5: false,
                     pg_jieba: installed.iter().any(|e| e == "pg_jieba"),

@@ -118,7 +118,7 @@
 | `WP-MVP-C01` | In progress | 五视图（含DEC-030热门）、导航、SSR、签名分页、作者隐私两轴与真实站点统计已交付，NAV-002/003 已推进为 Implemented（见5.19）；搜索入口、语言入口、最近浏览与正式视觉矩阵仍缺。 |
 | `WP-MVP-C02` | In progress | 内容/楼层/修订/本人维护/事务与权限合同齐备，发布政策按DEC-054/055/060装配，TOPIC-001/002/003/008 已推进为 Implemented（见5.19）；管理写入口（移帖、状态转换）无HTTP路由，附件与重复文本限速未实现。 |
 | `WP-MVP-C03` | In progress | 安全Markdown和预览已接；完整编辑器、草稿、上传及媒体全链仍缺，见5.9。 |
-| `WP-MVP-C05` | In progress | 只借入同事务权威search_documents；搜索引擎/页面、SEO、Feed/sitemap等仍缺，见5.9。 |
+| `WP-MVP-C05` | In progress | 同事务权威 search_documents、搜索页/SEO/Feed/sitemap 已交付；**本轮补齐 PostgreSQL 完整模式全文检索**（`pg_jieba` 索引侧 `jiebaqry`／查询侧 `jiebacfg`，能力按实测探测装配，权限过滤与体验模式逐条对齐），见 5.24。GIN 索引与百万级重建属性能矩阵，仍缺。 |
 | `WP-MVP-C04` | Not started | 互动、通知与跨设备阅读位置后续。 |
 | `WP-MVP-D01..D04` | Not started | - |
 | `WP-MVP-E01` | In progress | 真实 Redis 8 合同与真实 PostgreSQL 16 双前缀集成（11 项）已通过并留证；`90` §5 其余 PostgreSQL 条目、`pg_jieba` 完整搜索、安全/并发/性能/E2E/视觉矩阵未执行，见 5.23。 |
@@ -1284,7 +1284,7 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 | 未知提交（`CommitUnknown`） | 触发需 `command.rs` 内 `#[cfg(test)]` 的 `simulate_lost_ack` 钩子，crate 外的集成测试拿不到；只能由 crate 内单元测试覆盖。 |
 | `40001`/`40P01` 受控重试 | 压出序列化失败或死锁必须**故意违反**固定锁顺序，而平台层会先一步拒绝（已由 `lock_order_is_frozen_…` 正面验证）。需另建绕过平台层的夹具，或承认该故障被设计挡在发生之前。 |
 | 审计与搜索权限状态的同事务提交 | 本轮只验证了 Outbox 一侧。 |
-| 应用的完整搜索模式 | **阻塞性质已改变**：扩展镜像本轮已按 `M0-03` 的 Dockerfile 离线构建成功，`pg_jieba` 1.1.1 与 `pg_trgm` 1.6 实测可用（中文分词、`@@` 匹配、`similarity` 均正确），同一套合同 11 项在该镜像上亦全部通过。真正缺的是应用侧——`crates/content/src/search.rs` 目前只有 `SqliteTitleSearch` 一个 `SearchBackend` 实现，`pg_jieba + pg_trgm` 的 PostgreSQL 后端尚未编写。这属 `WP-MVP-C05` 的实现缺口，不再是 E01 的环境问题。证据见 [`pg-jieba-extension.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/pg-jieba-extension.txt)。 |
+| ~~应用的完整搜索模式~~ **已完成** | 2026-09-07 交付，见第 5.24 节。原登记如下：**阻塞性质已改变**：扩展镜像本轮已按 `M0-03` 的 Dockerfile 离线构建成功，`pg_jieba` 1.1.1 与 `pg_trgm` 1.6 实测可用（中文分词、`@@` 匹配、`similarity` 均正确），同一套合同 11 项在该镜像上亦全部通过。真正缺的是应用侧——`crates/content/src/search.rs` 目前只有 `SqliteTitleSearch` 一个 `SearchBackend` 实现，`pg_jieba + pg_trgm` 的 PostgreSQL 后端尚未编写。这属 `WP-MVP-C05` 的实现缺口，不再是 E01 的环境问题。证据见 [`pg-jieba-extension.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/pg-jieba-extension.txt)。**该缺口本轮已补齐**，全文检索通过真实 `pg_jieba` 验证。 |
 | 并发矩阵：互动唯一性、通知去重 | 属 `WP-MVP-C04`（`Not started`），**功能尚不存在**，不是载体问题。`90` §5 并发九项中的其余七项本轮全部通过。 |
 | `90` §6 负载与延迟门槛（`WP-MVP-E02`） | 200 read/s、写 20/s、公开读 p95 ≤400ms、写 p95 ≤800ms、SSR 首屏 p95 ≤800ms、1 万用户与 100 万主题基线等，**需要经批准的资源规格**——`90` §6 表末已写明「规格未批准时只能形成实验结果，不能支持 Production Approved」。本机结果不具备门禁效力，载体未编写。参数类门槛已单独核验，见上表。 |
 | 安全矩阵：上传相关 | 上传 MIME／文件头／压缩炸弹／像素炸弹与下载鉴权依赖 `WP-MVP-C03` 的上传链，**功能尚未实现**。 |
@@ -1399,6 +1399,39 @@ PostgreSQL 中没有 schema `USAGE`，其下所有表级授权一律无效。**�
 3. **端到端（E2E）与浏览器视觉矩阵**，需 `05` 规定的固定浏览器、字体、缩放与视口环境。
 
 当前所有需求的状态天花板仍是 `Implemented`：完整矩阵未跑完之前，`Verified` 不授予。
+
+### 5.24 `WP-MVP-C05` PostgreSQL 完整模式全文检索（2026-09-07）
+
+产品决策与最终批准：项目所有者（用户）；执行与登记：Claude。
+
+`WP-MVP-E01` 的扩展验证把「完整搜索模式」的阻塞从环境问题改判为实现缺口（见 5.23）。本节交付该实现。
+
+#### 交付物
+
+| 位置 | 内容 |
+|---|---|
+| `platform::db::full_text_search_sql` | PostgreSQL 方言全文检索语句。放这里而不是 `repo.rs`：`@@`／`to_tsvector` 是 PG 专有语法，共享 SQL 静态守卫会正确拒绝它们出现在 Repository。与 `lock_sql`、`advisory_lock_sql` 同一处理方式。 |
+| `content::search::PostgresFullTextSearch` | 完整模式后端。`new` 只在探测到 `pg_jieba` 时返回实例，探不到就保持体验模式。 |
+| `content::repo::search_full_text` | 只绑值取行，方言归方言模块。绑定顺序与语句中 `?` 严格对应。 |
+| `ContentService::with_search_backend` | 装配层注入；默认值取能力更弱的体验模式，漏接线时页面如实说「仅支持标题搜索」。 |
+| `apps/web` 装配 | `pool.capabilities()` 实测 `pg_extension` 后选择后端，不按配置声称。 |
+| `platform-db` 能力探测 | 改为只认装在 `public` 的扩展——运行连接 `search_path` 固定为 `pg_catalog`，装在别处会在每次查询报错，因此按缺失处理并降级。 |
+
+#### 关键取值：索引侧 `jiebaqry`、查询侧 `jiebacfg`
+
+首次实现两侧都用 `jiebacfg`，测试立刻暴露问题：该精确模式把「梧桐树下的公开主题」只切出 `梧桐树`，用户搜「梧桐」搜不到。中文里「查询词是索引词的前缀」极其常见，等于搜索大面积失灵。改为索引侧用检索模式 `jiebaqry`（切出 `梧桐`／`桐树`／`梧桐树` 三个重叠词元）、查询侧保持精确的 `jiebacfg`，实测短词、全词、正文独有词与多词查询均命中，不相关词不命中。
+
+查询侧用 `plainto_tsquery` 而非 `to_tsquery`：后者会把输入当查询表达式解析，用户输入里的 `&`／`|`／`!`／`:*` 会变成运算符，轻则报错，重则被用来构造代价极高的查询。
+
+#### 验证
+
+真实 `pg_jieba` 实例上通过。三条断言：能力注入后服务报告 `FullText`；标题独有词与**正文独有词**都命中；仅成员可见的主题对匿名检索**完全不出现**。第三条不可省——全文检索若放宽权限过滤，就是用检索绕过可见性：页面打不开，但结果页把标题、版块和时间全列出来。证据见 [`full-text-search.txt`](../docs/evidence/mvp/wp-mvp-c05/dev-20260907/full-text-search.txt)。
+
+编写过程中修正三处**测试自身**的缺陷，均非产品问题，一并登记以免被误读为实现有变：夹具版块 slug 固定导致同前缀二次运行撞唯一约束；两次建帖复用同一份凭据触发幂等冲突（幂等保护按预期工作）；`read_viewer` 无视 session 恒返回 `member: true`，使「匿名不可见」断言变成空断言——已改为按 session 判定。
+
+#### 未做
+
+GIN 索引未建，当前为顺序扫描：功能正确但不满足 `90` §6 的查询 p95 门槛。索引与百万级内容重建属性能矩阵（`WP-MVP-E02`），需经批准的资源规格才有门禁效力。`WP-MVP-C05` 因此维持 `In progress`。
 
 ## 6. 门禁状态
 

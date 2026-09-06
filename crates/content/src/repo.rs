@@ -581,6 +581,69 @@ pub(crate) async fn site_statistics(
 ///
 /// `member` 为真表示访问者是登录成员，可看到 `members` 可见性的内容。
 /// 通配符已由调用方转义，这里再用 `ESCAPE` 显式声明转义符。
+/// 完整模式全文检索（`WP-MVP-C05`）。
+///
+/// 语句本身来自 `platform::db::full_text_search_sql`——它用 `@@`／`to_tsvector`
+/// 这类 PostgreSQL 专有语法，共享 SQL 静态守卫会正确地拒绝它们出现在 Repository
+/// 里。这里只负责绑值与取行，方言归方言模块。
+///
+/// 绑定顺序必须与语句里 `?` 的出现顺序严格一致：查询词出现两次（标题一次、正文
+/// 一次），因此绑两次同一个值。
+#[allow(clippy::too_many_arguments)]
+pub(crate) async fn search_full_text(
+    tx: &mut TransactionConnection<'_>,
+    r: &SchemaRenderer,
+    terms: &str,
+    forum_id: i64,
+    since: DateTime<Utc>,
+    until: DateTime<Utc>,
+    newest_first: bool,
+    member: bool,
+    limit: i64,
+) -> Result<Vec<(i64, String, i64, DateTime<Utc>)>> {
+    let Some(sql) = platform::db::full_text_search_sql(r, tx.backend(), newest_first)
+        .map_err(|_| ContentError::Unavailable)?
+    else {
+        // 该后端没有全文方言。调用方只应在能力为 FullText 时走到这里，
+        // 走到了说明装配与能力判断不一致——宁可失败，也不静默降级成空结果。
+        return Err(ContentError::Unavailable);
+    };
+    let rows = tx
+        .fetch_all(
+            &sql,
+            &[
+                text(terms),
+                text(terms),
+                text("published"),
+                text("normal"),
+                date(DateTime::UNIX_EPOCH),
+                DbValue::I64(i64::from(member)),
+                text("public"),
+                text("public"),
+                forum_id.into(),
+                forum_id.into(),
+                date(since),
+                date(DateTime::UNIX_EPOCH),
+                date(since),
+                date(until),
+                date(DateTime::UNIX_EPOCH),
+                date(until),
+                limit.into(),
+            ],
+        )
+        .await?;
+    rows.iter()
+        .map(|row| {
+            Ok((
+                row.i64("topic_id")?,
+                row.text("title")?,
+                row.i64("forum_id")?,
+                row.time("created_at")?,
+            ))
+        })
+        .collect()
+}
+
 #[allow(clippy::too_many_arguments)]
 pub(crate) async fn search_titles(
     tx: &mut TransactionConnection<'_>,

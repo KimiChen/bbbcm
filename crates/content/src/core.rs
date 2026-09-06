@@ -34,6 +34,8 @@ pub struct ContentService {
     policy: Arc<dyn ContentPolicy>,
     cursor: CursorKey,
     cache: Option<Arc<dyn platform::cache::CacheStore>>,
+    /// 当前检索后端。由装配层按后端能力注入，不由配置声称。
+    search: Arc<dyn crate::search::SearchBackend>,
 }
 #[derive(Clone, serde::Serialize)]
 enum Mutation {
@@ -87,6 +89,10 @@ impl ContentService {
             policy,
             cursor,
             cache: None,
+            // 默认体验模式。完整模式由装配层在探测到 pg_jieba 后显式注入——
+            // 默认值取「能力更弱的那个」，漏接线时页面会如实说仅支持标题搜索，
+            // 而不是声称支持全文却搜不到正文。
+            search: Arc::new(crate::search::SqliteTitleSearch),
         }
     }
     pub fn with_cache(mut self, cache: Arc<dyn platform::cache::CacheStore>) -> Self {
@@ -155,6 +161,14 @@ impl ContentService {
             now,
         })
     }
+    /// 注入完整模式检索后端（`WP-MVP-C05`）。
+    ///
+    /// 装配层只在探测到 `pg_jieba` 时调用；探测不到就不调用，服务保持体验模式。
+    pub fn with_search_backend(mut self, backend: Arc<dyn crate::search::SearchBackend>) -> Self {
+        self.search = backend;
+        self
+    }
+
     pub async fn viewer(
         &self,
         session: Option<&str>,
@@ -726,20 +740,45 @@ impl ContentService {
         let mut tx = DbTransaction::begin_read(&self.pool).await?;
         let mut c = tx.connection();
         let ctx = self.context(&mut c, session, now).await?;
-        // 通配符转义后再包上 %：不转义的话一个 % 就能把检索变成枚举全部标题。
-        let pattern = format!("%{}%", crate::search::escape_like(&query.terms));
-        let rows = repo::search_titles(
-            &mut c,
-            &self.renderer,
-            &pattern,
-            query.forum_id.unwrap_or(0),
-            query.since.unwrap_or(DateTime::UNIX_EPOCH),
-            query.until.unwrap_or(DateTime::UNIX_EPOCH),
-            query.order == crate::search::SearchOrder::Newest,
-            ctx.viewer.member,
-            query.limit,
-        )
-        .await;
+        let forum_id = query.forum_id.unwrap_or(0);
+        let since = query.since.unwrap_or(DateTime::UNIX_EPOCH);
+        let until = query.until.unwrap_or(DateTime::UNIX_EPOCH);
+        let newest = query.order == crate::search::SearchOrder::Newest;
+        let member = ctx.viewer.member;
+        // 按注入的后端能力分派。两条路径的权限过滤完全一致——全文检索不放宽
+        // 任何一条，否则就是用搜索把权限过滤绕过去。
+        let rows = match self.search.capability() {
+            crate::search::SearchCapability::FullText => {
+                repo::search_full_text(
+                    &mut c,
+                    &self.renderer,
+                    &query.terms,
+                    forum_id,
+                    since,
+                    until,
+                    newest,
+                    member,
+                    query.limit,
+                )
+                .await
+            }
+            crate::search::SearchCapability::TitleOnly => {
+                // 通配符转义后再包上 %：不转义的话一个 % 就能把检索变成枚举全部标题。
+                let pattern = format!("%{}%", crate::search::escape_like(&query.terms));
+                repo::search_titles(
+                    &mut c,
+                    &self.renderer,
+                    &pattern,
+                    forum_id,
+                    since,
+                    until,
+                    newest,
+                    member,
+                    query.limit,
+                )
+                .await
+            }
+        };
         tx.rollback().await?;
         let hits = rows?
             .into_iter()
@@ -762,8 +801,7 @@ impl ContentService {
     /// 由数据库后端决定：SQLite 体验模式只支持标题检索。写死在这里而不是配置项，
     /// 因为它是后端的客观能力，不该由配置声称。
     pub fn search_capability(&self) -> crate::search::SearchCapability {
-        use crate::search::SearchBackend;
-        crate::search::SqliteTitleSearch.capability()
+        self.search.capability()
     }
 
     /// `SEO-004`／`SEO-005`：可公开索引的主题清单，供 sitemap 与 RSS 使用。

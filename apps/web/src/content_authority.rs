@@ -490,6 +490,11 @@ pub async fn connect(state: &mut crate::app_state::AppState) -> Result<(), Strin
         .map_err(|_| "content database unavailable")?;
     let policy = content::policy::ApprovedContentPolicy::new()
         .map_err(|_| "approved content rules are inconsistent")?;
+    // 检索能力按**实测**装配，不按配置声称：`capabilities()` 在建连时查
+    // `pg_extension`，装了 `pg_jieba` 才升级为全文检索。探不到就保持体验模式，
+    // 搜索页会如实说「仅支持标题搜索」——比声称支持却搜不到正文诚实得多。
+    let capabilities = pool.capabilities().await;
+    let full_text = content::search::PostgresFullTextSearch::new(capabilities);
     let mut service = content::core::ContentService::new(
         pool,
         renderer.clone(),
@@ -497,6 +502,9 @@ pub async fn connect(state: &mut crate::app_state::AppState) -> Result<(), Strin
         Arc::new(policy),
         cursor,
     );
+    if let Some(backend) = full_text {
+        service = service.with_search_backend(Arc::new(backend));
+    }
     if let Some(runtime) = state.runtime.as_ref() {
         service = service.with_cache(runtime.cache.clone());
     }

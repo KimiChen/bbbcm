@@ -88,6 +88,26 @@ impl SearchBackend for SqliteTitleSearch {
     }
 }
 
+/// PostgreSQL 完整模式：`pg_jieba` 中文分词的标题与正文全文检索（`02` §13）。
+///
+/// **构造是有条件的**：`new` 只在探测到 `pg_jieba` 时返回实例。装配层拿不到实例
+/// 就继续用 `SqliteTitleSearch`，页面照旧明示「仅支持标题搜索」。这样写是为了让
+/// 「扩展没装」表现为**能力降级并如实告知**，而不是运行期报错——扩展缺失是部署
+/// 事实，不是用户的错。
+#[derive(Debug, Clone, Copy)]
+pub struct PostgresFullTextSearch;
+impl PostgresFullTextSearch {
+    /// `capabilities` 来自 `platform-db` 建连时的一次性探测。
+    pub fn new(capabilities: platform::db::Capabilities) -> Option<Self> {
+        capabilities.pg_jieba.then_some(Self)
+    }
+}
+impl SearchBackend for PostgresFullTextSearch {
+    fn capability(&self) -> SearchCapability {
+        SearchCapability::FullText
+    }
+}
+
 /// 规范化查询词，并判断它是否可用于检索。
 ///
 /// 返回 `None` 表示这次查询不该执行：空串或纯空白会退化成「匹配全部」，

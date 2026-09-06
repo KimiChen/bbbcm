@@ -1,0 +1,33 @@
+# WP-MVP-C05 PostgreSQL 完整模式全文检索（2026-09-07）
+
+- 服务端：自建 pg_jieba 镜像（PostgreSQL 16.15 + pg_jieba 1.1.1 + pg_trgm 1.6）
+- 载体：`crates/content/tests/postgres_concurrency.rs` 的 `postgres_full_text_search_…`
+
+```
+test concurrent_replies_allocate_unique_contiguous_floors ... ok
+test postgres_full_text_search_finds_body_terms_and_keeps_permission_filters ... ok
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.35s
+```
+
+## 实现要点
+
+| 决定 | 理由 |
+|---|---|
+| 方言 SQL 放 `platform::db::full_text_search_sql` | `@@`／`to_tsvector` 是 PostgreSQL 专有语法，共享 SQL 静态守卫会正确拒绝它们出现在 Repository 里。与 `lock_sql`、`advisory_lock_sql` 同一处理方式：`repo.rs` 只绑值 |
+| 索引侧 `jiebaqry`、查询侧 `jiebacfg` | `jiebacfg` 精确模式把「梧桐树下的公开主题」只切出 `梧桐树`，用户搜「梧桐」就搜不到。`jiebaqry` 检索模式切出 `梧桐`／`桐树`／`梧桐树` 三个重叠词元。实测短词、全词、正文词、多词均命中，不相关词不命中 |
+| `plainto_tsquery` 而非 `to_tsquery` | `to_tsquery` 会把输入当查询表达式解析，用户输入里的 `&`／`|`／`!`／`:*` 变成运算符——轻则报错，重则被用来构造代价极高的查询 |
+| 限定 `public.jiebacfg` | 运行连接的 `search_path` 被固定为 `pg_catalog`（`prepare_postgres` 刻意如此），不限定会报 configuration does not exist。能力探测同样只认装在 `public` 的扩展，两处必须一致 |
+| 能力按实测装配 | `capabilities()` 查 `pg_extension`，装了才升级。探不到就保持体验模式并如实告知「仅支持标题搜索」，而不是声称支持却每次查询报错 |
+| 标题与正文分开 `to_tsvector` | 共享 SQL 禁止 `||` 拼接。语义等价，且两列将来可各自建索引 |
+
+## 断言
+
+1. 注入后服务报告 `FullText`；扩展缺失时跳过并明示「跳过不等于通过」。
+2. 标题独有词与**正文独有词**都命中——正文可检索正是完整模式的定义。
+3. 仅成员可见的主题对匿名检索**完全不出现**。全文检索不放宽任何一条权限过滤：
+   用检索绕过可见性是最隐蔽的越权，页面打不开但结果页把标题、版块和时间全列出来。
+
+## 未做
+
+GIN 索引未建：当前为顺序扫描，功能正确但不满足 `90` §6 的查询 p95 门槛。
+索引与百万级重建属性能矩阵（`WP-MVP-E02`），需经批准的资源规格才有门禁效力。

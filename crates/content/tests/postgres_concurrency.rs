@@ -97,10 +97,13 @@ impl ContentAuthority for AllowAll {
         _session: Option<&'a str>,
         _now: DateTime<Utc>,
     ) -> FutureResult<'a, Viewer> {
+        // 必须按 session 判定成员身份。恒返回 `member: true` 会让所有「匿名不可见」
+        // 的断言变成空断言——过滤条件里 `member = 1` 一路放行，测什么都通过。
+        let member = _session.is_some();
         Box::pin(async move {
             Ok(Viewer {
-                user_id: Some(self.default_user),
-                member: true,
+                user_id: member.then_some(self.default_user),
+                member,
                 excluded: true,
             })
         })
@@ -283,12 +286,13 @@ async fn fixture(workers: u32) -> Fixture {
         let forums = renderer
             .table(c.backend(), "community", "forums")
             .expect("表名");
+        // slug 唯一：同一前缀可能被多个用例复用，固定 slug 第二次就撞唯一约束。
         c.execute(
             &format!(
                 "INSERT INTO {forums} (slug, name, position, status, visibility, version) \
-                 VALUES ('concurrency', '并发探针版块', 1, 'active', 'public', 1)"
+                 VALUES (?, '并发探针版块', 1, 'active', 'public', 1)"
             ),
-            &[],
+            &[DbValue::Text(format!("probe-{}", new_operation_id()))],
         )
         .await
         .expect("建版块");
@@ -513,5 +517,113 @@ async fn concurrent_replies_allocate_unique_contiguous_floors() {
         "next_floor 必须指向下一个未用楼层"
     );
     assert_eq!(raw_replies, expected_total as i64, "回复计数必须与实际一致");
+    f.pool.close().await;
+}
+
+// ---------------------------------------------------------------------------
+// WP-MVP-C05：PostgreSQL 完整模式全文检索
+// ---------------------------------------------------------------------------
+
+/// `WP-MVP-C05` / `90` §5 搜索：`pg_jieba` 完整模式必须检索**正文**，
+/// 且权限过滤与体验模式一字不差。
+///
+/// 这是体验模式与完整模式的分界线：体验模式搜不到正文是**已告知的限制**，
+/// 完整模式搜不到正文就是缺陷。因此这里正面断言「只出现在正文里的词能被搜到」。
+///
+/// 更要紧的是第二组断言：全文检索**不得放宽任何一条权限过滤**。用检索绕过可见性
+/// 是最隐蔽的越权——页面打不开，但搜索结果页把标题、版块和时间全列出来了。
+///
+/// 需要装有 `pg_jieba` 的实例（`supply-chain/postgres/Dockerfile` 构建的镜像）。
+/// 扩展缺失时能力不会升级，用例明确跳过——跳过不是通过。
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "需要装有 pg_jieba 的 PostgreSQL；见 docs/development/postgres.md"]
+async fn postgres_full_text_search_finds_body_terms_and_keeps_permission_filters() {
+    use content::search::{SearchBackend, SearchCapability, SearchQuery};
+
+    let f = fixture(4).await;
+    let forum = seeded_forum(&f).await;
+
+    // 扩展探测：`pg_jieba` 未安装时不升级能力，也就没什么可测的。
+    let capabilities = f.pool.capabilities().await;
+    let Some(backend) = content::search::PostgresFullTextSearch::new(capabilities) else {
+        eprintln!("跳过：该实例未安装 pg_jieba，检索能力未升级。跳过不等于通过。");
+        return;
+    };
+    assert_eq!(backend.capability(), SearchCapability::FullText);
+    let service = f
+        .service
+        .clone()
+        .with_search_backend(std::sync::Arc::new(backend));
+    assert_eq!(
+        service.search_capability(),
+        SearchCapability::FullText,
+        "注入后服务必须报告完整模式"
+    );
+
+    let author = Credentials::new(f.users[0].to_string(), "csrf", new_operation_id());
+    // 标题与正文各放一个独有词，且两者不重叠——这样命中来自哪一列是确定的。
+    let title_term = "梧桐";
+    let body_term = "曼陀罗";
+    service
+        .create_topic(
+            &author,
+            NewTopic {
+                forum_id: forum,
+                title: format!("{title_term}树下的公开主题"),
+                markdown: format!("正文里只提到{body_term}这一个独有词，标题里没有它。"),
+                tag_ids: Vec::new(),
+                visibility: Visibility::Public,
+            },
+            at(),
+        )
+        .await
+        .expect("建公开主题");
+
+    let hits = |term: &str, session: Option<String>| {
+        let service = service.clone();
+        let term = term.to_owned();
+        async move {
+            let query = SearchQuery::build(&term, None, None, None, "", 50).expect("查询可构造");
+            let (_, hits) = service
+                .search(&query, session.as_deref(), at())
+                .await
+                .expect("检索不应失败");
+            hits.len()
+        }
+    };
+
+    // 1. 标题词与正文词都必须命中——正文可检索正是完整模式的定义。
+    assert!(hits(title_term, None).await > 0, "标题词必须命中");
+    assert!(
+        hits(body_term, None).await > 0,
+        "完整模式必须检索正文；搜不到说明分词或匹配没生效"
+    );
+
+    // 2. 权限过滤不得被检索绕过：仅成员可见的主题对匿名访客必须完全不出现，
+    //    连标题都不能出现在结果里。
+    let members_term = "紫檀";
+    // 必须换一份凭据：幂等键随凭据走，复用同一份而载荷不同会被判为幂等冲突。
+    // 这正是幂等保护在按预期工作，不是缺陷。
+    let author = Credentials::new(f.users[0].to_string(), "csrf", new_operation_id());
+    service
+        .create_topic(
+            &author,
+            NewTopic {
+                forum_id: forum,
+                title: format!("{members_term}的仅成员主题"),
+                markdown: "这条只对登录成员可见，匿名检索必须完全看不到它。".into(),
+                tag_ids: Vec::new(),
+                visibility: Visibility::Members,
+            },
+            at(),
+        )
+        .await
+        .expect("建成员主题");
+    assert_eq!(
+        hits(members_term, None).await,
+        0,
+        "仅成员内容不得出现在匿名检索结果里——用搜索绕过可见性是最隐蔽的越权"
+    );
+
     f.pool.close().await;
 }
