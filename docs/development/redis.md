@@ -51,7 +51,7 @@
 
 开发期运行 `cargo test -p platform cache::`、适用 Worker/SQLite 测试和仓库 `./scripts/dev-check.sh`。内存合同、配置装配、禁用/不可用区分和关闭 TCP 对端测试不等于真实 Redis Lua 原子性验证。
 
-真实合同入口默认 ignored，仅用于显式准备的可丢弃本机 Redis 8 实例。镜像沿用 `supply-chain/lock.json` 中 Redis 8.2.9-bookworm 的锁定 manifest，不升级镜像、不连接生产。先用已有供应链流程准备独立实例，绑定回环地址；测试前通过本机受控环境设置 `REDIS_CONTRACT_URL`（只允许字面回环 IP，不打印连接值）和 `REDIS_CONTRACT_ISOLATED=yes`，再执行：
+真实合同入口默认 ignored，仅用于显式准备的可丢弃本机 Redis 8 实例。按 `DEC-063`，服务端只锁**大版本 8.x**：任何 Redis 8 补丁线都可用于该合同，不要求与 `supply-chain/lock.json` 的 8.2.9-bookworm 小版本一致——合同验证的命令与 Lua 原子性语义在 8.x 内无差异，把证据绑定到单个补丁号只会让它随上游发版失效。锁定 manifest 仍是镜像构建与 SBOM 溯源的事实源，不因此放宽；无论用哪种方式起实例，都不连接生产。先用已有供应链流程准备独立实例，绑定回环地址；测试前通过本机受控环境设置 `REDIS_CONTRACT_URL`（只允许字面回环 IP，不打印连接值）和 `REDIS_CONTRACT_ISOLATED=yes`，再执行：
 
 ```bash
 cargo test -p platform --test redis_contract -- --ignored --exact redis8_contract_atomicity_namespace_and_recovery

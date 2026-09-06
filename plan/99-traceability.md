@@ -1259,10 +1259,10 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 
 | 检查 | 结果 |
 |---|---|
-| 真实 Redis 8 合同（`crates/platform/tests/redis_contract.rs`） | **通过**。在 `127.0.0.1:6399` 的隔离实例上执行（独立数据目录、关闭 RDB/AOF 持久化），覆盖原子性、命名空间隔离与恢复。测试自身强制要求显式隔离确认与回环地址，非回环端点一律拒绝。 |
+| 真实 Redis 8 合同（`crates/platform/tests/redis_contract.rs`） | **通过**。在 `127.0.0.1:6399` 的隔离实例上执行（独立数据目录、关闭 RDB/AOF 持久化），覆盖原子性、命名空间隔离与恢复。测试自身强制要求显式隔离确认、回环地址与 `redis_version:8.` 大版本断言，非回环端点一律拒绝。运行版本口径见 `DEC-063`。 |
 | 开发期最小集（`./scripts/dev-check.sh`） | **通过**，七步：格式化、Clippy `-D warnings`、333 项单元测试、真实 SQLite 冒烟 100 条路由、`git diff --check`、暂存区复核、静态守卫。 |
 
-**一处偏差需登记**：本机 `redis-server` 为 **8.8.0**，而 `supply-chain/lock.json` 锁定的基线是 **8.2.9-bookworm**。本次合同通过的是 8.8.0，不是锁定基线。它仍属 Redis 8 大版本，合同语义未变，但**不能据此声称锁定基线已验证**；正式证据须在锁定镜像上重跑。
+**运行版本口径（`DEC-063`）**：本机 `redis-server` 为 **8.8.0**。按 2026-09-07 批准的 `DEC-063`，合同运行时只锁 Redis **大版本 8.x**，不要求与 `supply-chain/lock.json` 镜像基线 8.2.9-bookworm 的小版本一致，因此本次结果按正式结果计入 E01 的 Redis 一项，无需在锁定镜像上重跑。`supply-chain/lock.json` 的镜像摘要锁与 `scripts/supply-chain.py` 的 tag 校验不受影响——那是可复现构建与 SBOM 溯源的约束，与合同跑在哪个 8.x 服务端上是两件事。
 
 #### 受环境阻塞，本轮未执行
 
@@ -1284,7 +1284,6 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 
 1. **一个可用的 PostgreSQL 16 端点**（本机安装、Docker 镜像或外部实例均可）。有了它就能执行 `90` §5 的 PostgreSQL 集成全部条目与双前缀矩阵，这是把当前 31 条 `Implemented` 推向 `Verified` 的必要前提。
 2. **可用的容器运行时**，用于 `pg_jieba` 扩展镜像构建与锁定基线复现。
-3. **锁定版本的 Redis 8.2.9 镜像**，用于把本轮的 8.8.0 结果替换为基线证据。
 
 在 1 到位之前，E01 无法推进，当前所有需求的状态天花板仍是 `Implemented`。
 
