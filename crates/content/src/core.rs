@@ -711,6 +711,23 @@ impl ContentService {
         Ok(counted)
     }
 
+    /// `NAV-004` 站点统计。
+    ///
+    /// 独立只读事务：它挂在每个页面的侧栏上，不应该被卷进任何写路径，
+    /// 也不值得为它扩大读事务的持有时间。
+    pub async fn site_statistics(
+        &self,
+        now: DateTime<Utc>,
+    ) -> Result<SiteStatistics, ContentError> {
+        let mut tx = DbTransaction::begin_read(&self.pool).await?;
+        let mut c = tx.connection();
+        self.flags(&mut c, None).await?;
+        let _ = canonical(now)?;
+        let stats = repo::site_statistics(&mut c, &self.renderer).await;
+        tx.rollback().await?;
+        stats
+    }
+
     pub async fn list(
         &self,
         filter: &ListFilter,

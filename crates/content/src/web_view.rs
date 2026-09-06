@@ -75,6 +75,13 @@ pub struct Editor {
     pub preview_html: Option<String>,
 }
 
+/// 侧栏站点统计的渲染形态。
+pub struct SiteStats {
+    pub topics: i64,
+    pub replies: i64,
+    pub users: i64,
+}
+
 pub struct Page {
     pub frame: PageFrame,
     pub title: String,
@@ -86,6 +93,9 @@ pub struct Page {
     pub profile_href: String,
     pub topics: Vec<TopicRow>,
     pub latest: Vec<Link>,
+    /// NAV-004 站点统计。`None` 表示本次未取到，模板据此整段不渲染，
+    /// 而不是显示 0 冒充观测。
+    pub statistics: Option<SiteStats>,
     pub next: Option<String>,
     pub first: String,
     pub empty: &'static str,
@@ -109,6 +119,7 @@ impl Page {
             profile_href: "/login".into(),
             topics: Vec::new(),
             latest: Vec::new(),
+            statistics: None,
             next: None,
             first: "/".into(),
             empty: "暂无可见内容。",

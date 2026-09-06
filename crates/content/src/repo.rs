@@ -515,6 +515,64 @@ pub(crate) async fn charges(
     let t = table(tx, r, "publication_receipts")?;
     Ok(tx.fetch_optional(&format!("SELECT COUNT(*) AS count FROM {t} WHERE actor_id = ? AND action = ? AND occurred_at >= ? AND occurred_at < ? AND charged = ?"),&[actor.into(),text(action.as_str()),date(start),date(end),DbValue::Bool(true)]).await?.ok_or(ContentError::Unavailable)?.i64("count")?)
 }
+/// DEC-030 热门榜候选：按 (view_count, id) 降序的 keyset 分页。
+///
+/// 排除条件与 DEC-030 一致：系统账号与确认作弊流量已在浏览计数阶段排除（不会进 view_count），
+/// 这里再排除已删除内容与未发布内容。活动参与回复属 P2，当前不存在。
+async fn hot_candidates(
+    tx: &mut TransactionConnection<'_>,
+    r: &SchemaRenderer,
+    filter: &ListFilter,
+    sort: i64,
+    id: i64,
+    limit: i64,
+) -> Result<Vec<(i64, i64)>> {
+    let topics = table(tx, r, "topics")?;
+    let topic_tags = table(tx, r, "topic_tags")?;
+    let forum = filter.forum_id.unwrap_or(0);
+    let tag = filter.tag_id.unwrap_or(0);
+    let owner = filter.owner_id.unwrap_or(0);
+    let rows = tx.fetch_all(&format!("SELECT t.id AS resource_id, t.view_count AS sort_seq FROM {topics} t WHERE (t.view_count < ? OR (t.view_count = ? AND t.id < ?)) AND t.publication = ? AND t.moderation = ? AND t.deleted_at = ? AND (? = 0 OR t.forum_id = ?) AND (? = 0 OR EXISTS (SELECT 1 FROM {topic_tags} tt WHERE tt.topic_id = t.id AND tt.tag_id = ?)) AND (? = 0 OR t.author_id = ?) ORDER BY t.view_count DESC, t.id DESC LIMIT ?"),
+        &[sort.into(), sort.into(), id.into(), text("published"), text("normal"), date(DateTime::UNIX_EPOCH),
+          forum.into(), forum.into(), tag.into(), tag.into(), owner.into(), owner.into(), limit.into()]).await?;
+    rows.iter()
+        .map(|row| Ok((row.i64("resource_id")?, row.i64("sort_seq")?)))
+        .collect()
+}
+
+/// NAV-004 站点统计：当前可见口径下的真实计数。
+pub(crate) async fn site_statistics(
+    tx: &mut TransactionConnection<'_>,
+    r: &SchemaRenderer,
+) -> Result<crate::contract::SiteStatistics> {
+    let topics = table(tx, r, "topics")?;
+    let posts = table(tx, r, "posts")?;
+    let users = r
+        .table(tx.backend(), "identity", "users")
+        .map_err(|_| ContentError::Unavailable)?;
+    let count = |row: Option<platform_db::transaction::DbRow>| -> Result<i64> {
+        Ok(row.ok_or(ContentError::Unavailable)?.i64("count")?)
+    };
+    // 主题与回复只算已发布、未被审核处置、未删除的；回复排除首帖（floor_no = 1），
+    // 否则「主题 12 / 回复 24」里的回复数会把每个主题的首帖重复算进去。
+    let topics = count(tx.fetch_optional(&format!("SELECT COUNT(*) AS count FROM {topics} WHERE publication = ? AND moderation = ? AND deleted_at = ?"),
+        &[text("published"), text("normal"), date(DateTime::UNIX_EPOCH)]).await?)?;
+    let replies = count(tx.fetch_optional(&format!("SELECT COUNT(*) AS count FROM {posts} WHERE floor_no > 1 AND publication = ? AND moderation = ? AND deleted_at = ?"),
+        &[text("published"), text("normal"), date(DateTime::UNIX_EPOCH)]).await?)?;
+    let users = count(
+        tx.fetch_optional(
+            &format!("SELECT COUNT(*) AS count FROM {users} WHERE status = ?"),
+            &[text("active")],
+        )
+        .await?,
+    )?;
+    Ok(crate::contract::SiteStatistics {
+        topics,
+        replies,
+        users,
+    })
+}
+
 pub(crate) async fn candidates(
     tx: &mut TransactionConnection<'_>,
     r: &SchemaRenderer,
@@ -532,6 +590,18 @@ pub(crate) async fn candidates(
     let tag = filter.tag_id.unwrap_or(0);
     let owner = filter.owner_id.unwrap_or(0);
     let (sql, values) = if filter.kind == ListKind::Topics {
+        // DEC-030 的「热门」：累计阅读量降序，(阅读量, id) 组成 keyset 游标。
+        //
+        // 与其他视图不同，热门的排序键取自 topics.view_count 而不是不可变的
+        // topic_history：阅读量本来就会随时间变化，把它冻进历史表反而会让「热门」
+        // 停在过去某一刻。NAV-005 要求的是「不因新内容插入导致重复/漏项」——
+        // keyset 游标对插入是稳定的；一个主题的阅读量在翻页途中变化时可能被重复
+        // 或跳过，这是 DEC-030 选择「最简可解释口径」时接受的代价，不是缺陷。
+        //
+        // 已删除主题不进热门榜：它的正文已是占位（DEC-061），把它排上榜没有意义。
+        if filter.order == ListOrder::Hot {
+            return hot_candidates(tx, r, filter, sort, id, limit).await;
+        }
         let latest = i64::from(filter.order == ListOrder::LatestReply);
         let pinned = i64::from(filter.order == ListOrder::Pinned);
         let featured = i64::from(filter.order == ListOrder::Featured);

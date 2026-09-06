@@ -49,6 +49,8 @@ pub fn router<S: Clone + Send + Sync + 'static>(state: ContentWebState) -> Route
         "/new",
         "/pinned",
         "/featured",
+        // NAV-004 首页「热门」：DEC-030 的累计阅读量降序视图。
+        "/hot",
         "/forums/{slug}",
         "/tags/{slug}",
         // DEC-056：`/t/{id}` 是权威永久链接，不含版块段，因此移帖不会让旧链接失效。
@@ -361,6 +363,16 @@ async fn frame(
             page_href(&format!("/forums/{}", encode(&forum.slug)), theme, None),
         )
     }));
+    // NAV-004 站点统计。取不到时整段不渲染，而不是显示 0 冒充观测。
+    page.statistics = service
+        .site_statistics(Utc::now())
+        .await
+        .ok()
+        .map(|stats| view::SiteStats {
+            topics: stats.topics,
+            replies: stats.replies,
+            users: stats.users,
+        });
     page.latest = catalog
         .topics
         .iter()
@@ -555,6 +567,10 @@ async fn read(
                     filter.order = ListOrder::Featured;
                     page.title = "精华".into()
                 }
+                "hot" => {
+                    filter.order = ListOrder::Hot;
+                    page.title = "热门".into()
+                }
                 "forums" => {
                     let slug = decode_segment(parts[1])?;
                     let forum = catalog
@@ -664,6 +680,7 @@ async fn read(
                     ("最新主题", "/new", ListOrder::LatestTopic),
                     ("置顶", "/pinned", ListOrder::Pinned),
                     ("精华", "/featured", ListOrder::Featured),
+                    ("热门", "/hot", ListOrder::Hot),
                 ] {
                     let mut tab = link(label, page_href(href, page.theme, None));
                     tab.active = filter.order == order;

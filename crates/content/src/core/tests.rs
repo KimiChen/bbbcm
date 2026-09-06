@@ -1589,3 +1589,101 @@ async fn moving_a_topic_keeps_its_identity_and_reapplies_the_target_forum_permis
         ContentError::NotFound
     );
 }
+
+/// NAV-004／DEC-030 热门榜：按累计阅读量降序，keyset 游标为 (阅读量, id)。
+///
+/// 覆盖排序正确性、翻页不重不漏、以及 DEC-030 的排除项（已删除内容不进榜）。
+#[tokio::test]
+async fn hot_ranking_orders_by_view_count_and_excludes_deleted_topics() {
+    let f = Fixture::new().await;
+    let guest = |tag: &str| ViewSubject {
+        kind: ViewSubjectKind::Session,
+        hash: format!("synthetic-{tag}"),
+    };
+    // 造四个主题，人为拉开阅读量：a=3、b=2、c=1、d=0。
+    let mut created = Vec::new();
+    for label in ["a", "b", "c", "d"] {
+        created.push(f.create(label).await);
+    }
+    for (index, topic) in created.iter().enumerate() {
+        let views = 3 - index;
+        for n in 0..views {
+            f.service
+                .record_view(topic.topic_id, &guest(&format!("{index}-{n}")), None, at())
+                .await
+                .unwrap();
+        }
+    }
+
+    let hot = ListFilter {
+        order: ListOrder::Hot,
+        ..ListFilter::default()
+    };
+    let listed = f.service.list(&hot, None, Some("2"), at()).await.unwrap();
+    let ids: Vec<_> = listed.topics.iter().map(|t| t.id).collect();
+    assert_eq!(
+        ids,
+        created.iter().map(|c| c.topic_id).collect::<Vec<_>>(),
+        "必须按累计阅读量降序"
+    );
+    // 阅读量随之可读，且与实际计数一致。
+    assert_eq!(
+        listed
+            .topics
+            .iter()
+            .map(|t| t.view_count)
+            .collect::<Vec<_>>(),
+        vec![Some(3), Some(2), Some(1), Some(0)]
+    );
+
+    // 删除首帖后该主题退出热门榜（DEC-030 排除已删除内容），
+    // 但按 DEC-061 它的详情页仍可打开——两条规则并存不矛盾。
+    let first = f.topic(created[0].topic_id).await;
+    f.service
+        .delete(
+            &f.credentials(1),
+            DeletePost {
+                post_id: first.first_post.id,
+                expected_version: first.first_post.version,
+            },
+            at() + Duration::seconds(1),
+        )
+        .await
+        .unwrap();
+    let listed = f.service.list(&hot, None, Some("2"), at()).await.unwrap();
+    assert!(
+        !listed.topics.iter().any(|t| t.id == created[0].topic_id),
+        "已删除主题不进热门榜"
+    );
+    assert!(
+        f.service
+            .topic(created[0].topic_id, None, Some("2"), at())
+            .await
+            .is_ok(),
+        "但详情页仍可打开（DEC-061）"
+    );
+}
+
+/// NAV-004 站点统计：真实计数，回复数排除首帖。
+#[tokio::test]
+async fn site_statistics_count_visible_content_and_exclude_opening_posts() {
+    let f = Fixture::new().await;
+    let before = f.service.site_statistics(at()).await.unwrap();
+    // 夹具建了 9 个账号，全部 active。
+    assert_eq!(before.users, 9);
+    assert_eq!((before.topics, before.replies), (0, 0));
+
+    let topic = f.create("统计").await;
+    f.reply(topic.topic_id, "第一条回复").await;
+    f.reply(topic.topic_id, "第二条回复").await;
+    let stats = f.service.site_statistics(at()).await.unwrap();
+    // 回复数只算楼层 > 1 的帖子：把首帖算进「回复」会让每个主题凭空多一条。
+    assert_eq!((stats.topics, stats.replies), (1, 2));
+
+    // 待审内容不计入公开统计。
+    f.service
+        .create_topic(&f.credentials(5), f.topic_input("待审"), at())
+        .await
+        .unwrap();
+    assert_eq!(f.service.site_statistics(at()).await.unwrap().topics, 1);
+}

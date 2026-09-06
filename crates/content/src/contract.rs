@@ -532,6 +532,9 @@ pub enum ListOrder {
     LatestTopic,
     Pinned,
     Featured,
+    /// `NAV-004` 首页「热门」。按 `DEC-030`：MVP 取累计阅读量降序，
+    /// `(阅读量, id)` 组成 keyset 游标；时间衰减与互动权重留待 P1-A 重新评估。
+    Hot,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -539,6 +542,18 @@ pub enum ListKind {
     Topics,
     Replies,
 }
+/// 站点统计（`NAV-004` 右侧栏）。
+///
+/// 三项都是当前可见口径下的真实计数：主题与回复排除未发布、被审核处置与已删除的行，
+/// 用户数只算 active 账号。刻意不缓存也不预聚合——MVP 规模下一次 COUNT 足够，
+/// 而预聚合会引入「统计与实际不一致」这类难查的偏差。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SiteStatistics {
+    pub topics: i64,
+    pub replies: i64,
+    pub users: i64,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ListFilter {
     pub order: ListOrder,
