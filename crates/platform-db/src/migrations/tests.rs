@@ -552,7 +552,7 @@ async fn upgrades_a03_database_to_engine_and_flags_without_changing_old_data() {
         let result = migrate(&f.cfg, &current).await.unwrap();
         assert_eq!(
             result.applied,
-            [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+            [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
         );
         assert_eq!(result.skipped, [1]);
         let after = status(&f.cfg, &current).await.unwrap();

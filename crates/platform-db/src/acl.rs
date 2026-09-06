@@ -57,6 +57,7 @@ mod tests {
             include_str!("../../../db/migrations/postgres/0014_reports_and_cases.sql"),
             include_str!("../../../db/migrations/postgres/0015_enforcement_and_appeals.sql"),
             include_str!("../../../db/migrations/postgres/0016_iam.sql"),
+            include_str!("../../../db/migrations/postgres/0017_iam_seed.sql"),
         ]
         .join("\n");
         for prefix in ["bcm_", "review42_"] {

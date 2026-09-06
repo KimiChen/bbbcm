@@ -274,6 +274,17 @@ impl ManagementCapability {
     }
 }
 
+/// 管理动作的目标资源。
+///
+/// `forum_id` 必须是目标内容**当前**所属的版块（`03` §5：版块范围通过目标内容当前
+/// `forum_id` 验证）。移帖场景下这里传源版块——判断的是「你有没有权动这条内容」，
+/// 而不是「你能不能往那个版块放东西」。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ManagementTarget {
+    pub resource_id: i64,
+    pub forum_id: Option<i64>,
+}
+
 /// 已通过授权的管理操作者，仅携带审计所需的最小事实。
 ///
 /// 刻意不带角色名、权限集合或会话信息：内容领域拿到它只是为了把「谁做的」写进审计，
@@ -446,6 +457,7 @@ pub trait ContentAuthority: Send + Sync {
         tx: &'a mut TransactionConnection<'_>,
         credentials: &'a Credentials,
         capability: ManagementCapability,
+        target: ManagementTarget,
         now: DateTime<Utc>,
     ) -> FutureResult<'a, ManagementActor>;
 

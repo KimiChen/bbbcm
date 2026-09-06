@@ -9,7 +9,12 @@ publish.workspace = true
 [dependencies]
 axum.workspace = true
 platform.workspace = true
+thiserror.workspace = true
+platform-db.workspace = true
 chrono.workspace = true
+
+[dev-dependencies]
+tokio.workspace = true
 
 [build-dependencies]
 toml.workspace = true

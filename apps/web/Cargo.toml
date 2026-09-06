@@ -16,6 +16,7 @@ identity.workspace = true
 interaction.workspace = true
 media.workspace = true
 moderation.workspace = true
+manage.workspace = true
 platform.workspace = true
 platform-db.workspace = true
 platform-outbox.workspace = true

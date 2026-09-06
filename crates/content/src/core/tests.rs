@@ -69,6 +69,7 @@ impl ContentAuthority for SyntheticAuthority {
         _tx: &'a mut TransactionConnection<'_>,
         credentials: &'a Credentials,
         _capability: ManagementCapability,
+        target: ManagementTarget,
         _now: DateTime<Utc>,
     ) -> FutureResult<'a, ManagementActor> {
         Box::pin(async move {
@@ -83,6 +84,12 @@ impl ContentAuthority for SyntheticAuthority {
             if user_id != 1 {
                 return Err(ContentError::Forbidden);
             }
+            // 目标必须带上当前所属版块，否则 ABAC 的版块范围无从判定。
+            // 合成授权在这里断言这一点，防止调用方漏传。
+            assert!(
+                target.forum_id.is_some() && target.resource_id > 0,
+                "管理授权必须带上目标资源与其当前版块"
+            );
             Ok(ManagementActor { user_id })
         })
     }

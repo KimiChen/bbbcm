@@ -27,6 +27,9 @@ pub struct Role {
 include!(concat!(env!("OUT_DIR"), "/registry.rs"));
 
 pub mod authorize;
+pub mod commands;
+pub mod contract;
+pub mod repo;
 
 /// 按键查权限。未登记的键返回 `None`——闭合 registry 意味着「查不到就是没有」，
 /// 绝不因为字符串看起来合理就放行。

@@ -7,25 +7,13 @@ use platform::{analytics::TrustedExclusions, identifiers::SchemaRenderer};
 use platform_db::transaction::TransactionConnection;
 use std::sync::Arc;
 
-/// 管理权限判定的最小载体。
+/// 内容领域的管理能力到 registry 权限键的映射。
 ///
-/// DEC-058 批准的完整方案是「仓库内单一 TOML registry 构建期生成 Rust 枚举与数据库种子」，
-/// 那属于 `WP-MVP-D01`。本类型只是内容领域调用管理命令时的判定接口占位实现所需的形状，
-/// 当前唯一构造入口是显式标注的合成测试；生产装配保持 `None`，管理命令整体失败关闭。
-#[derive(Clone, Copy)]
-pub struct ManagementRegistry {
-    /// 合成测试中被授予全部管理能力的账号。真实 registry 落地后本字段整体替换。
-    synthetic_operator: i64,
-}
-impl ManagementRegistry {
-    #[cfg(test)]
-    pub fn synthetic(operator: i64) -> Self {
-        Self {
-            synthetic_operator: operator,
-        }
-    }
-    fn permits(&self, user_id: i64, _capability: ManagementCapability) -> bool {
-        self.synthetic_operator > 0 && self.synthetic_operator == user_id
+/// 映射写在这里而不是内容领域里：内容领域只声明「我需要移动主题这项能力」，
+/// 具体对应哪个权限键、哪些角色持有它，是 `DEC-058` registry 的事。
+fn permission_key(capability: ManagementCapability) -> &'static str {
+    match capability {
+        ManagementCapability::MoveTopic => "community.content.move",
     }
 }
 
@@ -42,8 +30,11 @@ pub struct ApplicationContentAuthority {
     /// 逐用户的隐私设置入口属于后续波次，因此当前这里承载的是账号级默认值；
     /// 取 `None` 时相应投影一律关闭，绝不臆造一个 Public 事实。
     author_default: Option<Visibility>,
-    /// 管理权限判定。`None` 表示权限 registry 尚未装配，所有管理命令失败关闭。
-    management: Option<ManagementRegistry>,
+    /// 是否已接入 `DEC-058` 的权限 registry。
+    ///
+    /// `false` 表示授权底座未装配，所有管理命令整体失败关闭——这不是占位，
+    /// 而是显式的未装配态，绝不允许「找不到权限规则就放行」。
+    management: bool,
 }
 impl ApplicationContentAuthority {
     /// 按 DEC-054／DEC-060 已批准事实装配的正常构造入口。
@@ -56,8 +47,8 @@ impl ApplicationContentAuthority {
             renderer,
             risk_rule_version: Some(crate::content_risk::APPROVED_RATE_VERSION),
             author_default: Some(Visibility::Public),
-            // 权限 registry 属 WP-MVP-D01，本轮未装配：管理命令失败关闭。
-            management: None,
+            // DEC-058 权限 registry 已装配：管理命令走十步授权求值。
+            management: true,
         }
     }
     /// 未装配的授权对象，仅测试使用。
@@ -70,7 +61,7 @@ impl ApplicationContentAuthority {
             renderer,
             risk_rule_version: None,
             author_default: None,
-            management: None,
+            management: false,
         }
     }
     #[cfg(test)]
@@ -79,7 +70,7 @@ impl ApplicationContentAuthority {
             renderer,
             risk_rule_version: Some(1),
             author_default: Some(Visibility::Public),
-            management: Some(ManagementRegistry::synthetic(1)),
+            management: true,
         }
     }
 }
@@ -116,26 +107,74 @@ impl ContentAuthority for ApplicationContentAuthority {
         tx: &'a mut TransactionConnection<'_>,
         credentials: &'a Credentials,
         capability: ManagementCapability,
+        target: ManagementTarget,
         now: DateTime<Utc>,
     ) -> FutureResult<'a, ManagementActor> {
         Box::pin(async move {
-            let registry = self.management.ok_or(ContentError::PolicyPending)?;
-            // 与内容写路径同一条身份校验：重读会话、校验 CSRF、要求邮箱已验证，
-            // 并在同事务内取得身份根锁，避免用事务外快照冒充当前权限。
-            let user = identity::core::authorize_content_identity(
+            if !self.management {
+                // 授权底座未装配：整体失败关闭，不做任何猜测。
+                return Err(ContentError::PolicyPending);
+            }
+            // 管理动作走独立的管理会话（03 §6），不接受普通会话。
+            // 会话令牌与 CSRF 复用同一组凭据字段，但校验路径完全独立。
+            let identity = identity::management::authorize_management_session(
                 tx,
                 &self.renderer,
                 credentials.session_token.expose(),
-                credentials.csrf.expose(),
                 now,
             )
             .await
             .map_err(failure)?;
-            if !registry.permits(user.user_id(), capability) {
+            identity
+                .check_csrf(credentials.csrf.expose())
+                .map_err(failure)?;
+            // AUTH-014：未完成 TOTP 绑定前只能访问绑定流程，任何管理动作一律拒绝。
+            if identity.access != identity::management::ManagementAccess::Ready {
+                return Err(ContentError::Forbidden);
+            }
+            // 03 §4：授权所需事实必须在最终写入事务内重新读取，不接受事务外快照。
+            //
+            // `session_authz_version` 直接取账号当前值：管理会话的有效性刚刚校验过，
+            // 而 `authz_version` 的作用是让**权限变更**使旧会话失效——变更会同时递增
+            // 账号版本并撤销会话，因此这里读到的就是本次会话对应的版本。
+            let key = permission_key(capability);
+            let version = manage::iam::repo::account_authz(tx, &self.renderer, identity.user_id)
+                .await
+                .map_err(|_| ContentError::Unavailable)?
+                .map(|(_, version)| version)
+                .unwrap_or_default();
+            let facts = manage::iam::repo::collect_facts(
+                tx,
+                &self.renderer,
+                identity.user_id,
+                true,
+                true,
+                version,
+                true,
+                key,
+                "content",
+                target.resource_id,
+                now,
+            )
+            .await
+            .map_err(|_| ContentError::Unavailable)?;
+            if manage::iam::authorize::authorize(
+                &manage::iam::authorize::AuthorizationRequest {
+                    actor_id: identity.user_id,
+                    permission_key: key,
+                    resource_type: "content",
+                    resource_id: target.resource_id,
+                    // ABAC 版块范围按目标当前所属版块判定（03 §5）。
+                    forum_id: target.forum_id,
+                },
+                &facts,
+                now,
+            ) != manage::iam::authorize::Decision::Allowed
+            {
                 return Err(ContentError::Forbidden);
             }
             Ok(ManagementActor {
-                user_id: user.user_id(),
+                user_id: identity.user_id,
             })
         })
     }

@@ -534,16 +534,28 @@ impl ContentService {
         now: DateTime<Utc>,
     ) -> Result<MutationResult, ContentError> {
         self.flags(tx, None).await?;
+        // 先读出目标当前所属版块，再做授权：ABAC 的版块范围要按「目标此刻在哪」判断，
+        // 而不是按调用方声称的版块（`03` §5）。这次读取不加锁，随后的写路径会在
+        // 取得版块与主题锁后重读并做版本 CAS，因此不存在 TOCTOU 放行。
+        let source = repo::topic(tx, &self.renderer, topic_id)
+            .await?
+            .ok_or(ContentError::NotFound)?;
         let actor = self
             .authority
-            .authorize_management(tx, credentials, ManagementCapability::MoveTopic, now)
+            .authorize_management(
+                tx,
+                credentials,
+                ManagementCapability::MoveTopic,
+                ManagementTarget {
+                    resource_id: topic_id,
+                    forum_id: Some(source.forum_id),
+                },
+                now,
+            )
             .await?;
         let ctx = self
             .context(tx, Some(credentials.session_token.expose()), now)
             .await?;
-        let source = repo::topic(tx, &self.renderer, topic_id)
-            .await?
-            .ok_or(ContentError::NotFound)?;
         if source.forum_id == target_forum_id {
             // 移到原版块没有任何状态变化，直接拒绝而不是写一条空审计。
             return Err(ContentError::InvalidInput);

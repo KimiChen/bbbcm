@@ -308,6 +308,7 @@ dependencies = [
  "hmac",
  "identity",
  "interaction",
+ "manage",
  "media",
  "moderation",
  "platform",
@@ -1340,7 +1341,10 @@ dependencies = [
  "axum",
  "chrono",
  "platform",
+ "platform-db",
  "serde",
+ "thiserror",
+ "tokio",
  "toml",
 ]
 
