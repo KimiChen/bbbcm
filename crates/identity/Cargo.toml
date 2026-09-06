@@ -24,6 +24,8 @@ hmac.workspace = true
 
 [dev-dependencies]
 tokio.workspace = true
+# E01 并发夹具解析端点主机做回环校验；不新增 registry 包。
+url.workspace = true
 sqlx.workspace = true
 platform-outbox.workspace = true
 tokio-util.workspace = true

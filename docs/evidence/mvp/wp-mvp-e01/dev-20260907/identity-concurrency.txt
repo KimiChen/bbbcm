@@ -1,0 +1,27 @@
+# WP-MVP-E01 并发矩阵：identity 三项（2026-09-07）
+
+- 服务端：PostgreSQL 16.15（自建 pg_jieba 镜像），一次性容器，本机回环
+- 每项 8 路并发，各自独立的预认证上下文，避免失败来自 CSRF 而非并发
+- 命令：`cargo test -p identity --lib concurrency_tests -- --ignored --test-threads=1`
+
+```
+test concurrency_tests::concurrent_email_verification_consumes_the_token_once ... ok
+test concurrency_tests::concurrent_password_reset_consumes_the_token_once ... ok
+test concurrency_tests::concurrent_registrations_consume_one_invitation_once ... ok
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 57 filtered out; finished in 8.30s
+```
+
+| 用例 | 断言 |
+|---|---|
+| 邮箱验证 | 8 路并发消费同一枚 `verify_email` 令牌，恰好一次成功；并额外回读该行的 `consumed` 必须为真——只看返回值排除不了「第二次也写了、只是返回幂等重放」。 |
+| 密码恢复 | 8 路并发消费同一枚 `reset_password` 令牌（各带不同新密码），恰好一次成功；并发结束后再单独试一次必须仍然失败，把一次性验到底。 |
+| 邀请码消费/额度 | 8 路并发注册消费同一枚邀请码，用户名与邮箱各不相同以避开唯一索引先行拦截；恰好一次成功，且实际只新增一个账号。 |
+
+## 夹具要点
+
+- 每次建夹具先以迁移身份 `DROP SCHEMA … CASCADE` 重建：夹具播种的用户名为固定值
+  （被大量既有断言依赖，不能改随机），共用一个 PostgreSQL schema 会让三个用例互相踩。
+- Feature Flag 以迁移身份开启：运行角色对 `platform.feature_flags` 只有 SELECT
+  （`0003_flags.sql:22`）。这不是缺陷，`bbbcm-cli flag set` 本就随 A02 才接入。
+- 时间基准复用夹具的固定 `at()`，不用 `Utc::now()`：邀请码签发于该时刻、两天后过期，
+  用真实当前时间会让它已过期，测的就变成过期校验而非并发消费。

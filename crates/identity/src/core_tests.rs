@@ -105,6 +105,10 @@ pub(crate) struct Fixture {
     pub(crate) service: IdentityService,
     pub(crate) issuer: Arc<TokenIssuer>,
     invite: Secret,
+    /// 仅 PostgreSQL 夹具持有：Feature Flag 与版块一样是运维维护的数据，
+    /// 运行角色只被授予 SELECT（`0003_flags.sql:22`），开 Flag 必须换迁移身份。
+    /// SQLite 没有表级授权，因此为 `None`，走原来的应用连接即可。
+    migrator_url: Option<String>,
 }
 impl Fixture {
     pub(crate) async fn new() -> Self {
@@ -114,12 +118,97 @@ impl Fixture {
         let mut cfg = Config::default().database;
         cfg.sqlite_path = dir.join("identity.sqlite3").to_string_lossy().into();
         cfg.schema_prefix = "idtest_".into();
+        Self::build(cfg, dir).await
+    }
+
+    /// `WP-MVP-E01` 并发矩阵专用：把同一套夹具搭在真实 PostgreSQL 上。
+    ///
+    /// 返回 `None` 表示运行者没有提供隔离端点，调用方应跳过——**不是**测试通过。
+    /// 闸门与前置同 `docs/development/postgres.md`：显式隔离确认、回环地址、
+    /// 运行/迁移两个登录身份、以及为本轮新建且已预置角色的随机前缀。
+    ///
+    /// 为什么必须用真实 PostgreSQL：SQLite 是单写者，所有「两个请求同时抢同一个
+    /// 一次性令牌／同一份邀请额度」的分支都会被串行化掉，永远走不到。
+    pub(crate) async fn new_postgres() -> Option<Self> {
+        if std::env::var("POSTGRES_CONTRACT_ISOLATED").ok().as_deref() != Some("yes") {
+            return None;
+        }
+        let prefix = std::env::var("POSTGRES_CONTRACT_ALT_PREFIX").ok()?;
+        let loopback = |raw: String| -> String {
+            let raw = raw.replace("{prefix}", &prefix);
+            let parsed = url::Url::parse(&raw).expect("端点 URL 非法");
+            assert!(
+                parsed.host_str().is_some_and(|h| h
+                    .parse::<std::net::IpAddr>()
+                    .is_ok_and(|ip| ip.is_loopback())),
+                "只允许字面回环 IP"
+            );
+            raw
+        };
+        let app = loopback(std::env::var("POSTGRES_CONTRACT_URL").ok()?);
+        let migrator = loopback(std::env::var("POSTGRES_CONTRACT_MIGRATOR_URL").ok()?);
+
+        let mut cfg = Config::default().database;
+        cfg.backend = platform::db::Backend::Postgres;
+        cfg.schema_prefix = prefix;
+
+        // 同一前缀被本模块的多个用例复用，而夹具播种的用户名/邮箱是固定值
+        // （`ordinary_inviter`、`ordinary_member` 等，被大量既有断言依赖，不能改成随机）。
+        // 因此每次建夹具先以**迁移身份**把整套 schema 删掉重建，让各用例彼此独立。
+        // 用裸 sqlx 是因为 `DbTransaction` 只允许 DML；`SET ROLE` 是必需的：
+        // 登录角色是 NOINHERIT，不会自动获得 migrator 的属主权限。
+        {
+            use sqlx::Connection as _;
+            let renderer = SchemaRenderer::new(&cfg.schema_prefix).unwrap();
+            let mut raw = sqlx::PgConnection::connect(&migrator).await.unwrap();
+            sqlx::query(&format!("SET ROLE {}", renderer.role("migrator").unwrap()))
+                .execute(&mut raw)
+                .await
+                .unwrap();
+            for schema in platform::identifiers::LOGICAL_SCHEMAS {
+                sqlx::query(&format!(
+                    "DROP SCHEMA IF EXISTS {} CASCADE",
+                    renderer.schema(schema).unwrap()
+                ))
+                .execute(&mut raw)
+                .await
+                .unwrap();
+            }
+            raw.close().await.unwrap();
+        }
+        // 迁移与运行必须是两个登录身份（见运行手册）：迁移先跑，随后换回运行身份。
+        cfg.postgres_url = Some(platform::config::SecretString::new(migrator.clone()));
+        cfg.max_connections = 4;
         platform_db::migrations::migrate(
             &cfg,
             &Path::new(env!("CARGO_MANIFEST_DIR")).join("../../db/migrations"),
         )
         .await
         .unwrap();
+        cfg.postgres_url = Some(platform::config::SecretString::new(app));
+        // 并发用例要打满连接，单连接会把争用退化成排队。
+        cfg.max_connections = 12;
+        let dir = std::env::temp_dir().join(format!("bbbcm-identity-pg-{}", new_operation_id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        Some(Self::build_connected(cfg, dir, Some(migrator)).await)
+    }
+
+    async fn build(cfg: platform::config::DatabaseConfig, dir: PathBuf) -> Self {
+        platform_db::migrations::migrate(
+            &cfg,
+            &Path::new(env!("CARGO_MANIFEST_DIR")).join("../../db/migrations"),
+        )
+        .await
+        .unwrap();
+        Self::build_connected(cfg, dir, None).await
+    }
+
+    /// 迁移已完成后的公共装配：连接、建服务、播种邀请人与一张邀请码。
+    async fn build_connected(
+        cfg: platform::config::DatabaseConfig,
+        dir: PathBuf,
+        migrator_url: Option<String>,
+    ) -> Self {
         let pool = Pool::connect(&cfg).await.unwrap();
         let r = SchemaRenderer::new(&cfg.schema_prefix).unwrap();
         let engine = Arc::new(PasswordEngine::new(8, Arc::new(DisabledPasswordScreen)).unwrap());
@@ -157,15 +246,42 @@ impl Fixture {
             service,
             issuer,
             invite,
+            migrator_url,
         }
     }
     pub(crate) async fn enable(&self) {
+        const KEYS: [&str; 3] = ["public_read", "registration", "email_verification"];
+        // PostgreSQL 上运行角色对 feature_flags 只有 SELECT，必须以迁移身份改。
+        // 这不是缺陷：Flag 是运维数据，`bbbcm-cli flag set` 本就随 A02 才接入。
+        if let Some(url) = &self.migrator_url {
+            use sqlx::Connection as _;
+            let mut raw = sqlx::PgConnection::connect(url).await.unwrap();
+            sqlx::query(&format!("SET ROLE {}", self.r.role("migrator").unwrap()))
+                .execute(&mut raw)
+                .await
+                .unwrap();
+            let t = self
+                .r
+                .table(platform::db::Backend::Postgres, "platform", "feature_flags")
+                .unwrap();
+            for key in KEYS {
+                sqlx::query(&format!(
+                    "UPDATE {t} SET enabled = true, version = version + 1 WHERE flag_key = $1"
+                ))
+                .bind(key)
+                .execute(&mut raw)
+                .await
+                .unwrap();
+            }
+            raw.close().await.unwrap();
+            return;
+        }
         let mut tx = DbTransaction::begin(&self.pool).await.unwrap();
         let t = self
             .r
             .table(tx.connection().backend(), "platform", "feature_flags")
             .unwrap();
-        for key in ["public_read", "registration", "email_verification"] {
+        for key in KEYS {
             tx.connection()
                 .execute(
                     &format!(

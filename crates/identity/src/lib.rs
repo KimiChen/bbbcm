@@ -29,6 +29,8 @@ pub mod mail_source;
 pub mod rate;
 
 #[cfg(test)]
+mod concurrency_tests;
+#[cfg(test)]
 mod core_tests;
 
 #[cfg(test)]
