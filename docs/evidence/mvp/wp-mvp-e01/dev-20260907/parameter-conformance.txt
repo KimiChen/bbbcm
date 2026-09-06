@@ -1,0 +1,37 @@
+# WP-MVP-E01 固定指标：参数门槛一致性（2026-09-07）
+
+载体：`apps/web/src/parameter_conformance_tests.rs`。
+
+`90` §6 的表格分两类。**负载与延迟门槛**（200 read/s、公开读 p95 ≤400ms、
+100 万主题基线…）需要经批准的资源规格——表末已写明「规格未批准时只能形成实验结果，
+不能支持 Production Approved」，因此属 `WP-MVP-E02`，本载体不涉及。
+
+**已批准的固定取值**此刻就能权威核验，而且必须核验：这些数字散落在四个 crate 的
+常量里，文档与代码各改各的，谁也不会报错。
+
+```
+test parameter_conformance_tests::external_link_thresholds_match_the_approved_table ... ok
+test parameter_conformance_tests::trust_tier_promotion_thresholds_match_the_approved_table ... ok
+test parameter_conformance_tests::management_session_thresholds_match_the_approved_table ... ok
+test parameter_conformance_tests::publishing_quota_thresholds_match_the_approved_table ... ok
+test parameter_conformance_tests::content_length_and_window_thresholds_match_the_approved_table ... ok
+test parameter_conformance_tests::four_dimension_abuse_budgets_match_the_approved_table ... ok
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 44 filtered out; finished in 0.00s
+```
+
+| 用例 | 钉住的 90 §6 参数 |
+|---|---|
+| 内容长度与窗口 | 标题 5–120、正文 10–50000、回复 2–10000、标签 ≤5、本人编辑/删除窗口 30 分钟 |
+| 发布额度 | T0 每日 5/20、24 小时内 1/5、T1 每日 20/100、UTC 零点分日、待审计入、pending 不得发布 |
+| 外链门槛 | T0 每帖 1 个、T1 每帖 10 个 |
+| T1 授予门槛 | 账号满 2 个自然日 + 5 条有效贡献 |
+| 管理会话 | 最长 8 小时、空闲 15 分钟、高危重新认证 5 分钟内 |
+| 四维反滥用预算 | 主题 10/30/15/100、回复 60/150/90/500、编辑与删除各 30/75/45/250、IPv4 /24、IPv6 /64 |
+
+四维预算一项连**补充间隔**一并断言：只对容量不对间隔的话，把周期从 1 小时改成 1 天
+也不会被发现。
+
+## 边界说明
+
+这不是行为测试——它不验证参数被正确执行（那由各领域用例负责），
+只验证「实现里的取值等于计划批准的取值」。两者都需要，缺一不可。

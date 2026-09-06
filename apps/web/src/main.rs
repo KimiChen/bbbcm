@@ -24,6 +24,8 @@ mod middleware;
 mod moderation_authority;
 #[cfg(test)]
 mod moderation_runtime_tests;
+#[cfg(test)]
+mod parameter_conformance_tests;
 mod router;
 #[cfg(test)]
 mod security_tests;
