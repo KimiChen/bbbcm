@@ -838,6 +838,154 @@ impl IdentityService {
             replayed: result.replayed,
         })
     }
+    /// `03` §6 的独立管理登录。
+    ///
+    /// 与普通登录**共用同一条密码校验路径**：同一个 `PasswordEngine::verify`、
+    /// 同一套四维限流与风险事件、同样的固定成本比较（账号不存在时也传 `None`
+    /// 走一遍完整工作量，避免用响应时间区分账号是否存在）。区别只有三处：
+    ///   1. 额外要求目标账号是 active 的 staff principal；
+    ///   2. 建立的是管理会话（8 小时绝对 / 15 分钟空闲），不是普通用户会话；
+    ///   3. 返回值带上是否已完成 TOTP 绑定，供调用方决定跳绑定流程还是首页。
+    ///
+    /// 不是 staff、账号不存在、密码错误三种情况返回**同一个** `Unauthenticated`：
+    /// 区分它们等于把 `/manage/login` 变成一个「谁是管理员」的探测接口。
+    pub async fn management_login(
+        &self,
+        context: &RequestContext,
+        input: LoginInput,
+        now: DateTime<Utc>,
+    ) -> Result<ManagementLoginResult, IdentityError> {
+        let now = normalized_now(now);
+        let is_email = input.identifier.contains('@');
+        let normalized = if is_email {
+            self.policy.email(&input.identifier)
+        } else {
+            self.policy.username(&input.identifier)
+        };
+        let mut tx = DbTransaction::begin_read(&self.pool).await?;
+        let account = if let Ok(ref key) = normalized {
+            repo::account_by_identifier(&mut tx.connection(), &self.renderer, &key.key, is_email)
+                .await?
+        } else {
+            None
+        };
+        let hash = match &account {
+            Some(a) => repo::password_hash(&mut tx.connection(), &self.renderer, a.id).await?,
+            None => None,
+        };
+        tx.rollback().await?;
+        // 与普通登录逐字相同的固定成本比较：硬限流时传 None，同样跑满一次校验工作量。
+        let password_ok = self.passwords.verify(
+            input.password.expose(),
+            if context.hard_rate_limited {
+                None
+            } else {
+                hash.as_deref()
+            },
+        );
+        let account = account.filter(|a| a.status == "active" && password_ok);
+        let canonical = serde_json::to_vec(&(&input.identifier, input.password.expose(), "manage"))
+            .map_err(|_| IdentityError::Rejected)?;
+        let challenge = self
+            .prepare_challenge(
+                context,
+                crate::challenge::ChallengeAction::Login,
+                &canonical,
+                now,
+            )
+            .await?;
+        let command = self
+            .public_command(context, "identity.manage.login", &canonical, now)
+            .await?;
+        if crate::challenge::hard_blocked(context, challenge.as_ref()) {
+            return Err(IdentityError::Rejected);
+        }
+        let token = random_secret();
+        let csrf = random_secret();
+        let service = self.clone();
+        let context = context.clone();
+        let raw_token = token.expose().to_owned();
+        let raw_csrf = csrf.expose().to_owned();
+        let lock_plan = account.as_ref().map(|a| locks(a.id)).unwrap_or_default();
+        let outcome = execute_command(
+            &self.pool,
+            &self.renderer,
+            &command,
+            &lock_plan,
+            now,
+            move |tx| {
+                let service = service.clone();
+                let context = context.clone();
+                let account = account.clone();
+                let challenge = challenge.clone();
+                let raw_token = raw_token.clone();
+                let raw_csrf = raw_csrf.clone();
+                Box::pin(async move {
+                    if context.hard_rate_limited {
+                        return Err(TransactionError::InvalidInput);
+                    }
+                    repo::principal(tx, &service.renderer, &context, now).await?;
+                    assert_flags(tx, &service.renderer, &[Flag::PublicRead]).await?;
+                    service
+                        .consume_challenge(tx, challenge.as_ref(), now)
+                        .await?;
+                    let risk = record_risk(
+                        tx,
+                        &service,
+                        account.as_ref().map(|a| a.id),
+                        trust::risk::RiskEventKind::Login,
+                        context.risk_signals.clone(),
+                        now,
+                    )
+                    .await?;
+                    if !risk.decision().allowed() {
+                        return Ok(risk_response(&risk));
+                    }
+                    let Some(account) = account else {
+                        return Ok(rejected_response());
+                    };
+                    let current = repo::account_by_id(tx, &service.renderer, account.id)
+                        .await?
+                        .ok_or(TransactionError::InvalidInput)?;
+                    if current.status != "active"
+                        || current.credential_version != account.credential_version
+                    {
+                        return Ok(rejected_response());
+                    }
+                    // 管理会话的额外前提：目标必须是 active 的 staff principal。
+                    // `open_management_session` 内部再查一次，这里不预判也不缓存结果。
+                    match crate::management::open_management_session(
+                        tx,
+                        &service.renderer,
+                        current.id,
+                        &raw_token,
+                        &raw_csrf,
+                        now,
+                    )
+                    .await
+                    {
+                        Ok(access) => Ok(response(Some(match access {
+                            crate::management::ManagementAccess::Ready => "ready",
+                            crate::management::ManagementAccess::BindingRequired => "binding",
+                        }))),
+                        // 不是 staff：与密码错误返回同一种结果，不泄露谁是管理员。
+                        Err(_) => Ok(rejected_response()),
+                    }
+                })
+            },
+        )
+        .await?;
+        let result = mutation(outcome)?;
+        let Some(access) = result.resource_ref.as_deref() else {
+            return Err(IdentityError::Unauthenticated);
+        };
+        Ok(ManagementLoginResult {
+            token,
+            csrf,
+            bound: access == "ready",
+        })
+    }
+
     pub async fn request_reset(
         &self,
         context: &RequestContext,

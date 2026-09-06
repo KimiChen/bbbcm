@@ -186,6 +186,23 @@ pub struct MutationResult {
     pub resource_ref: Option<String>,
     pub replayed: bool,
 }
+
+/// 管理登录成功的结果（`03` §6）。
+///
+/// 原始令牌只在这里出现一次，由调用方立即写进独立的管理 cookie；
+/// 库中只存哈希。`bound` 为假时调用方必须把用户引到 TOTP 绑定流程（`AUTH-014`）。
+pub struct ManagementLoginResult {
+    pub token: Secret,
+    pub csrf: Secret,
+    pub bound: bool,
+}
+impl std::fmt::Debug for ManagementLoginResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ManagementLoginResult")
+            .field("bound", &self.bound)
+            .finish_non_exhaustive()
+    }
+}
 /// 字段私有：只有数据库重读且检查有效的core能构造身份；客户端不能声明owner。
 #[derive(Clone)]
 pub struct SessionIdentity {

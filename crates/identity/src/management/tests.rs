@@ -382,3 +382,49 @@ fn decode_base32(input: &str) -> Vec<u8> {
 fn totp_code(secret: &[u8], step: i64) -> String {
     format!("{:06}", mfa::code_at(secret, step).unwrap())
 }
+
+/// `03` §6 管理登录：不是 staff 的账号即便密码正确也建立不了管理会话。
+///
+/// 这条验证的是「管理会话与普通会话是两套凭据体系」——普通账号无论如何都进不了
+/// 管理体系，而不是靠界面隐藏入口。
+#[tokio::test]
+async fn management_session_requires_an_active_staff_principal() {
+    let f = Fixture::new().await;
+    let mut tx = DbTransaction::begin(&f.pool).await.unwrap();
+    let mut c = tx.connection();
+
+    // 账号 b 从未被提权：开不了管理会话。
+    assert!(
+        open_management_session(&mut c, &f.renderer, f.b, "session-b", "csrf-b", at())
+            .await
+            .is_err()
+    );
+    // 提权后可以。
+    bootstrap_first_owner(&mut c, &f.renderer, f.b, at())
+        .await
+        .unwrap();
+    assert_eq!(
+        open_management_session(&mut c, &f.renderer, f.b, "session-b", "csrf-b", at())
+            .await
+            .unwrap(),
+        ManagementAccess::BindingRequired
+    );
+
+    // principal 被停用后，既有会话立即校验失败——不需要逐个撤销会话。
+    let t = f
+        .renderer
+        .table(c.backend(), "identity", "staff_principals")
+        .unwrap();
+    c.execute(
+        &format!("UPDATE {t} SET status = 'suspended', version = version + 1 WHERE user_id = ?"),
+        &[DbValue::I64(f.b)],
+    )
+    .await
+    .unwrap();
+    assert!(
+        authorize_management_session(&mut c, &f.renderer, "session-b", at())
+            .await
+            .is_err()
+    );
+    tx.rollback().await.unwrap();
+}

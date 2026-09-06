@@ -82,6 +82,7 @@ pub async fn connect(state: &mut AppState) {
             .as_ref()
             .map(|key| key.as_bytes().to_vec()),
         content: service,
+        identity: state.identity.service.clone(),
     }));
 }
 
@@ -93,6 +94,8 @@ struct Backend {
     mfa: Option<Vec<u8>>,
     /// 内容服务。移帖命令自带事务、锁序、审计与授权，控制台直接调用它。
     content: Arc<content::core::ContentService>,
+    /// 身份服务。管理登录复用它的密码校验与限流路径，不另建一条。
+    identity: Option<Arc<identity::core::IdentityService>>,
 }
 
 fn status_label(status: moderation::cases::CaseStatus) -> &'static str {
@@ -147,14 +150,39 @@ impl ConsoleBackend for Backend {
 
     fn login<'a>(
         &'a self,
-        _username: &'a str,
-        _password: &'a str,
+        username: &'a str,
+        password: &'a str,
     ) -> BoxFuture<'a, Result<(String, String, bool), ConsoleError>> {
         Box::pin(async move {
-            // 管理登录需要复用普通身份的密码校验路径（含固定成本比较与四维限流），
-            // 那条路径当前只暴露给普通会话签发。把它安全地抽出来给管理侧复用属
-            // WP-MVP-B03 的剩余工作，本轮不做半套：一律拒绝，不放行任何登录。
-            Err(ConsoleError::Unavailable)
+            let identity = self.identity.as_ref().ok_or(ConsoleError::Unavailable)?;
+            // 复用与普通登录完全相同的请求上下文构造：四维限流、风险信号与挑战
+            // 都在这一层生效，管理登录不走任何简化路径。
+            let context = identity::contract::RequestContext::new(
+                identity::contract::Secret::from(platform::transaction::new_operation_id()),
+                identity::contract::Secret::from(platform::transaction::new_operation_id()),
+                platform::transaction::new_operation_id(),
+            );
+            identity
+                .management_login(
+                    &context,
+                    identity::contract::LoginInput {
+                        identifier: username.to_owned(),
+                        password: identity::contract::Secret::from(password.to_owned()),
+                        device_summary: "unknown".into(),
+                    },
+                    Utc::now(),
+                )
+                .await
+                .map(|result| {
+                    (
+                        result.token.expose().to_owned(),
+                        result.csrf.expose().to_owned(),
+                        result.bound,
+                    )
+                })
+                // 账号不存在、不是 staff、密码错误在这里已经收敛成同一个错误，
+                // 控制台再统一成一句「登录失败」，不给任何区分线索。
+                .map_err(|_| ConsoleError::Unauthenticated)
         })
     }
 
