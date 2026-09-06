@@ -1262,6 +1262,7 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 |---|---|
 | 真实 Redis 8 合同（`crates/platform/tests/redis_contract.rs`） | **通过**。在 `127.0.0.1:6399` 的隔离实例上执行（独立数据目录、关闭 RDB/AOF 持久化），覆盖原子性、命名空间隔离与恢复。测试自身强制要求显式隔离确认、回环地址与 `redis_version:8.` 大版本断言，非回环端点一律拒绝。运行版本口径见 `DEC-063`。 |
 | 真实 PostgreSQL 16 集成（`crates/platform-db/tests/postgres_contract.rs`） | **通过，11/11**。服务端为供应链锁定镜像 `postgres@sha256:421b84e0…`（`PG_VERSION=16.15`，UTF8 / C.UTF-8），一次性容器 + tmpfs 数据目录，经本机回环 `127.0.0.1:5433` 连接，取证后销毁。默认 `bcm_` 与本次运行新建的随机非默认前缀并存。运行身份 `<prefix>app_login` 仅属 `app_rw`，迁移身份 `<prefix>mig_login` 仅属 `migrator`，均为 `INHERIT FALSE` / `SET TRUE`。证据见 [`postgres-contract.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/postgres-contract.txt)，运行手册见 [`docs/development/postgres.md`](../docs/development/postgres.md)。 |
+| 并发矩阵：Outbox lease | **通过**。120 条事件 / 8 路 Worker 并发 `claim`，四层断言：反空转（八路全部领到，非单线程退化）、至多一次（无重复租约）、不饿死（120 条全部领走）、两两不相交。数据库侧复核状态全为 `leased` 且计数相符。证据见 [`postgres-concurrency.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/postgres-concurrency.txt)。**只覆盖 `90` §5 并发九项中的一项**，其余见下表。 |
 | SBOM / 许可证 / 漏洞 / Secret 全量扫描 | **通过**。Syft 1.51.1 生成 CycloneDX SBOM（368 组件）；Trivy 0.74.0 对 347 个包扫描，**任何等级漏洞均为 0**；Gitleaks 8.30.1 全 Git 历史扫描，首轮 10 条 `generic-api-key` 发现经逐条核实**全部为误报**（命中的是资产与证据清单里的 SHA-256 文件摘要，已抽验重算确认），指纹连同依据登记于 `supply-chain/gitleaks.ignore`，重跑后剩余 0。许可证第三方部分全为 MIT/Apache 系宽松许可；唯一的 AGPL-3.0-only 是**本项目自身**的声明（`Cargo.toml`/`package.json`/`LICENSE` 三处一致），2 项 MPL-2.0 为文件级弱 copyleft，1 项 LGPL 为三选一可选 MIT。证据见 [`supply-chain-scan.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/supply-chain-scan.txt)。 |
 | 开发期最小集（`./scripts/dev-check.sh`） | **通过**，七步：格式化、Clippy `-D warnings`、333 项单元测试、真实 SQLite 冒烟 100 条路由、`git diff --check`、暂存区复核、静态守卫。新增的 11 项 PostgreSQL 合同在默认运行中正确保持 ignored。证据见 [`dev-check.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/dev-check.txt)。 |
 
@@ -1277,7 +1278,8 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 | `40001`/`40P01` 受控重试 | 压出序列化失败或死锁必须**故意违反**固定锁顺序，而平台层会先一步拒绝（已由 `lock_order_is_frozen_…` 正面验证）。需另建绕过平台层的夹具，或承认该故障被设计挡在发生之前。 |
 | 审计与搜索权限状态的同事务提交 | 本轮只验证了 Outbox 一侧。 |
 | 应用的完整搜索模式 | **阻塞性质已改变**：扩展镜像本轮已按 `M0-03` 的 Dockerfile 离线构建成功，`pg_jieba` 1.1.1 与 `pg_trgm` 1.6 实测可用（中文分词、`@@` 匹配、`similarity` 均正确），同一套合同 11 项在该镜像上亦全部通过。真正缺的是应用侧——`crates/content/src/search.rs` 目前只有 `SqliteTitleSearch` 一个 `SearchBackend` 实现，`pg_jieba + pg_trgm` 的 PostgreSQL 后端尚未编写。这属 `WP-MVP-C05` 的实现缺口，不再是 E01 的环境问题。证据见 [`pg-jieba-extension.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/pg-jieba-extension.txt)。 |
-| 并发、性能与容量基线（`WP-MVP-E02`） | 载体未编写。 |
+| 并发矩阵其余八项 | 邀请码消费/额度、邮箱验证、密码恢复、主题楼层、举报合并、治理命令属领域 crate，`platform-db` 在依赖图下游无法反向依赖，需在各自 crate 内另建载体；互动唯一性与通知去重属 `WP-MVP-C04`（`Not started`），**功能尚不存在**。 |
+| 性能与容量基线（`WP-MVP-E02`） | 载体未编写。 |
 | 安全套件与跨平台矩阵 | 载体未编写；SBOM/许可证/漏洞/Secret 扫描已单独完成，见上表。 |
 | 浏览器与视觉矩阵（`WP-MVP-E04`） | 需 `05` 规定的固定浏览器、字体、缩放与视口环境。 |
 
@@ -1299,6 +1301,21 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 另有一条运行前置：官方镜像默认 `datctype=C`，会被 `prepare_postgres` 的 locale 校验拒绝，必须以 `--locale=C.UTF-8` 初始化。三条都已写入运行手册。
 
 此外，`M0-03` 的 `pg_jieba` 离线构建上下文本轮首次真实执行：35 个文件 SHA-256 全部校验通过，`docker build --network=none` 构建成功，产出的镜像通过了同一套 11 项合同——该构建链路自此不再是纸面配置。
+
+#### E01 的退出条件当前不可达
+
+`90` 第 5 节把统一硬化阶段定义为「**功能开发完成后**集中执行」，而功能层远未完成：`WP-MVP-C04`（互动、通知、跨设备阅读位置）与 `WP-MVP-D01..D04` 为 `Not started`，`C01`/`C02`/`C03`/`C05`/`A02`/`A06`/`B01`/`B04`/`B06` 为 `In progress`。
+
+矩阵中多条目直接依赖这些尚不存在的功能，因此**不是投入不足，而是结构上不可执行**：
+
+| 矩阵条目 | 依赖的未完成功能 |
+|---|---|
+| 并发「互动唯一性、通知去重」 | `WP-MVP-C04`，`Not started` |
+| 安全「上传 MIME、文件头、压缩炸弹、像素炸弹、下载鉴权」 | `WP-MVP-C03` 的上传与媒体全链未实现 |
+| 搜索「中文相关性、简繁、正文、100 万内容重建、查询 p95」 | `WP-MVP-C05` 的 PostgreSQL `SearchBackend` 未编写 |
+| HTTP/E2E 全路径与浏览器视觉矩阵 | 依赖 `C01`~`C05`、`D01`~`D04` 的页面与治理入口 |
+
+结论：**E01 不能在功能层收口前完成**，`WP-MVP-E01` 应维持 `In progress`。可先行执行的部分（平台层集成、扩展镜像、供应链扫描、平台层并发）已在本节逐项留证；其余条目须等对应功能包推进后再补。这条判断请用户确认，若认为应调整 E01 的范围定义，须先更新 `90` 与 `DEC-020` 再执行。
 
 #### 仍需的能力
 

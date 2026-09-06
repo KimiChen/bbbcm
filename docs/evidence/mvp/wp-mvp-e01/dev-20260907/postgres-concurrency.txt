@@ -1,0 +1,32 @@
+# WP-MVP-E01 并发矩阵：Outbox lease（2026-09-07）
+
+- 服务端：PostgreSQL 16.15（自建 pg_jieba 镜像），一次性容器，本机回环 127.0.0.1:5433
+- 规模：120 条事件 / 8 路 Worker 并发 claim，每批上限 5
+- 命令：`cargo test -p platform-db --test postgres_concurrency -- --ignored`
+
+```
+     Running tests/postgres_concurrency.rs (target/debug/deps/postgres_concurrency-ffb29c852ee690e7)
+
+running 1 test
+领取分布：[("worker-0", 50), ("worker-1", 10), ("worker-2", 10), ("worker-3", 15), ("worker-4", 10), ("worker-5", 10), ("worker-6", 5), ("worker-7", 10)]
+test concurrent_outbox_claims_never_lease_one_event_twice ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.37s
+
+```
+
+四层断言，缺一层都不足以证明正确：
+
+1. **反空转**：至少两个 Worker 各自领到过事件。若一个 Worker 独吞，下面三条照样成立，测试却退化成单线程。实测八路全部参与。
+2. **至多一次**：去重后数量等于总领取数量，无重复租约。
+3. **不饿死**：入队的 120 条全部被领走，`SKIP LOCKED` 不得让事件永久跳过。
+4. **两两不相交**：逐对求交集，不靠总数相等蒙混。
+
+数据库侧复核：本轮事件状态全部为 `leased`，计数等于入队数。
+
+## 范围限定
+
+`90` §5 并发清单共九项，本文件只覆盖 **Outbox lease** 一项。邀请码消费、邮箱验证、
+密码恢复、主题楼层、举报合并、治理命令属领域 crate，而 `platform-db` 在依赖图下游，
+无法反向依赖它们，需在各自 crate 内另建载体；互动唯一性与通知去重所属的 `WP-MVP-C04`
+尚未开始，功能不存在。八项缺口不因本文件存在而视作已覆盖。
