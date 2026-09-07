@@ -1253,7 +1253,13 @@ name = "interaction"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "chrono",
  "platform",
+ "platform-db",
+ "sqlx",
+ "thiserror",
+ "tokio",
+ "url",
 ]
 
 [[package]]

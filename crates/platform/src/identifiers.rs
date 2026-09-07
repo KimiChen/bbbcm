@@ -33,6 +33,12 @@ pub struct TableRegistration {
 
 pub const TABLES: &[TableRegistration] = &[
     TableRegistration {
+        // SOCIAL-002/003 正向反馈。唯一性由数据库约束兜底，见 0020 迁移。
+        schema: "interaction",
+        table: "feedback",
+        identity_column: Some("id"),
+    },
+    TableRegistration {
         schema: "identity",
         table: "challenges",
         identity_column: None,
@@ -356,6 +362,7 @@ pub const TABLES: &[TableRegistration] = &[
 
 /// 仅本轮引擎所需索引；迁移与表注册同时版本化。
 pub const INDEXES: &[(&str, &str)] = &[
+    ("interaction", "feedback_target_idx"),
     ("community", "topic_forum_idx"),
     ("community", "topic_owner_idx"),
     ("community", "post_floor_idx"),

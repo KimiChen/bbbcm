@@ -1,0 +1,50 @@
+# WP-MVP-C04 切片：SOCIAL-002／SOCIAL-003 正向反馈（2026-09-07）
+
+本切片的直接目的是解锁 `90` §5 并发矩阵的「互动唯一性」——它是 `WP-MVP-E01`
+剩余两项之一，此前因功能不存在而无法执行。
+
+```
+test feedback_tests::database_constraints_reject_self_feedback_and_duplicates ... ok
+test feedback_tests::feedback_is_once_per_user_idempotent_and_never_self ... ok
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+test concurrent_feedback_from_one_user_counts_once ... ok
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.08s
+```
+
+## 交付
+
+| 位置 | 内容 |
+|---|---|
+| `db/migrations/{postgres,sqlite}/0020_feedback.sql` | `interaction.feedback` 表。唯一性由 `UNIQUE (user_id, target_kind, target_id)` 兜底，自我反馈由 `CHECK (user_id <> author_id)` 拒绝——两条约束在两个后端上都成立，否则体验模式会成为绕过口。 |
+| `crates/interaction/src/core.rs` | `give`／`withdraw`／`count`。不判断谁可以反馈、不读内容表：目标是否存在、作者是谁由调用方在**同一事务内**重读后传入。 |
+| `crates/interaction/src/repo.rs` | 只借用当前事务连接，不持有池、不开事务——事务边界归调用方，否则「反馈与通知同事务」无从表达。 |
+
+## 关键设计
+
+**不靠先查再写**。`SOCIAL-003` 的唯一性完全由数据库约束保证。应用层的
+`current()` 查询只用来区分「首次/重做/幂等」三种结果，并发下第二路命中
+`feedback_once` 拿到 `Conflict`，由调用方重读重试。
+
+**撤销不删行**。删行会让「撤销后重新反馈」变成又一条新行，唯一约束反而挡不住；
+保留行则由同一条记录承载状态变化，也留下痕迹。测试正面断言撤销—重做后仍只有一行。
+
+**不存冗余计数**。计数由聚合得出。冗余计数列一旦与唯一约束不一致，排查成本
+远高于一次聚合查询。
+
+**重复点击是幂等而非错误**。返回 `changed = false`，计数不涨。若重复点击报错，
+前端只能靠禁用按钮回避，而按钮状态在多标签页下并不可靠。
+
+## 并发验证（E01 矩阵「互动唯一性」）
+
+8 路并发对同一 `(user, target)` 提交反馈，真实 PostgreSQL。四层断言：
+每路都得到确定结果、恰好一路是真正首写、库里只有一行、有效计数为 1。
+
+SQLite 上这条走不到：单写者会把「两路同时插入」串行化，唯一约束那条分支
+永远不被触发，跑绿证明不了任何事。
+
+## 未做
+
+`C04` 其余需求——收藏（`SOCIAL-001`）、关注（`SOCIAL-004`）、阅读位置、
+站内通知（`NOTIFY-*`）、通知偏好——本切片未涉及。HTTP 入口亦未接线，
+因此 `SOCIAL-002/003` 尚无可达路由，`WP-MVP-C04` 维持 `Not started` 之上的
+`In progress`，不标完成。并发矩阵剩余的「通知去重」仍依赖 `NOTIFY-*`。

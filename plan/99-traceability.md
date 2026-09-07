@@ -119,7 +119,7 @@
 | `WP-MVP-C02` | In progress | 内容/楼层/修订/本人维护/事务与权限合同齐备，发布政策按DEC-054/055/060装配，TOPIC-001/002/003/008 已推进为 Implemented（见5.19）；管理写入口（移帖、状态转换）无HTTP路由，附件与重复文本限速未实现。 |
 | `WP-MVP-C03` | In progress | 安全Markdown和预览已接；完整编辑器、草稿、上传及媒体全链仍缺，见5.9。 |
 | `WP-MVP-C05` | In progress | 同事务权威 search_documents、搜索页/SEO/Feed/sitemap 已交付；**本轮补齐 PostgreSQL 完整模式全文检索**（`pg_jieba` 索引侧 `jiebaqry`／查询侧 `jiebacfg`，能力按实测探测装配，权限过滤与体验模式逐条对齐），见 5.24。GIN 索引与百万级重建属性能矩阵，仍缺。 |
-| `WP-MVP-C04` | Not started | 互动、通知与跨设备阅读位置后续。 |
+| `WP-MVP-C04` | In progress | **本轮交付 `SOCIAL-002`／`SOCIAL-003` 正向反馈切片**（迁移 0020、`interaction` 领域服务与仓库、唯一性与自我反馈的库层约束），并据此补齐 `90` §5 并发矩阵的「互动唯一性」，见 5.25。收藏、关注、阅读位置、站内通知与 HTTP 入口仍缺；无可达路由，不标完成。 |
 | `WP-MVP-D01..D04` | Not started | - |
 | `WP-MVP-E01` | In progress | 真实 Redis 8 合同与真实 PostgreSQL 16 双前缀集成（11 项）已通过并留证；`90` §5 其余 PostgreSQL 条目、`pg_jieba` 完整搜索、安全/并发/性能/E2E/视觉矩阵未执行，见 5.23。 |
 | `WP-MVP-E02/E04/E05` | Not started | - |
@@ -1262,6 +1262,7 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 |---|---|
 | 真实 Redis 8 合同（`crates/platform/tests/redis_contract.rs`） | **通过**。在 `127.0.0.1:6399` 的隔离实例上执行（独立数据目录、关闭 RDB/AOF 持久化），覆盖原子性、命名空间隔离与恢复。测试自身强制要求显式隔离确认、回环地址与 `redis_version:8.` 大版本断言，非回环端点一律拒绝。运行版本口径见 `DEC-063`。 |
 | 真实 PostgreSQL 16 集成（`crates/platform-db/tests/postgres_contract.rs`） | **通过，11/11**。服务端为供应链锁定镜像 `postgres@sha256:421b84e0…`（`PG_VERSION=16.15`，UTF8 / C.UTF-8），一次性容器 + tmpfs 数据目录，经本机回环 `127.0.0.1:5433` 连接，取证后销毁。默认 `bcm_` 与本次运行新建的随机非默认前缀并存。运行身份 `<prefix>app_login` 仅属 `app_rw`，迁移身份 `<prefix>mig_login` 仅属 `migrator`，均为 `INHERIT FALSE` / `SET TRUE`。证据见 [`postgres-contract.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/postgres-contract.txt)，运行手册见 [`docs/development/postgres.md`](../docs/development/postgres.md)。 |
+| 并发矩阵：互动唯一性 | **通过**。8 路并发对同一 `(user, target)` 提交反馈（真实 PostgreSQL），四层断言：每路都得到确定结果、恰好一路是真正首写、库里只有一行、有效计数为 1。为执行此项本轮交付了 `SOCIAL-002`／`SOCIAL-003` 切片，见 5.25。证据见 [`feedback.txt`](../docs/evidence/mvp/wp-mvp-c04/dev-20260907/feedback.txt)。 |
 | 并发矩阵：举报合并 | **通过**。8 路并发举报同一目标，恰好建一个案件、全部挂到同一案件，并回读库中该目标只有一行案件、每位举报人各留一条工单。本项首次执行即暴露并修复了 `DEC-066` 的缺陷。证据见 [`governance-concurrency.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/governance-concurrency.txt)。 |
 | 并发矩阵：治理命令 | **通过，2/2**。并发批准恰好生效一次且落库批准人正是成功那一路、版本恰好 +1；操作者自批 8 路并发全部失败、状态与版本纹丝不动、`approval_satisfied` 仍为假。本项首次执行即暴露并修复了 `DEC-065` 的缺陷。证据同上。 |
 | 并发矩阵：identity 三项 | **通过**。邮箱验证、密码恢复、邀请码消费/额度，各 8 路并发。邮箱验证除断言恰好一次成功外，还回读 `consumed` 标志——只看返回值排除不了「第二次也写了、只是返回幂等重放」；密码恢复在并发结束后再单独试一次并要求失败，把一次性验到底；邀请码额外核对实际只新增一个账号。证据见 [`identity-concurrency.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/identity-concurrency.txt)。 |
@@ -1286,7 +1287,7 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 | `40001`/`40P01` 受控重试 | 压出序列化失败或死锁必须**故意违反**固定锁顺序，而平台层会先一步拒绝（已由 `lock_order_is_frozen_…` 正面验证）。需另建绕过平台层的夹具，或承认该故障被设计挡在发生之前。 |
 | 审计与搜索权限状态的同事务提交 | 本轮只验证了 Outbox 一侧。 |
 | ~~应用的完整搜索模式~~ **已完成** | 2026-09-07 交付，见第 5.24 节。原登记如下：**阻塞性质已改变**：扩展镜像本轮已按 `M0-03` 的 Dockerfile 离线构建成功，`pg_jieba` 1.1.1 与 `pg_trgm` 1.6 实测可用（中文分词、`@@` 匹配、`similarity` 均正确），同一套合同 11 项在该镜像上亦全部通过。真正缺的是应用侧——`crates/content/src/search.rs` 目前只有 `SqliteTitleSearch` 一个 `SearchBackend` 实现，`pg_jieba + pg_trgm` 的 PostgreSQL 后端尚未编写。这属 `WP-MVP-C05` 的实现缺口，不再是 E01 的环境问题。证据见 [`pg-jieba-extension.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/pg-jieba-extension.txt)。**该缺口本轮已补齐**，全文检索通过真实 `pg_jieba` 验证。 |
-| 并发矩阵：互动唯一性、通知去重 | 属 `WP-MVP-C04`（`Not started`），**功能尚不存在**，不是载体问题。`90` §5 并发九项中的其余七项本轮全部通过。 |
+| 并发矩阵：通知去重 | 属 `WP-MVP-C04` 的 `NOTIFY-*`，**功能尚不存在**，不是载体问题。并发九项中其余八项已全部通过。 |
 | `90` §6 公开读延迟（实验结果） | **载体已编写并执行**（`crates/content/tests/postgres_performance.rs`）。2,000 与 100,000 两个数据量下，公开列表与版块列表的 p95 分别为 7.9／8.1ms 与 **7.4／7.2ms**，远低于 400ms 门槛；50 倍数据量增长几乎不改变 p95，与 keyset 游标分页的预期一致。**但资源规格未获批准**，按 `90` §6 表末规定只作实验记录，不支持 Production Approved。运行条件（含 tmpfs 数据目录、`fsync=off` 等非生产配置）已全量登记。证据见 [`read-latency-baseline.txt`](../docs/evidence/mvp/wp-mvp-e02/dev-20260907/read-latency-baseline.txt)。 |
 | `90` §6 其余负载门槛 | 100 万主题基线（载体支持，按当前播种速率需约 1 小时，本轮未跑）、写负载 20/s 与写 p95、SSR 首屏 p95（本载体测领域读路径，未含模板渲染与 HTTP 往返）、200 read/s 吞吐（本机非生产规格，堆并发只会测出连接池排队）均未执行。 |
 | 安全矩阵：上传相关 | 上传 MIME／文件头／压缩炸弹／像素炸弹与下载鉴权依赖 `WP-MVP-C03` 的上传链，**功能尚未实现**。 |
@@ -1451,6 +1452,37 @@ PostgreSQL 中没有 schema `USAGE`，其下所有表级授权一律无效。**�
 #### 未做
 
 GIN 索引未建，当前为顺序扫描：功能正确但不满足 `90` §6 的查询 p95 门槛。索引与百万级内容重建属性能矩阵（`WP-MVP-E02`），需经批准的资源规格才有门禁效力。`WP-MVP-C05` 因此维持 `In progress`。
+
+### 5.25 `WP-MVP-C04` 切片：`SOCIAL-002`／`SOCIAL-003` 正向反馈（2026-09-07）
+
+产品决策与最终批准：项目所有者（用户）；执行与登记：Claude。
+
+**动机**：`90` §5 并发矩阵的「互动唯一性」此前因功能不存在而无法执行，是 `WP-MVP-E01` 剩余项之一。本切片交付该功能以解锁它。
+
+#### 交付物
+
+| 位置 | 内容 |
+|---|---|
+| `db/migrations/{postgres,sqlite}/0020_feedback.sql` | `interaction.feedback` 表。`UNIQUE (user_id, target_kind, target_id)` 保证 `SOCIAL-003` 的一次性，`CHECK (user_id <> author_id)` 拒绝自我反馈。两条约束在两个后端上都成立——否则体验模式会成为绕过口。PostgreSQL 轨含完整 ACL（schema USAGE + 表级 `SELECT/INSERT/UPDATE` + 序列 `USAGE/SELECT`）。 |
+| `crates/interaction/src/contract.rs` | `InteractionError`、`FeedbackTarget` 封闭枚举、`FeedbackOutcome`（含 `changed` 以区分「真的变了」与「本来就是这样」）。 |
+| `crates/interaction/src/core.rs` | `give`／`withdraw`／`count`。**不判断谁可以反馈、不读内容表**：目标是否存在、作者是谁由调用方在同一事务内重读后以 `FeedbackSubject` 传入，`author_id` 不接受请求自报值。 |
+| `crates/interaction/src/repo.rs` | 只借用当前事务连接，不持有池、不开事务。 |
+| `crates/platform/src/identifiers.rs` | 登记 `interaction.feedback` 表与 `feedback_target_idx` 索引。 |
+
+#### 关键设计
+
+- **唯一性不靠先查再写**。应用层查询只用于区分首次／重做／幂等三种结果；并发下第二路命中唯一约束拿到 `Conflict`，由调用方重读重试。
+- **撤销不删行，只翻标记**。删行会让「撤销后重新反馈」变成又一条新行，唯一约束反而挡不住；保留行由同一条记录承载状态变化，也留下痕迹。测试正面断言撤销—重做后仍只有一行。
+- **不存冗余计数**。计数由聚合得出：冗余计数列一旦与唯一约束不一致，排查成本远高于一次聚合。
+- **重复点击是幂等而非错误**。返回 `changed = false`，计数不涨。若重复点击报错，前端只能靠禁用按钮回避，而按钮状态在多标签页下并不可靠。
+
+#### 验证
+
+SQLite 上验语义（幂等、撤销—重做复用同一行、库层约束独立拒绝自我反馈与重复行）；**互动唯一性的并发在真实 PostgreSQL 上验**——SQLite 单写者会把「两路同时插入」串行化，唯一约束那条分支永远走不到，跑绿证明不了任何事。开发期最小集七步全绿，349 项单元测试、SQLite 冒烟 100 条路由。
+
+#### 未做
+
+`C04` 其余需求——收藏（`SOCIAL-001`）、关注（`SOCIAL-004`）、阅读位置、站内通知（`NOTIFY-*`）、通知偏好——均未涉及；HTTP 入口未接线，因此 `SOCIAL-002/003` **尚无可达路由**。按 `README` 第 6 节「部分路径可用不得记 Implemented」，本切片不使 `SOCIAL-002/003` 进入 `Implemented`，`WP-MVP-C04` 维持 `In progress`。并发矩阵剩余的「通知去重」仍依赖 `NOTIFY-*`。
 
 ## 6. 门禁状态
 

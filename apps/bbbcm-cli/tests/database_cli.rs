@@ -67,11 +67,12 @@ fn cli_migrates_reports_and_seeds_repeatedly() {
     assert!(!f.dir.join("test.db").exists(), "status不能创建数据库");
     assert!(!f.db(&["seed"]).status.success());
     assert!(
-        succeeds(f.db(&["migrate", "--backend", "sqlite"]))
-            .contains("应用 [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]")
+        succeeds(f.db(&["migrate", "--backend", "sqlite"])).contains(
+            "应用 [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]"
+        )
     );
     assert!(succeeds(f.db(&["migrate"])).contains(
-        "已应用跳过 [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]"
+        "已应用跳过 [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]"
     ));
     assert!(succeeds(f.db(&["status"])).contains("applied"));
     assert!(succeeds(f.db(&["seed"])).contains("新增 4 个版块、4 个规则"));
