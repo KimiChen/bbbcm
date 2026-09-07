@@ -246,6 +246,16 @@ async fn public_read_throughput_baseline() {
             latencies.last().copied().unwrap_or(f64::NAN)
         );
 
+        // 对账：每一次发出都必须落到「有样本」或「有错误」之一。实测出现过
+        // 300 次发出只回收 105 个样本、错误却是 0 的情况——那 195 次去了哪里
+        // 没有任何记录，而缺失的多半是最慢的那些，留着会让 p95 系统性偏低。
+        assert_eq!(
+            samples.len() as u64 + errors,
+            issued,
+            "{path} 发出 {issued} 次，但只有 {} 个样本 + {errors} 个错误；\
+             缺口无记录，缺的多半是最慢的那些，p95 会系统性偏低",
+            samples.len()
+        );
         // 防空：请求没真正发出去、或响应不是 200，延迟数字毫无意义。
         assert!(
             issued >= (rate as u64 * seconds) * 9 / 10,
