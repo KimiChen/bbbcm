@@ -5,203 +5,20 @@
 //! 为什么必须在真实 PostgreSQL 上跑：楼层号由「读当前 `next_floor` → 写回 +1」构成，
 //! 是教科书式的 read-modify-write 竞态。SQLite 的单写者会把并发串行化，让这条路径
 //! **永远不会失败**——在那上面跑绿了，证明不了楼层分配是安全的。
-use chrono::{DateTime, Utc};
 use content::contract::*;
 use content::core::ContentService;
 use content::cursor::CursorKey;
 use content::policy::ApprovedContentPolicy;
-use platform::config::{Config, DatabaseConfig, SecretString};
 use platform::db::Backend;
 use platform::identifiers::SchemaRenderer;
 use platform::transaction::new_operation_id;
 use platform_db::Pool;
-use platform_db::transaction::{DbTransaction, DbValue, TransactionConnection};
+use platform_db::transaction::{DbTransaction, DbValue};
 use std::collections::BTreeSet;
-use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-fn endpoint(var: &str, prefix: &str) -> String {
-    assert_eq!(
-        std::env::var("POSTGRES_CONTRACT_ISOLATED").ok().as_deref(),
-        Some("yes"),
-        "必须显式确认目标库是隔离且可丢弃的"
-    );
-    let raw = std::env::var(var).unwrap_or_else(|_| panic!("需要 {var}"));
-    let raw = raw.replace("{prefix}", prefix);
-    let parsed = url::Url::parse(&raw).unwrap_or_else(|_| panic!("{var} 的 URL 非法"));
-    assert!(
-        parsed.host_str().is_some_and(|host| host
-            .parse::<std::net::IpAddr>()
-            .is_ok_and(|ip| ip.is_loopback())),
-        "{var} 只允许字面回环 IP"
-    );
-    raw
-}
-
-fn config(prefix: &str, url: &str, max_connections: u32) -> DatabaseConfig {
-    let mut cfg = Config::default().database;
-    cfg.backend = Backend::Postgres;
-    cfg.schema_prefix = prefix.to_owned();
-    cfg.postgres_url = Some(SecretString::new(url.to_owned()));
-    cfg.max_connections = max_connections;
-    cfg
-}
-
-fn migrations_root() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../db/migrations")
-}
-
-fn at() -> DateTime<Utc> {
-    Utc::now()
-}
-
-/// 本测试要压的是**楼层分配**，不是授权。这个实现一律放行，把授权变量固定下来，
-/// 让失败只可能来自并发本身。它绝不能出现在非测试代码里：`authorize` 无条件返回
-/// `allowed: true`，用在生产上等于没有权限系统。管理路径仍保持失败关闭，
-/// 免得这个放行实现被顺手接到管理动作上。
-struct AllowAll {
-    default_user: i64,
-    /// 每个账号一个稳定的分析化名。必须是合法的操作 ID（UUIDv7）——
-    /// `platform::analytics` 会校验它的格式，随手拼个 `pseudo-3` 会让
-    /// 整条写路径在构造分析事实时失败，且失败被归一成 `Unavailable`。
-    pseudonyms: std::collections::BTreeMap<i64, String>,
-}
-
-impl AllowAll {
-    fn facts(&self, user_id: i64) -> AuthorityFacts {
-        AuthorityFacts {
-            user_id,
-            // 账龄取足够久，确保 T1 规则不因「账号太新」而拒绝。
-            created_at: at() - chrono::Duration::days(30),
-            tier: TrustTier::T1,
-            email_verified: true,
-            allowed: true,
-            default_visibility: Visibility::Public,
-            publication: Publication::Published,
-            analytics_pseudonym: self
-                .pseudonyms
-                .get(&user_id)
-                .cloned()
-                .unwrap_or_else(new_operation_id),
-            analytics_exclusions: platform::analytics::TrustedExclusions::from_authority(
-                false, true, false, false,
-            ),
-        }
-    }
-}
-
-impl ContentAuthority for AllowAll {
-    fn read_viewer<'a>(
-        &'a self,
-        _tx: &'a mut TransactionConnection<'_>,
-        _session: Option<&'a str>,
-        _now: DateTime<Utc>,
-    ) -> FutureResult<'a, Viewer> {
-        // 必须按 session 判定成员身份。恒返回 `member: true` 会让所有「匿名不可见」
-        // 的断言变成空断言——过滤条件里 `member = 1` 一路放行，测什么都通过。
-        let member = _session.is_some();
-        Box::pin(async move {
-            Ok(Viewer {
-                user_id: member.then_some(self.default_user),
-                member,
-                excluded: true,
-            })
-        })
-    }
-
-    fn authorize<'a>(
-        &'a self,
-        _tx: &'a mut TransactionConnection<'_>,
-        credentials: &'a Credentials,
-        _action: Action,
-        _now: DateTime<Utc>,
-    ) -> FutureResult<'a, AuthorityFacts> {
-        // 夹具把用户 ID 直接放进 session token；这是测试自造的凭据，
-        // 不经过任何真实会话解析，也不代表生产可以这样取身份。
-        let user_id: i64 = credentials
-            .session_token
-            .expose()
-            .parse()
-            .unwrap_or(self.default_user);
-        Box::pin(async move { Ok(self.facts(user_id)) })
-    }
-
-    fn resolve_author<'a>(
-        &'a self,
-        _tx: &'a mut TransactionConnection<'_>,
-        _public_id: &'a str,
-        _now: DateTime<Utc>,
-    ) -> FutureResult<'a, Option<Author>> {
-        Box::pin(async { Ok(None) })
-    }
-
-    fn authors<'a>(
-        &'a self,
-        _tx: &'a mut TransactionConnection<'_>,
-        user_ids: &'a [i64],
-        _now: DateTime<Utc>,
-    ) -> FutureResult<'a, Vec<Author>> {
-        Box::pin(async move {
-            Ok(user_ids
-                .iter()
-                .map(|id| Author {
-                    user_id: *id,
-                    public_id: format!("pub-{id}"),
-                    username: format!("u{id}"),
-                    body_visibility: Visibility::Public,
-                    lists_visibility: Visibility::Public,
-                })
-                .collect())
-        })
-    }
-
-    fn authorize_management<'a>(
-        &'a self,
-        _tx: &'a mut TransactionConnection<'_>,
-        _credentials: &'a Credentials,
-        _capability: ManagementCapability,
-        _target: ManagementTarget,
-        _now: DateTime<Utc>,
-    ) -> FutureResult<'a, ManagementActor> {
-        Box::pin(async { Err(ContentError::PolicyPending) })
-    }
-
-    fn append_move_audit<'a>(
-        &'a self,
-        _tx: &'a mut TransactionConnection<'_>,
-        _actor: &'a ManagementActor,
-        _topic_id: i64,
-        _from_forum_id: i64,
-        _to_forum_id: i64,
-        _operation_id: &'a str,
-        _now: DateTime<Utc>,
-    ) -> FutureResult<'a, ()> {
-        Box::pin(async { Ok(()) })
-    }
-
-    fn record_contribution<'a>(
-        &'a self,
-        _tx: &'a mut TransactionConnection<'_>,
-        _user_id: i64,
-        _contribution: Contribution,
-        _now: DateTime<Utc>,
-    ) -> FutureResult<'a, ()> {
-        Box::pin(async { Ok(()) })
-    }
-
-    fn append_risk<'a>(
-        &'a self,
-        _tx: &'a mut TransactionConnection<'_>,
-        _credentials: &'a Credentials,
-        _facts: &'a AuthorityFacts,
-        _action: Action,
-        _disposition: RiskDisposition,
-        _event_id: &'a str,
-        _now: DateTime<Utc>,
-    ) -> FutureResult<'a, ()> {
-        Box::pin(async { Ok(()) })
-    }
-}
+mod support;
+use support::{AllowAll, at, config, endpoint, migrations_root};
 
 struct Fixture {
     pool: Pool,
@@ -314,14 +131,10 @@ async fn fixture(workers: u32) -> Fixture {
     tx.commit().await.expect("提交");
     seed_pool.close().await;
 
-    let default_user = users[0];
     let service = ContentService::new(
         pool.clone(),
         renderer.clone(),
-        Arc::new(AllowAll {
-            default_user,
-            pseudonyms: users.iter().map(|id| (*id, new_operation_id())).collect(),
-        }),
+        Arc::new(AllowAll::new(users.clone())),
         Arc::new(ApprovedContentPolicy::new().expect("已批准政策")),
         CursorKey::new(vec![7; 32]).expect("游标密钥"),
     );

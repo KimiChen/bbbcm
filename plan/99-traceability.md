@@ -1287,7 +1287,8 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 | 审计与搜索权限状态的同事务提交 | 本轮只验证了 Outbox 一侧。 |
 | ~~应用的完整搜索模式~~ **已完成** | 2026-09-07 交付，见第 5.24 节。原登记如下：**阻塞性质已改变**：扩展镜像本轮已按 `M0-03` 的 Dockerfile 离线构建成功，`pg_jieba` 1.1.1 与 `pg_trgm` 1.6 实测可用（中文分词、`@@` 匹配、`similarity` 均正确），同一套合同 11 项在该镜像上亦全部通过。真正缺的是应用侧——`crates/content/src/search.rs` 目前只有 `SqliteTitleSearch` 一个 `SearchBackend` 实现，`pg_jieba + pg_trgm` 的 PostgreSQL 后端尚未编写。这属 `WP-MVP-C05` 的实现缺口，不再是 E01 的环境问题。证据见 [`pg-jieba-extension.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/pg-jieba-extension.txt)。**该缺口本轮已补齐**，全文检索通过真实 `pg_jieba` 验证。 |
 | 并发矩阵：互动唯一性、通知去重 | 属 `WP-MVP-C04`（`Not started`），**功能尚不存在**，不是载体问题。`90` §5 并发九项中的其余七项本轮全部通过。 |
-| `90` §6 负载与延迟门槛（`WP-MVP-E02`） | 200 read/s、写 20/s、公开读 p95 ≤400ms、写 p95 ≤800ms、SSR 首屏 p95 ≤800ms、1 万用户与 100 万主题基线等，**需要经批准的资源规格**——`90` §6 表末已写明「规格未批准时只能形成实验结果，不能支持 Production Approved」。本机结果不具备门禁效力，载体未编写。参数类门槛已单独核验，见上表。 |
+| `90` §6 公开读延迟（实验结果） | **载体已编写并执行**（`crates/content/tests/postgres_performance.rs`）。2,000 与 100,000 两个数据量下，公开列表与版块列表的 p95 分别为 7.9／8.1ms 与 **7.4／7.2ms**，远低于 400ms 门槛；50 倍数据量增长几乎不改变 p95，与 keyset 游标分页的预期一致。**但资源规格未获批准**，按 `90` §6 表末规定只作实验记录，不支持 Production Approved。运行条件（含 tmpfs 数据目录、`fsync=off` 等非生产配置）已全量登记。证据见 [`read-latency-baseline.txt`](../docs/evidence/mvp/wp-mvp-e02/dev-20260907/read-latency-baseline.txt)。 |
+| `90` §6 其余负载门槛 | 100 万主题基线（载体支持，按当前播种速率需约 1 小时，本轮未跑）、写负载 20/s 与写 p95、SSR 首屏 p95（本载体测领域读路径，未含模板渲染与 HTTP 往返）、200 read/s 吞吐（本机非生产规格，堆并发只会测出连接池排队）均未执行。 |
 | 安全矩阵：上传相关 | 上传 MIME／文件头／压缩炸弹／像素炸弹与下载鉴权依赖 `WP-MVP-C03` 的上传链，**功能尚未实现**。 |
 | 安全矩阵：验证码、凭证填充、时序 | 需真实身份后端与统计样本，随 `WP-MVP-E02` 性能矩阵一并做。 |
 | 跨平台矩阵 | 载体未编写。 |
@@ -1378,7 +1379,7 @@ PostgreSQL 中没有 schema `USAGE`，其下所有表级授权一律无效。**�
 
 #### 状态影响
 
-**没有任何需求或工作包因本节推进为 `Verified`。** `DEC-020` 规定 `Verified` 只能在统一硬化阶段凭**完整矩阵**证据授予。本轮完成的是矩阵中的 Redis 合同、PostgreSQL 集成的十一项、并发九项中的七项（Outbox lease、主题楼层、邮箱验证、密码恢复、邀请码消费/额度、举报合并、治理命令）、安全矩阵中不依赖未完成功能的六项、`90` §6 参数门槛一致性六项、SQLite 体验模式矩阵、浏览器结构化检查的四项、`pg_jieba` 扩展镜像的离线构建与实测、SBOM/许可证/漏洞/Secret 全量扫描，以及开发期最小集；安全、并发、性能、E2E 与视觉矩阵仍未执行，`90` §5 的 PostgreSQL 条目也只覆盖了一部分（未覆盖清单见上表与 [`docs/development/postgres.md`](../docs/development/postgres.md)）。`WP-MVP-E01` 由 `Not started` 转 `In progress`——它的退出条件是整套矩阵，跑通若干项不等于包完成。
+**没有任何需求或工作包因本节推进为 `Verified`。** `DEC-020` 规定 `Verified` 只能在统一硬化阶段凭**完整矩阵**证据授予。本轮完成的是矩阵中的 Redis 合同、PostgreSQL 集成的十一项、并发九项中的七项（Outbox lease、主题楼层、邮箱验证、密码恢复、邀请码消费/额度、举报合并、治理命令）、安全矩阵中不依赖未完成功能的六项、`90` §6 参数门槛一致性六项、SQLite 体验模式矩阵、浏览器结构化检查的五项（含 `DEC-067` 后达标的对比度）、公开读延迟基线（实验记录）、`pg_jieba` 扩展镜像的离线构建与实测、SBOM/许可证/漏洞/Secret 全量扫描，以及开发期最小集；安全、并发、性能、E2E 与视觉矩阵仍未执行，`90` §5 的 PostgreSQL 条目也只覆盖了一部分（未覆盖清单见上表与 [`docs/development/postgres.md`](../docs/development/postgres.md)）。`WP-MVP-E01` 由 `Not started` 转 `In progress`——它的退出条件是整套矩阵，跑通若干项不等于包完成。
 
 #### 环境阻塞已解除
 
