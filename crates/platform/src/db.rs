@@ -336,6 +336,65 @@ pub fn full_text_search_sql(
     Ok(Some(format!("{head}{filters}{tail}")))
 }
 
+/// 列表页批量取数的三条 SQL（`99` §5.44 的 N+1 修复）。
+///
+/// **为什么整条 SQL 在这里构造，而不是在 Repository 里拼**：`sql_lint` 规定
+/// Repository 的 SQL 模板占位只允许出现在**表位置**，其余一律 bind，且禁止
+/// `.join`／`.push_str` 一类拼接。那条规则是对的——注入正是从「就插一小段」开始的。
+/// 变长 `IN` 是正当需求（变的只有占位符个数，没有取值进入 SQL 文本），但正当不等于
+/// 可以在 Repository 里破例。与 `full_text_search_sql`、`outbox_claim_update_sql`
+/// 一样，把这类构造收拢到本模块这个受信位置，规则本身不放松。
+pub fn topics_by_ids_sql(
+    renderer: &crate::identifiers::SchemaRenderer,
+    backend: Backend,
+    count: usize,
+) -> Result<String, crate::identifiers::SchemaError> {
+    let table = renderer.table(backend, "community", "topics")?;
+    let holes = placeholders(count)?;
+    Ok(format!("SELECT * FROM {table} WHERE id IN ({holes})"))
+}
+
+pub fn posts_at_floor_by_topics_sql(
+    renderer: &crate::identifiers::SchemaRenderer,
+    backend: Backend,
+    count: usize,
+) -> Result<String, crate::identifiers::SchemaError> {
+    let table = renderer.table(backend, "community", "posts")?;
+    let holes = placeholders(count)?;
+    Ok(format!(
+        "SELECT * FROM {table} WHERE topic_id IN ({holes}) AND floor_no = ?"
+    ))
+}
+
+pub fn topic_tags_by_topics_sql(
+    renderer: &crate::identifiers::SchemaRenderer,
+    backend: Backend,
+    count: usize,
+) -> Result<String, crate::identifiers::SchemaError> {
+    let table = renderer.table(backend, "community", "topic_tags")?;
+    let holes = placeholders(count)?;
+    Ok(format!(
+        "SELECT topic_id, tag_id FROM {table} WHERE topic_id IN ({holes}) ORDER BY topic_id, tag_id"
+    ))
+}
+
+/// 生成 `IN (...)` 用的占位符列表：`?, ?, ?`。
+///
+/// **为什么放在这里而不是各 Repository 里**：`sql_lint` 禁止 Repository 出现
+/// `.join`／`.push_str` 一类的动态 SQL 拼接，那条规则是对的——注入正是那样进来的。
+/// 但变长 `IN` 是正当需求，变的只有**占位符个数**，没有任何取值进入 SQL 文本。
+/// 因此和 `outbox_claim_update_sql` 一样，把这类构造收拢到本模块这个受信位置，
+/// 而不是在 Repository 里开一个口子。
+///
+/// 上限 1000：无界的 `IN` 会让规划器的计划体积随参数个数膨胀，也会把一次「取一批」
+/// 悄悄变成「取全表」。调用方按批取数，超限说明批大小失控，应当报错而不是照单执行。
+pub fn placeholders(count: usize) -> Result<String, crate::identifiers::SchemaError> {
+    if count == 0 || count > 1000 {
+        return Err(crate::identifiers::SchemaError::InvalidTemplate);
+    }
+    Ok(vec!["?"; count].join(", "))
+}
+
 pub fn outbox_claim_update_sql(
     renderer: &crate::identifiers::SchemaRenderer,
     backend: Backend,

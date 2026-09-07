@@ -304,6 +304,76 @@ pub(crate) async fn tag_id_for_slug(
         (None, None) => Ok(None),
     }
 }
+/// 批量取主题。一次 `IN (...)` 代替 N 次按 id 查询。
+///
+/// 列表页渲染 50 行时逐条查主题是 N+1 的主要来源之一（`99` §5.44）。
+/// 占位符按实际个数生成，值仍全部走 bind——`02` 的「模板占位只允许出现在表位置，
+/// 值一律 bind」在这里同样成立：拼进 SQL 的只有 `?` 的个数，没有任何取值。
+pub(crate) async fn topics_by_ids(
+    tx: &mut TransactionConnection<'_>,
+    r: &SchemaRenderer,
+    ids: &[i64],
+) -> Result<Vec<Topic>> {
+    if ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    let sql = platform::db::topics_by_ids_sql(r, tx.backend(), ids.len())
+        .map_err(|_| ContentError::Unavailable)?;
+    let values: Vec<DbValue> = ids.iter().map(|id| (*id).into()).collect();
+    tx.fetch_all(&sql, &values)
+        .await?
+        .iter()
+        .map(topic_row)
+        .collect()
+}
+
+/// 批量取指定楼层的帖子（列表页用 floor_no = 1 取首帖）。
+pub(crate) async fn posts_at_floor_by_topics(
+    tx: &mut TransactionConnection<'_>,
+    r: &SchemaRenderer,
+    topic_ids: &[i64],
+    floor: i64,
+) -> Result<Vec<Post>> {
+    if topic_ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    let sql = platform::db::posts_at_floor_by_topics_sql(r, tx.backend(), topic_ids.len())
+        .map_err(|_| ContentError::Unavailable)?;
+    // 用 `chain` 而不是 `push`：`sql_lint` 禁止 Repository 出现 `.push` 一类调用，
+    // 它无法区分「往 SQL 里拼一段」和「往 bind 值数组里加一项」。规则宁可误伤也不
+    // 放松，这里按它的口径写。顺序是「先全部 topic_id，最后 floor」，与
+    // `posts_at_floor_by_topics_sql` 的占位符顺序一一对应。
+    let values: Vec<DbValue> = topic_ids
+        .iter()
+        .map(|id| (*id).into())
+        .chain(std::iter::once(floor.into()))
+        .collect();
+    tx.fetch_all(&sql, &values)
+        .await?
+        .iter()
+        .map(post_row)
+        .collect()
+}
+
+/// 批量取主题标签，返回 `(topic_id, tag_id)` 对。
+pub(crate) async fn topic_tag_ids_by_topics(
+    tx: &mut TransactionConnection<'_>,
+    r: &SchemaRenderer,
+    topic_ids: &[i64],
+) -> Result<Vec<(i64, i64)>> {
+    if topic_ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    let sql = platform::db::topic_tags_by_topics_sql(r, tx.backend(), topic_ids.len())
+        .map_err(|_| ContentError::Unavailable)?;
+    let values: Vec<DbValue> = topic_ids.iter().map(|id| (*id).into()).collect();
+    tx.fetch_all(&sql, &values)
+        .await?
+        .iter()
+        .map(|row| Ok((row.i64("topic_id")?, row.i64("tag_id")?)))
+        .collect()
+}
+
 pub(crate) async fn topic_tag_ids(
     tx: &mut TransactionConnection<'_>,
     r: &SchemaRenderer,

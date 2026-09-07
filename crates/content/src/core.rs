@@ -78,6 +78,36 @@ struct ReadContext {
     forums: Vec<Forum>,
     tags: Vec<Tag>,
     now: DateTime<Utc>,
+    /// 单次读请求内的备忘缓存：作者与主题。
+    ///
+    /// 列表页渲染 50 行时，同一个主题会被查两次（调用方一次、`basic_post_visible`
+    /// 再查一次），同一个作者会被查三次（主题作者、可见性判定、首帖作者），而作者
+    /// 在一页里往往高度重复。E02 实测：修复前首页一次渲染发约 820 条查询，其中
+    /// 300 条是用户、200 条是主题（`99` §5.44）。
+    ///
+    /// 只在**一次读事务内**有效：`ReadContext` 随请求创建、随事务结束丢弃，因此不会
+    /// 跨请求返回陈旧数据，也不需要失效策略。事务本身就是一致性快照，同一事务内
+    /// 重复读到同一行是正确行为。
+    authors: Memo<Author>,
+    topics: Memo<repo::Topic>,
+    /// 按主题预取的首帖与标签。列表路径在取回候选 id 后一次性填好，
+    /// 详情页路径不填——那里只渲染一个主题，批量没有收益。
+    first_posts: Memo<repo::Post>,
+    topic_tags: Memo<Vec<i64>>,
+}
+
+/// 请求内备忘缓存。用 `std::sync::Mutex` 而不是 `RefCell`：读路径是 async，
+/// 值可能跨线程移动；锁只在取值/存值的瞬间持有，绝不跨 `.await`。
+type Memo<T> = std::sync::Mutex<std::collections::BTreeMap<i64, T>>;
+
+fn memo_get<T: Clone>(memo: &Memo<T>, id: i64) -> Option<T> {
+    memo.lock().ok()?.get(&id).cloned()
+}
+
+fn memo_put<T>(memo: &Memo<T>, id: i64, value: T) {
+    if let Ok(mut guard) = memo.lock() {
+        guard.insert(id, value);
+    }
 }
 fn canonical(now: DateTime<Utc>) -> Result<DateTime<Utc>, ContentError> {
     if now < DateTime::UNIX_EPOCH {
@@ -179,6 +209,10 @@ impl ContentService {
             forums,
             tags: repo::tags(tx, &self.renderer).await?,
             now,
+            authors: Memo::default(),
+            topics: Memo::default(),
+            first_posts: Memo::default(),
+            topic_tags: Memo::default(),
         })
     }
     /// 注入完整模式检索后端（`WP-MVP-C05`）。
@@ -283,6 +317,92 @@ impl ContentService {
             .find(|a| a.user_id == id)
             .ok_or(ContentError::NotFound)
     }
+
+    /// 带请求内备忘的作者读取。语义与 `author_in` 完全一致，只是同一事务内
+    /// 对同一 id 不再重复查库。
+    async fn author_memo(
+        &self,
+        tx: &mut TransactionConnection<'_>,
+        ctx: &ReadContext,
+        id: i64,
+    ) -> Result<Author, ContentError> {
+        if let Some(found) = memo_get(&ctx.authors, id) {
+            return Ok(found);
+        }
+        let author = self.author_in(tx, id, ctx.now).await?;
+        memo_put(&ctx.authors, id, author.clone());
+        Ok(author)
+    }
+
+    /// 批量预取一批主题及其首帖、标签与作者，填入 `ReadContext` 的备忘表。
+    ///
+    /// 这是把列表页 N+1 压平的核心：原先每行要 8 条查询（主题 ×2、首帖、回复扫描、
+    /// 标签、作者 ×3），预取后整批只要 4 条（主题、首帖、标签、作者），逐行判定
+    /// 全部命中备忘。可见性与权限判定**不在这里做**——仍由 `topic_view` 逐行执行，
+    /// 预取只负责把数据一次取回来。
+    async fn prefetch_topics(
+        &self,
+        tx: &mut TransactionConnection<'_>,
+        ctx: &ReadContext,
+        ids: &[i64],
+    ) -> Result<(), ContentError> {
+        let missing: Vec<i64> = ids
+            .iter()
+            .copied()
+            .filter(|id| memo_get(&ctx.topics, *id).is_none())
+            .collect();
+        if missing.is_empty() {
+            return Ok(());
+        }
+        let topics = repo::topics_by_ids(tx, &self.renderer, &missing).await?;
+        let present: Vec<i64> = topics.iter().map(|t| t.id).collect();
+        // 作者取主题作者与首帖作者的并集，一次问全。
+        let mut authors: Vec<i64> = topics.iter().map(|t| t.author_id).collect();
+        let posts = repo::posts_at_floor_by_topics(tx, &self.renderer, &present, 1).await?;
+        authors.extend(posts.iter().map(|p| p.author_id));
+        authors.sort_unstable();
+        authors.dedup();
+        let tags = repo::topic_tag_ids_by_topics(tx, &self.renderer, &present).await?;
+
+        for topic in topics {
+            memo_put(&ctx.topics, topic.id, topic);
+        }
+        for post in posts {
+            memo_put(&ctx.first_posts, post.topic_id, post);
+        }
+        // 没有标签的主题也要落一条空记录，否则它每行都会回落到单条查询。
+        let mut grouped: std::collections::BTreeMap<i64, Vec<i64>> =
+            present.iter().map(|id| (*id, Vec::new())).collect();
+        for (topic_id, tag_id) in tags {
+            grouped.entry(topic_id).or_default().push(tag_id);
+        }
+        for (topic_id, tag_ids) in grouped {
+            memo_put(&ctx.topic_tags, topic_id, tag_ids);
+        }
+        if !authors.is_empty() {
+            for author in self.authority.authors(tx, &authors, ctx.now).await? {
+                memo_put(&ctx.authors, author.user_id, author);
+            }
+        }
+        Ok(())
+    }
+
+    /// 带请求内备忘的主题读取。
+    async fn topic_memo(
+        &self,
+        tx: &mut TransactionConnection<'_>,
+        ctx: &ReadContext,
+        id: i64,
+    ) -> Result<Option<repo::Topic>, ContentError> {
+        if let Some(found) = memo_get(&ctx.topics, id) {
+            return Ok(Some(found));
+        }
+        let topic = repo::topic(tx, &self.renderer, id).await?;
+        if let Some(found) = topic.as_ref() {
+            memo_put(&ctx.topics, id, found.clone());
+        }
+        Ok(topic)
+    }
     async fn topic_visible(
         &self,
         tx: &mut TransactionConnection<'_>,
@@ -296,7 +416,7 @@ impl ContentService {
             .ok_or(ContentError::NotFound)?
             .clone();
         let fv = forum_visibility(&ctx.forums, forum.id)?;
-        let author = self.author_in(tx, topic.author_id, ctx.now).await?;
+        let author = self.author_memo(tx, ctx, topic.author_id).await?;
         // PRIV-002（作者关闭正文公开）只扣留正文，不整体隐藏主题：标题与元信息按 DEC-054
         // 「标题按规则保留」继续展示。因此这里的主题级可见性只由版块与主题自身决定，
         // 作者隐私在 `post_view` 产出正文时单独生效。
@@ -312,11 +432,13 @@ impl ContentService {
         ctx: &ReadContext,
         post: &repo::Post,
     ) -> Result<(repo::Topic, Author, Visibility), ContentError> {
-        let topic = repo::topic(tx, &self.renderer, post.topic_id)
+        // 主题走请求内备忘：调用方通常刚刚读过同一个主题，列表页每行都会重复一次。
+        let topic = self
+            .topic_memo(tx, ctx, post.topic_id)
             .await?
             .ok_or(ContentError::NotFound)?;
         let (_, _, visibility) = self.topic_visible(tx, ctx, &topic).await?;
-        let author = self.author_in(tx, post.author_id, ctx.now).await?;
+        let author = self.author_memo(tx, ctx, post.author_id).await?;
         // PRIV-002 只覆盖「本人主题正文」，不覆盖回复，因此这里不再折入作者隐私开关。
         //
         // DEC-061：删除态主题的首帖本身也带墓碑，但必须保留可读性才能渲染占位提示。
@@ -420,11 +542,19 @@ impl ContentService {
         topic: &repo::Topic,
     ) -> Result<TopicView, ContentError> {
         let (forum, author, _) = self.topic_visible(tx, ctx, topic).await?;
-        let first = repo::post_at_floor(tx, &self.renderer, topic.id, 1)
-            .await?
-            .ok_or(ContentError::NotFound)?;
+        // 首帖与标签优先取预取表；列表路径已批量填好，详情页路径回落到单条查询。
+        // 回落分支保留是必要的：预取缺项时必须仍然正确，而不是渲染出缺内容的页面。
+        let first = match memo_get(&ctx.first_posts, topic.id) {
+            Some(found) => found,
+            None => repo::post_at_floor(tx, &self.renderer, topic.id, 1)
+                .await?
+                .ok_or(ContentError::NotFound)?,
+        };
         self.basic_post_visible(tx, ctx, &first).await?;
-        let ids = repo::topic_tag_ids(tx, &self.renderer, topic.id).await?;
+        let ids = match memo_get(&ctx.topic_tags, topic.id) {
+            Some(found) => found,
+            None => repo::topic_tag_ids(tx, &self.renderer, topic.id).await?,
+        };
         let tags = ctx
             .tags
             .iter()
@@ -986,11 +1116,18 @@ impl ContentService {
             if rows.is_empty() {
                 break;
             }
+            // 批量预取本批候选的主题、首帖、标签与作者，把逐行的 N+1 压成常数条。
+            // 预取只填备忘表，不改变任何可见性判定——判定仍在 `topic_view` 里逐行
+            // 执行，读到的值与逐条查询完全相同。
+            if filter.kind == ListKind::Topics {
+                let ids: Vec<i64> = rows.iter().map(|(id, _)| *id).collect();
+                self.prefetch_topics(&mut c, &ctx, &ids).await?;
+            }
             for (id, sort) in rows {
                 position.id = id;
                 position.sort = sort;
                 let found = if filter.kind == ListKind::Topics {
-                    if let Some(topic) = repo::topic(&mut c, &self.renderer, id).await? {
+                    if let Some(topic) = self.topic_memo(&mut c, &ctx, id).await? {
                         match self.topic_view(&mut c, &ctx, &topic).await {
                             Ok(topic) => {
                                 topics.push(topic);
