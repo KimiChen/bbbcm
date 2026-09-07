@@ -326,6 +326,27 @@ rules   terms   privacy  __fixtures  __diagnostics
 清单同时包含尚未实现但已在 `01` 第 10 节登记的路由（`polls`、`top`、`verified` 等）：先占位比日后为了让路由上线而改动线上版块 slug 代价低得多。
 
 校验点有两处，缺一不可：种子写入（`seed_repo`）和将来的建版块入口。两处都拒绝保留字、拒绝空串与非 `[a-z0-9-]` 字符。
+### 6.6-A 搜索索引轨（`postgres-search`）
+
+`02` 第 258 行的存储映射写明全文索引为「`pg_jieba` GIN + `pg_trgm`」，但索引不能放进常规迁移轨：GIN 表达式索引必须写 `to_tsvector('public.jiebaqry', …)`，缺 `pg_jieba` 的实例执行该 DDL 直接失败，而 §6.5 明确允许这类实例正常启动、只关闭搜索能力。放进常规轨等于把扩展升格为**迁移期硬依赖**，那条降级路径就没了。
+
+因此索引单独成一条轨：
+
+| 项 | 约定 |
+|---|---|
+| 目录 | `db/migrations/postgres-search/` |
+| 编号对齐 | **不参与**三库基线的对齐校验（不在 `TRACKS` 内），但共用同一套 `validate_content` |
+| 执行方式 | 显式命令 `bbbcm-cli db search-index`，不随 `db migrate` 自动执行 |
+| 缺扩展时 | **跳过并打印缺失扩展名，退出码 0**——这是 §6.5 允许的降级状态，不是失败 |
+| 历史表 | `platform.search_migrations`，与 `schema_migrations` 分开：两者适用的实例集合不同，混表会让「基线已就绪」与「搜索已就绪」无法区分 |
+| 幂等 | 已记录且校验和相同则跳过；不同则报 `ContentDrift` 拒绝执行，必须用新的前向迁移 |
+
+索引表达式必须与 `platform::db::full_text_search_sql` 生成的条件逐字一致，否则规划器不会选中它。当前为 `title` 与 `body` 两个独立表达式索引——查询里两者是 OR 关系且分列两个字段，合并成一个索引无法服务只命中其中一列的查询。
+
+配置名写全限定 `public.jiebaqry`：表达式索引要求函数不可变，两参数形式的 `to_tsvector(regconfig, text)` 才是 IMMUTABLE，依赖 `search_path` 的单参数形式是 STABLE，建索引会直接失败。
+
+SQLite 体验模式没有这条轨，`platform.search_migrations` 不应出现在 SQLite 库里（`seed.rs` 有反向断言）。
+
 ## 7. PostgreSQL 逻辑 schema
 
 默认物理前缀为 `bcm_`，同时支持测试中的受信非默认前缀；SQLite/MySQL 使用 `<前缀><逻辑 schema>_<表名>`（`DEC-029`），逻辑 schema 到物理表名的映射由 `SchemaRenderer` 负责，并对 `(schema, table)` 参数做受信注册表校验。15 个逻辑 schema：

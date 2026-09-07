@@ -140,12 +140,22 @@ mod tests {
             let tables: Vec<String> = sqlx::query_scalar("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name").fetch_all(&mut *c).await.unwrap();
             let mut expected: Vec<_> = platform::identifiers::TABLES
                 .iter()
+                // `platform.search_migrations` 只存在于装有 pg_jieba 的 PostgreSQL
+                // 实例（`postgres-search` 轨的历史表），SQLite 体验模式没有搜索索引
+                // 轨，也就不该有这张表。排除它是断言的一部分：如果它出现在 SQLite
+                // 库里，说明附加轨被错误地混进了基线轨。
+                .filter(|t| !(t.schema == "platform" && t.table == "search_migrations"))
                 .map(|t| renderer.table(Backend::Sqlite, t.schema, t.table).unwrap())
                 .collect();
             expected.sort();
             assert_eq!(
                 tables, expected,
                 "种子只使用已迁移受信对象，不创建账户或IAM表"
+            );
+            // 反向断言：搜索轨的历史表绝不能出现在 SQLite 体验模式里。
+            assert!(
+                !tables.iter().any(|t| t.ends_with("search_migrations")),
+                "SQLite 体验模式不应存在搜索索引轨的历史表"
             );
             let flags = renderer
                 .table(Backend::Sqlite, "platform", "feature_flags")

@@ -1,7 +1,9 @@
 //! N 轨迁移：专用连接、前缀锁、内容身份与失败恢复；不提供 A04 业务事务引擎。
 
 mod discovery;
-pub use discovery::{Migration, MigrationSet, TRACKS, verify_alignment, verify_repository};
+pub use discovery::{
+    Migration, MigrationSet, SEARCH_TRACK, TRACKS, verify_alignment, verify_repository,
+};
 
 use crate::connection::{DatabaseConnection, Purpose};
 use chrono::{DateTime, Utc};

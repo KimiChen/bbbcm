@@ -204,6 +204,14 @@ pub const TABLES: &[TableRegistration] = &[
         table: "schema_migrations",
         identity_column: None,
     },
+    // 搜索索引轨的执行历史。与 `schema_migrations` 分表：两者适用的实例集合不同
+    // （后者是三库基线，前者只在装有 pg_jieba 的完整模式实例上存在），混在一张
+    // 表里会让「基线已就绪」与「搜索已就绪」无法区分。
+    TableRegistration {
+        schema: "platform",
+        table: "search_migrations",
+        identity_column: None,
+    },
     TableRegistration {
         schema: "community",
         table: "commit_state",
@@ -377,6 +385,10 @@ pub const INDEXES: &[(&str, &str)] = &[
     ("community", "history_topic_idx"),
     ("community", "publication_owner_idx"),
     ("community", "search_topic_idx"),
+    // 完整模式搜索索引（`postgres-search` 轨）。只在装有 pg_jieba 的实例上存在，
+    // 因此不出现在三库基线轨里；名字仍须在此登记，受信标识符渲染没有例外。
+    ("community", "search_title_gin_idx"),
+    ("community", "search_body_gin_idx"),
     ("moderation", "content_restriction_owner_idx"),
     ("identity", "session_owner_idx"),
     ("identity", "invite_owner_idx"),

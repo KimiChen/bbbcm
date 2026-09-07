@@ -6,6 +6,10 @@ use std::path::Path;
 
 pub const TRACKS: &[&str] = &["postgres", "sqlite", "mysql8"];
 
+/// 完整模式搜索索引轨。**不在 `TRACKS` 内**，因此不参与编号对齐校验——
+/// 它按扩展是否就位单独执行，与三库基线轨的编号无关（`02` §6.6-A）。
+pub const SEARCH_TRACK: &str = "postgres-search";
+
 #[derive(Debug, Clone)]
 pub struct Migration {
     pub number: i64,
@@ -254,7 +258,21 @@ impl MigrationSet {
             return Err(MigrationError::UnsupportedBackend);
         }
         verify_repository(root)?;
-        let track = backend.to_string();
+        Self::discover_track(root, backend, &backend.to_string())
+    }
+
+    /// 按指定目录名发现一条轨。常规轨由 `discover` 传入后端名；搜索索引轨传
+    /// [`SEARCH_TRACK`]。两者共用同一套 `validate_content`，附加轨不会因为
+    /// 「不在基线里」就少一层校验。
+    pub fn discover_track(
+        root: &Path,
+        backend: Backend,
+        track: &str,
+    ) -> Result<Self, MigrationError> {
+        if !backend.is_implemented() {
+            return Err(MigrationError::UnsupportedBackend);
+        }
+        let track = track.to_owned();
         let mut migrations = Vec::new();
         for (number, name) in filenames(root, &track)? {
             let bytes = std::fs::read(root.join(&track).join(&name))

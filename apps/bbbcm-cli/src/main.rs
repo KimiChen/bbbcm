@@ -44,8 +44,10 @@ enum DbCommand {
     Status,
     /// 输出一次性 PostgreSQL 组角色初始化 SQL（需数据库管理员另行执行）
     BootstrapSql,
-    /// 写入 development/test 四版块与规则占位（不创建账号）
+    /// 写入 development/test 六版块与规则占位（不创建账号）
     Seed,
+    /// 应用完整模式搜索索引轨（`postgres-search`）；缺 pg_jieba 时跳过而非失败
+    SearchIndex,
 }
 
 /// `--backend` 的合法取值。用枚举而非自由字符串：拼错的后端名必须在参数解析阶段
@@ -130,6 +132,28 @@ async fn run(cli: Cli) -> Result<(), String> {
                     "迁移完成：应用 {:?}；已应用跳过 {:?}",
                     result.applied, result.skipped
                 );
+            }
+            // 与 Migrate 分开的原因见 `platform_db::search_index` 模块头：
+            // `02` §6.5 允许缺 pg_jieba 的实例正常启动、只关搜索，因此索引不能
+            // 进常规轨——那会把扩展升格为迁移期硬依赖。
+            DbCommand::SearchIndex => {
+                config.validate().map_err(|err| err.to_string())?;
+                let outcome =
+                    platform_db::search_index::migrate_search(&config.database, &migrations_dir)
+                        .await
+                        .map_err(|err| err.to_string())?;
+                match outcome {
+                    platform_db::search_index::SearchIndexOutcome::Applied { applied, skipped } => {
+                        println!("搜索索引完成：应用 {applied:?}；已应用跳过 {skipped:?}");
+                    }
+                    // 退出码保持 0：这是 `02` §6.5 允许的降级状态，不是失败。
+                    // 但必须打印清楚缺什么，否则运维会以为索引建好了。
+                    platform_db::search_index::SearchIndexOutcome::ExtensionMissing { missing } => {
+                        println!(
+                            "跳过搜索索引：缺少扩展 {missing:?}。该实例按 02 §6.5 以降级模式运行，搜索能力关闭；装上扩展后重跑本命令。"
+                        );
+                    }
+                }
             }
             DbCommand::Status => {
                 let states = platform_db::migrations::status(&config.database, &migrations_dir)

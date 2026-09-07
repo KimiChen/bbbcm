@@ -74,7 +74,12 @@ fn stats(mut samples: Vec<f64>) -> Stats {
 /// 这是刻意的：基线要测的是读路径延迟，用领域服务逐条发帖会把播种时间拉到不可
 /// 接受，而且顺带测的是写路径。播种数据仍严格满足读路径的全部过滤条件
 /// （published / normal / 未删除 / public），否则测出来的是「查空表有多快」。
-async fn seed(prefix: &str, topics: usize) -> (Pool, SchemaRenderer, i64) {
+/// 播种并返回 `(连接池, 渲染器, 版块 id, search_documents 实际行数)`。
+///
+/// **返回实际行数而不是请求数**：本函数只做插入、不清空，同一前缀重复调用会累积。
+/// 早先的运行正因如此把 21.2 万行的表报成「2,000 档」——档位标签一旦与真实行数
+/// 脱节，整组延迟数字就失去意义。调用方必须用实际行数出报告。
+async fn seed(prefix: &str, topics: usize) -> (Pool, SchemaRenderer, i64, i64) {
     let migrator = endpoint("POSTGRES_CONTRACT_MIGRATOR_URL", prefix);
     platform_db::migrations::migrate(&config(prefix, &migrator, 4), &migrations_root())
         .await
@@ -178,7 +183,25 @@ async fn seed(prefix: &str, topics: usize) -> (Pool, SchemaRenderer, i64) {
     ))
     .await
     .expect("以运行身份连接");
-    (app, r, forum)
+
+    // 回读真实行数：请求数与表内实际行数只有在干净前缀上才相等。
+    let mut tx = DbTransaction::begin(&app).await.expect("事务");
+    let documents = {
+        let mut c = tx.connection();
+        let docs = r
+            .table(c.backend(), "community", "search_documents")
+            .expect("表名");
+        c.fetch_all(&format!("SELECT COUNT(*) AS n FROM {docs}"), &[])
+            .await
+            .expect("回读行数")
+            .first()
+            .expect("计数应有一行")
+            .i64("n")
+            .expect("计数列")
+    };
+    tx.rollback().await.expect("回滚只读事务");
+
+    (app, r, forum, documents)
 }
 
 /// 每个读路径单独测：并发 N 路，每路 rounds 次，汇总全部样本。
@@ -223,7 +246,7 @@ async fn public_read_latency_baseline() {
     let rounds = env_usize("POSTGRES_PERF_ROUNDS", 20);
 
     let seed_started = Instant::now();
-    let (pool, renderer, forum) = seed(&prefix, topics).await;
+    let (pool, renderer, forum, documents) = seed(&prefix, topics).await;
     let seed_secs = seed_started.elapsed().as_secs_f64();
 
     let service = ContentService::new(
@@ -278,7 +301,10 @@ async fn public_read_latency_baseline() {
     );
 
     println!("\n===== WP-MVP-E01/E02 公开读延迟基线 =====");
-    println!("数据量：{topics} 主题（每主题 1 首帖 + 1 检索文档），播种耗时 {seed_secs:.1}s");
+    // 打印**实际行数**而非请求数：seed 只插不清，同一前缀重复运行会累积。
+    // 早先正因只打印请求数，把一张 21.2 万行的表报成了「2,000 档」，据此得出的
+    // 「2,000 条就超门槛」结论也随之作废。
+    println!("数据量：{documents} 篇检索文档（本次新增 {topics} 主题），播种耗时 {seed_secs:.1}s");
     println!("并发：{concurrency} 路 × 每路 {rounds} 次；连接池上限 16");
     println!("缓存：无应用层缓存（未注入 Redis）；数据库缓冲池已预热");
     println!("后端：PostgreSQL 16（运行身份 app_rw），本机回环");
@@ -325,7 +351,7 @@ async fn search_latency_baseline() {
     let rounds = env_usize("POSTGRES_PERF_ROUNDS", 20);
 
     let seed_started = Instant::now();
-    let (pool, renderer, _forum) = seed(&prefix, topics).await;
+    let (pool, renderer, _forum, documents) = seed(&prefix, topics).await;
     let seed_secs = seed_started.elapsed().as_secs_f64();
 
     let capabilities = pool.capabilities().await;
@@ -404,7 +430,7 @@ async fn search_latency_baseline() {
     );
 
     println!("\n===== WP-MVP-E01/E02 搜索读延迟基线 =====");
-    println!("数据量：{topics} 主题（每主题 1 检索文档），播种耗时 {seed_secs:.1}s");
+    println!("数据量：{documents} 篇检索文档（本次新增 {topics}），播种耗时 {seed_secs:.1}s");
     println!("召回：全量命中 {full_recall} 条（每页取前 50）、零命中 0 条");
     println!("并发：{concurrency} 路 × 每路 {rounds} 次；连接池上限 16");
     println!("检索：PostgreSQL 完整模式（pg_jieba，索引侧 jiebaqry / 查询侧 jiebacfg）");
