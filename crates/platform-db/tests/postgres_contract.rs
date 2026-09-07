@@ -1208,6 +1208,57 @@ async fn real_deadlocks_are_classified_and_absorbed_by_controlled_retry() {
     let a = insert_user(&pool, &renderer, &marker()).await;
     let b = insert_user(&pool, &renderer, &marker()).await;
 
+    // ---- 前置：确认死锁检测能早于锁超时触发 ----
+    //
+    // 反序更新要产出 `40P01`，前提是死锁检测器先于 `lock_timeout` 触发。生产默认恰恰
+    // 相反——`transaction_setup_sql` 设 `lock_timeout = '500ms'`，而 PostgreSQL 的
+    // `deadlock_timeout` 默认 1s，冲突方总是先拿到 `55P03`，死锁检测根本没机会跑。
+    // 这正是 `99` §5.23 登记的待裁决缺陷。
+    //
+    // 因此本用例要求运行环境把 `deadlock_timeout` 降到 `lock_timeout` 之下，在一次性
+    // 容器里执行：`ALTER DATABASE bbbcm_contract SET deadlock_timeout = '200ms';`
+    //
+    // 这样做有两重意义：一是让「40P01 发生时分类与重试是否正确」这条独立性质可被验证，
+    // 二是对候选修法「降低 deadlock_timeout」的实证——若本用例在该配置下通过，说明该
+    // 修法确实能让受控重试生效。**生产采用哪个取值仍待裁决，本用例不代替裁决，也不修改
+    // 生产配置。**
+    fn timeout_ms(raw: &str) -> u64 {
+        let t = raw.trim();
+        if let Some(v) = t.strip_suffix("ms") {
+            v.trim().parse().expect("毫秒值")
+        } else if let Some(v) = t.strip_suffix('s') {
+            v.trim().parse::<u64>().expect("秒值") * 1000
+        } else {
+            t.parse().expect("裸数字按毫秒")
+        }
+    }
+    let (deadlock_ms, lock_ms) = {
+        let mut tx = DbTransaction::begin(&pool).await.expect("事务");
+        let row = {
+            let mut c = tx.connection();
+            c.fetch_optional(
+                "SELECT current_setting('deadlock_timeout') AS d, \
+                 current_setting('lock_timeout') AS l",
+                &[],
+            )
+            .await
+            .expect("读取超时设置")
+            .expect("current_setting 必有一行")
+        };
+        let d = timeout_ms(&row.text("d").expect("deadlock_timeout"));
+        let l = timeout_ms(&row.text("l").expect("lock_timeout"));
+        tx.rollback().await.expect("回滚");
+        (d, l)
+    };
+    assert!(
+        deadlock_ms < lock_ms,
+        "本用例要求 deadlock_timeout({deadlock_ms}ms) < 事务内的 lock_timeout({lock_ms}ms)，\
+         否则冲突方先超时，`40P01` 不可达、用例失去意义。请在一次性容器上执行 \
+         `ALTER DATABASE <库> SET deadlock_timeout = '200ms';` 后重跑。\
+         生产默认相反，那是 `99` §5.23 登记的待裁决缺陷，不是本用例的断言对象。"
+    );
+    eprintln!("前置：deadlock_timeout={deadlock_ms}ms < lock_timeout={lock_ms}ms");
+
     // ---- 第一层：裸事务反序更新，确认错误码被正确分类 ----
     let touch = |pool: Pool, users: String, first: i64, second: i64| async move {
         let mut tx = DbTransaction::begin(&pool).await.expect("事务");
