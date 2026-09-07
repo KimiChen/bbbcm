@@ -36,7 +36,26 @@ pub struct ContentService {
     cache: Option<Arc<dyn platform::cache::CacheStore>>,
     /// 当前检索后端。由装配层按后端能力注入，不由配置声称。
     search: Arc<dyn crate::search::SearchBackend>,
+    /// `NAV-004` 站点统计的进程内短 TTL 缓存。
+    ///
+    /// 统计挂在每个公开页面的侧栏上，而它由三条**全表 COUNT** 算出
+    /// （主题、回复、用户）。E02 吞吐实测（`99` §5.43）里，10 万主题 + 10 万帖子
+    /// 下这三条构成首页请求的主要数据库开销，200 req/s 时系统饱和在约 130 req/s。
+    ///
+    /// 缓存的是聚合公开计数，不含任何按人可见性——统计只数已发布、未处置、未删除
+    /// 的行，对所有访客同一份，因此不存在跨用户串味的问题。
+    statistics: StatisticsCache,
 }
+
+/// 站点统计缓存的存活时间。
+///
+/// 取 30 秒与 `02` §12 的公开片段缓存 TTL 一致，并落在 `DEC-030` 规定的
+/// 「删除／隐藏／权限收紧向搜索与缓存传播 ≤60 秒」之内——统计里的一条主题被删除
+/// 后，最迟 30 秒该计数就会重算。
+const STATISTICS_TTL_SECONDS: i64 = 30;
+
+/// 站点统计缓存：`(算出的时刻, 计数)`。`Arc` 使 `ContentService` 的克隆共享同一份。
+type StatisticsCache = Arc<std::sync::Mutex<Option<(DateTime<Utc>, SiteStatistics)>>>;
 #[derive(Clone, serde::Serialize)]
 enum Mutation {
     Topic(NewTopic),
@@ -93,6 +112,7 @@ impl ContentService {
             // 默认值取「能力更弱的那个」，漏接线时页面会如实说仅支持标题搜索，
             // 而不是声称支持全文却搜不到正文。
             search: Arc::new(crate::search::SqliteTitleSearch),
+            statistics: Arc::new(std::sync::Mutex::new(None)),
         }
     }
     pub fn with_cache(mut self, cache: Arc<dyn platform::cache::CacheStore>) -> Self {
@@ -871,13 +891,27 @@ impl ContentService {
         &self,
         now: DateTime<Utc>,
     ) -> Result<SiteStatistics, ContentError> {
+        let now = canonical(now)?;
+        // 命中未过期缓存就不碰数据库。锁只护一个小结构，持有时间是常数级，
+        // 不跨 await——跨 await 持有 std 互斥锁会在多线程运行时上死锁。
+        if let Ok(guard) = self.statistics.lock()
+            && let Some((computed_at, cached)) = guard.as_ref()
+            && (now - *computed_at).num_seconds() < STATISTICS_TTL_SECONDS
+            && now >= *computed_at
+        {
+            return Ok(*cached);
+        }
         let mut tx = DbTransaction::begin_read(&self.pool).await?;
         let mut c = tx.connection();
         self.flags(&mut c, None).await?;
-        let _ = canonical(now)?;
         let stats = repo::site_statistics(&mut c, &self.renderer).await;
         tx.rollback().await?;
-        stats
+        let stats = stats?;
+        // 只缓存成功结果：把失败缓存下来会让一次瞬时故障持续 30 秒。
+        if let Ok(mut guard) = self.statistics.lock() {
+            *guard = Some((now, stats));
+        }
+        Ok(stats)
     }
 
     pub async fn list(

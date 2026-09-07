@@ -1665,10 +1665,14 @@ async fn hot_ranking_orders_by_view_count_and_excludes_deleted_topics() {
 }
 
 /// NAV-004 站点统计：真实计数，回复数排除首帖。
+///
+/// 每次断言都把时钟推过缓存 TTL：统计带 30 秒进程内缓存（见 `core.rs`），
+/// 用同一个时间戳连调只会拿到同一份快照，那样测不到计数逻辑。
 #[tokio::test]
 async fn site_statistics_count_visible_content_and_exclude_opening_posts() {
     let f = Fixture::new().await;
-    let before = f.service.site_statistics(at()).await.unwrap();
+    let past_ttl = |n: i64| at() + chrono::Duration::seconds(31 * n);
+    let before = f.service.site_statistics(past_ttl(0)).await.unwrap();
     // 夹具建了 9 个账号，全部 active。
     assert_eq!(before.users, 9);
     assert_eq!((before.topics, before.replies), (0, 0));
@@ -1676,7 +1680,7 @@ async fn site_statistics_count_visible_content_and_exclude_opening_posts() {
     let topic = f.create("统计").await;
     f.reply(topic.topic_id, "第一条回复").await;
     f.reply(topic.topic_id, "第二条回复").await;
-    let stats = f.service.site_statistics(at()).await.unwrap();
+    let stats = f.service.site_statistics(past_ttl(1)).await.unwrap();
     // 回复数只算楼层 > 1 的帖子：把首帖算进「回复」会让每个主题凭空多一条。
     assert_eq!((stats.topics, stats.replies), (1, 2));
 
@@ -1685,7 +1689,53 @@ async fn site_statistics_count_visible_content_and_exclude_opening_posts() {
         .create_topic(&f.credentials(5), f.topic_input("待审"), at())
         .await
         .unwrap();
-    assert_eq!(f.service.site_statistics(at()).await.unwrap().topics, 1);
+    assert_eq!(
+        f.service.site_statistics(past_ttl(2)).await.unwrap().topics,
+        1
+    );
+}
+
+/// 统计缓存：TTL 内复用，过期后重算。
+///
+/// 单独测它而不是只依赖上面的用例——缓存的失效边界是它唯一会出错的地方，
+/// 而「一直返回旧值」在页面上看不出来，只会表现为统计数字停住不动。
+#[tokio::test]
+async fn site_statistics_cache_holds_within_ttl_and_recomputes_after() {
+    let f = Fixture::new().await;
+    let base = at();
+    assert_eq!(f.service.site_statistics(base).await.unwrap().topics, 0);
+
+    f.create("缓存内新增").await;
+    // TTL 内：内容已经进库，但统计仍应返回缓存快照。
+    assert_eq!(
+        f.service
+            .site_statistics(base + chrono::Duration::seconds(29))
+            .await
+            .unwrap()
+            .topics,
+        0,
+        "TTL 内应复用缓存快照"
+    );
+    // 越过 TTL：必须重算。
+    assert_eq!(
+        f.service
+            .site_statistics(base + chrono::Duration::seconds(31))
+            .await
+            .unwrap()
+            .topics,
+        1,
+        "越过 TTL 应重算"
+    );
+    // 时间倒流不得命中缓存：否则一次时钟回拨会让统计卡在未来的那份快照上。
+    assert_eq!(
+        f.service
+            .site_statistics(base - chrono::Duration::seconds(5))
+            .await
+            .unwrap()
+            .topics,
+        1,
+        "时间早于缓存时刻时应重算而不是命中"
+    );
 }
 
 /// `90` §5 SQLite 体验模式：FTS5 探测结果决定检索能力，正文搜索入口必须给出
