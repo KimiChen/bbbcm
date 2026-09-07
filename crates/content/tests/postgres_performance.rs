@@ -174,13 +174,13 @@ async fn seed(prefix: &str, topics: usize) -> (Pool, SchemaRenderer, i64, i64) {
                 // 分档测量。选词避免共享汉字：jieba 会把「紫檀」「檀香」都切出
                 // 「檀」，共字会让零命中那一档失真。
                 let mut markers = String::new();
-                if n % 10 == 0 {
+                if n.is_multiple_of(10) {
                     markers.push_str(" 蓝莓");
                 }
-                if n % 100 == 0 {
+                if n.is_multiple_of(100) {
                     markers.push_str(" 猕猴桃");
                 }
-                if n % 1000 == 0 {
+                if n.is_multiple_of(1000) {
                     markers.push_str(" 山竹");
                 }
                 let body = format!("基线正文 {n}，含独有词 曼陀罗{markers}，用于检索路径测量。");
