@@ -268,7 +268,7 @@ fn secret_debug_and_parse_errors_never_disclose_values() {
     let fixture = Fixture::new();
     let base = fixture.file(
         "base.toml",
-        "[database]\nbackend='postgres'\n[worker]\nembedded=false",
+        "[database]\nbackend='postgres'\nmax_connections=32\n[worker]\nembedded=false",
     );
     let config = Config::load_layers(&base, None, &variables, secrets).unwrap();
     assert!(!format!("{config:?}").contains("do-not-print"));
@@ -288,7 +288,7 @@ fn secret_debug_and_parse_errors_never_disclose_values() {
 fn backend_connections_prefix_path_and_bind_validation() {
     for text in [
         "[database]\nbackend='mysql8'",
-        "[database]\nbackend='postgres'\n[worker]\nembedded=false",
+        "[database]\nbackend='postgres'\nmax_connections=32\n[worker]\nembedded=false",
         "[database]\nmax_connections=0",
         "[database]\nmax_connections=2",
         "[database]\nschema_prefix='BCM'",
@@ -368,6 +368,9 @@ fn all_four_environments_and_production_boundaries() {
             config.features.redis = true;
             config.redis.url = Some("redis://localhost/0".to_string().into());
             config.worker.embedded = false;
+            // 切到 PostgreSQL 就必须一并给出池大小：默认值 1 是 SQLite 的，
+            // 留着会让全部请求排队在单条连接上（见 config.rs 的校验注释）。
+            config.database.max_connections = 32;
         }
         config.validate().unwrap();
         config.database.schema_prefix = "trial_".into();

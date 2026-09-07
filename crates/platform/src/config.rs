@@ -345,6 +345,22 @@ impl Config {
                 "database.max_connections 必须显式配置为正整数",
             ));
         }
+        // PostgreSQL 完整模式的连接池不得停在 SQLite 的默认值 1。
+        //
+        // `config/default.toml` 的 `max_connections = 1` 是给默认后端 SQLite 的
+        // （单写者，必须为 1）。切到 PostgreSQL 却忘了改，应用就只有一条数据库
+        // 连接，全部请求在它上面排队——**不报错、不告警，只是慢**。E02 吞吐实测
+        // 中这一项让 200 req/s 下的服务端延迟达到 5.7 秒；改成 32 后降到 1.6 秒，
+        // 同一份代码差 3.6 倍，唯一区别就是这个值。
+        //
+        // 这类「没有错误信号的错配置」必须在启动时拦住，而不是等上线后从延迟里
+        // 反推。这里只拒绝显然错误的 1，不规定具体取值——池规格属 `02` §19 的
+        // `DEC-004-B/013`，未批准前不设默认。
+        if self.database.backend == Backend::Postgres && self.database.max_connections < 2 {
+            return Err(ConfigError::Invalid(
+                "backend=postgres 时 database.max_connections 不得为 1：那是 SQLite 的默认值，会让全部请求排队在单条连接上",
+            ));
+        }
         if self.database.backend == Backend::Sqlite {
             if self.database.max_connections != 1 {
                 return Err(ConfigError::Invalid(

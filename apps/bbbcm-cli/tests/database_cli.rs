@@ -114,7 +114,7 @@ fn cli_uses_local_override_and_rejects_secrets_in_files() {
 #[test]
 fn production_seed_rejected_before_database_connection() {
     let f = Fixture::new();
-    std::fs::write(f.dir.join("config.toml"), "[server]\nenvironment='production'\nbind='127.0.0.1:8080'\n[database]\nbackend='postgres'\nmax_connections=1\n[features]\nredis=true\n[worker]\nembedded=false\n").unwrap();
+    std::fs::write(f.dir.join("config.toml"), "[server]\nenvironment='production'\nbind='127.0.0.1:8080'\n[database]\nbackend='postgres'\nmax_connections=32\n[features]\nredis=true\n[worker]\nembedded=false\n").unwrap();
     let output = f
         .command()
         .env(
