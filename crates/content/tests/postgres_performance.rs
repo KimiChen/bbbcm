@@ -196,6 +196,16 @@ async fn seed(prefix: &str, topics: usize) -> (Pool, SchemaRenderer, i64, i64) {
                     &[DbValue::I64(post_id), DbValue::I64(topic_id), DbValue::I64(forum),
                       DbValue::Text(title.clone()), DbValue::Text(title.to_lowercase()), DbValue::Text(body),
                       DbValue::Time(DateTime::UNIX_EPOCH), DbValue::I64(seq), DbValue::Time(doc_created)]).await.expect("插检索文档");
+                // `topic_history` 是主列表视图（最新回复／最新主题／置顶／精华）
+                // 的排序来源：`candidates()` 对 topics 与它做 JOIN，缺行则整张
+                // 列表为空。**空列表下的延迟与吞吐毫无意义**——它测的是渲染一个
+                // 空页面。早先的 `/`、`/new`、版块页数据正因缺这一步而作废。
+                let h = r
+                    .table(c.backend(), "community", "topic_history")
+                    .expect("表名");
+                c.execute(&format!("INSERT INTO {h} (sequence_no, topic_id, create_seq, last_reply_seq, pinned, globally_pinned, featured) VALUES (?, ?, ?, ?, ?, ?, ?)"),
+                    &[DbValue::I64(seq), DbValue::I64(topic_id), DbValue::I64(seq), DbValue::I64(seq),
+                      DbValue::Bool(false), DbValue::Bool(false), DbValue::Bool(false)]).await.expect("插主题历史");
             }
         }
         tx.commit().await.expect("提交批次");
@@ -210,6 +220,55 @@ async fn seed(prefix: &str, topics: usize) -> (Pool, SchemaRenderer, i64, i64) {
     ))
     .await
     .expect("以运行身份连接");
+
+    // 推进提交水位：`candidates()` 只取 `sequence_no <= watermark` 的历史行，
+    // 水位停在 0 时列表同样为空。播种是「已提交」的既成事实，水位必须跟上。
+    {
+        let mut tx = DbTransaction::begin(&app).await.expect("事务");
+        {
+            let mut c = tx.connection();
+            let state = r
+                .table(c.backend(), "community", "commit_state")
+                .expect("表名");
+            c.execute(
+                &format!("UPDATE {state} SET sequence_no = ?, version = version + 1 WHERE id = 1"),
+                &[DbValue::I64(created as i64 + 1)],
+            )
+            .await
+            .expect("推进水位");
+        }
+        tx.commit().await.expect("提交水位");
+    }
+
+    // 防空：主列表必须真的能取到行。缺 `topic_history` 或水位没推进时列表为空，
+    // 而空页面的延迟与吞吐是另一件事——早先三条路径的数据正因此作废。
+    {
+        let mut tx = DbTransaction::begin(&app).await.expect("事务");
+        let listed = {
+            let mut c = tx.connection();
+            let h = r
+                .table(c.backend(), "community", "topic_history")
+                .expect("表名");
+            let state = r
+                .table(c.backend(), "community", "commit_state")
+                .expect("表名");
+            let rows = c
+                .fetch_all(
+                    &format!(
+                        "SELECT COUNT(*) AS n FROM {h} WHERE sequence_no <= (SELECT sequence_no FROM {state} WHERE id = 1)"
+                    ),
+                    &[],
+                )
+                .await
+                .expect("回读可见历史行");
+            rows.first().expect("应有一行").i64("n").expect("计数列")
+        };
+        tx.rollback().await.expect("回滚只读事务");
+        assert!(
+            listed > 0,
+            "水位之内没有任何 topic_history 行，主列表会渲染为空；空页面的延迟数字没有意义"
+        );
+    }
 
     // 回读真实行数：请求数与表内实际行数只有在干净前缀上才相等。
     let mut tx = DbTransaction::begin(&app).await.expect("事务");

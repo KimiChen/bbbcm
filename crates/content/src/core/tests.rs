@@ -1804,3 +1804,16 @@ async fn sqlite_search_degrades_to_titles_and_says_so_instead_of_erroring() {
     // 受限提示本身的映射由 `http::search_notice` 的用例断言：它需要页面渲染器，
     // 而渲染器属应用装配层，不在内容领域的测试范围内。
 }
+
+/// 用真实墙钟连调两次：生产路径传的是 `Utc::now()`，不是夹具时间。
+#[tokio::test]
+async fn site_statistics_cache_hits_with_real_wall_clock() {
+    let f = Fixture::new().await;
+    let first = f.service.site_statistics(Utc::now()).await.unwrap();
+    f.create("第二次调用前新增").await;
+    let second = f.service.site_statistics(Utc::now()).await.unwrap();
+    assert_eq!(
+        first, second,
+        "两次调用相隔远小于 30 秒 TTL，第二次必须命中缓存"
+    );
+}
