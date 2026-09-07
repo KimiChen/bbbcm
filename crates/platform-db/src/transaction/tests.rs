@@ -34,6 +34,67 @@ impl Fixture {
             dir,
         }
     }
+    /// `WP-MVP-E01`：把同一套夹具搭在真实 PostgreSQL 上。
+    ///
+    /// 返回 `None` 表示运行者没有提供隔离端点，调用方应**跳过并说明**——跳过不是通过。
+    /// 闸门与前置同 `docs/development/postgres.md`：显式隔离确认、回环地址、
+    /// 迁移与运行两个登录身份、以及已预置角色的随机前缀。
+    ///
+    /// 为什么需要它：`90` §5 把「未知提交」列在 **PostgreSQL 集成**下，而丢回执后
+    /// 连接必须被丢弃这一条，在 SQLite 上只能用 `sqlite_temp_master` 间接验证，
+    /// 换到 PostgreSQL 要看 `pg_backend_pid()`。两个后端的验证手段不通用。
+    /// 连接池上限由调用方显式给出，没有默认值。
+    ///
+    /// 不设默认是有意的：池大小会直接改变某些断言的含义。要断言「某条连接被丢弃」，
+    /// 就必须先保证稳态下**复用同一条**（取 1）；多连接池会随机派发空闲连接，
+    /// `pg_backend_pid()` 本来就每次不同，那样的断言无论实现对错都会通过。
+    /// 让调用方写出这个数字，比给一个"通用"默认值更不容易出错。
+    pub async fn new_postgres_with(max_connections: u32) -> Option<Self> {
+        if std::env::var("POSTGRES_CONTRACT_ISOLATED").ok().as_deref() != Some("yes") {
+            return None;
+        }
+        let prefix = std::env::var("POSTGRES_CONTRACT_ALT_PREFIX").ok()?;
+        let loopback = |raw: String| -> String {
+            let raw = raw.replace("{prefix}", &prefix);
+            let parsed = url::Url::parse(&raw).expect("端点 URL 非法");
+            assert!(
+                parsed.host_str().is_some_and(|h| h
+                    .parse::<std::net::IpAddr>()
+                    .is_ok_and(|ip| ip.is_loopback())),
+                "只允许字面回环 IP"
+            );
+            raw
+        };
+        let migrator = loopback(std::env::var("POSTGRES_CONTRACT_MIGRATOR_URL").ok()?);
+        let app = loopback(std::env::var("POSTGRES_CONTRACT_URL").ok()?);
+
+        let mut cfg = Config::default().database;
+        cfg.backend = Backend::Postgres;
+        cfg.schema_prefix = prefix.clone();
+        // 迁移与运行必须是两个登录身份：`prepare_postgres` 要求运行角色的组成员
+        // 关系恰好一条，同一角色不可能既迁移又跑应用。
+        cfg.postgres_url = Some(platform::config::SecretString::new(migrator));
+        cfg.max_connections = max_connections.max(2);
+        migrations::migrate(
+            &cfg,
+            &PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../db/migrations"),
+        )
+        .await
+        .unwrap();
+        cfg.postgres_url = Some(platform::config::SecretString::new(app));
+        cfg.max_connections = max_connections;
+        let dir = std::env::temp_dir().join(format!(
+            "bbbcm-engine-pg-{}",
+            platform::transaction::new_operation_id()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        Some(Self {
+            pool: Pool::connect(&cfg).await.unwrap(),
+            renderer: SchemaRenderer::new(&prefix).unwrap(),
+            dir,
+        })
+    }
+
     pub fn forums(&self) -> String {
         self.renderer
             .table(Backend::Sqlite, "community", "forums")

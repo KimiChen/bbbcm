@@ -121,7 +121,7 @@
 | `WP-MVP-C05` | In progress | 同事务权威 search_documents、搜索页/SEO/Feed/sitemap 已交付；**本轮补齐 PostgreSQL 完整模式全文检索**（`pg_jieba` 索引侧 `jiebaqry`／查询侧 `jiebacfg`，能力按实测探测装配，权限过滤与体验模式逐条对齐），见 5.24。GIN 索引与百万级重建属性能矩阵，仍缺。 |
 | `WP-MVP-C04` | In progress | **本轮交付两个切片**：`SOCIAL-002`／`SOCIAL-003` 正向反馈（迁移 0020，见 5.25）与 `NOTIFY-001`／`002`／`003` 站内通知（迁移 0021，见 5.26），并据此补齐 `90` §5 并发矩阵的「互动唯一性」与「通知去重」，使并发九项全部执行完毕。收藏（`SOCIAL-001`）、关注（`SOCIAL-004`）、阅读位置、`NOTIFY-004/005` 与 HTTP 入口仍缺；无可达路由，不标完成。 |
 | `WP-MVP-D01..D04` | Not started | - |
-| `WP-MVP-E01` | In progress | 已通过并留证：真实 Redis 8 合同、真实 PostgreSQL 16 双前缀集成 11 项、并发矩阵九项**全部通过**（通知去重随 5.26 的 `NOTIFY-*` 切片补齐）、安全矩阵中不依赖未完成功能的六项、`90` §6 参数门槛六项、SQLite 体验模式四项、浏览器结构化检查（对比度经 `DEC-067` 修复后达标）、`pg_jieba` 扩展镜像离线构建与实测、SBOM/许可证/漏洞/Secret 全量扫描、公开读延迟基线（实验记录）。执行过程中发现并修复四个生产缺陷（`DEC-064`／`DEC-065`／`DEC-066` 与 `/manage` 错误响应缺安全头）。**仍缺**：E2E 全路径（依赖 `C04`／`D01`–`D04`）、A 级像素与几何比对、负载与延迟门槛（需批准资源规格）、触控目标门槛（待裁决）、`90` §5 部分 PostgreSQL 条目（`CommitUnknown`、`40001`/`40P01` 受控重试）。详见 5.23。 |
+| `WP-MVP-E01` | In progress | 已通过并留证：真实 Redis 8 合同、真实 PostgreSQL 16 双前缀集成 11 项、并发矩阵九项**全部通过**（通知去重随 5.26 的 `NOTIFY-*` 切片补齐）、安全矩阵中不依赖未完成功能的六项、`90` §6 参数门槛六项、SQLite 体验模式四项、浏览器结构化检查（对比度经 `DEC-067` 修复后达标）、`pg_jieba` 扩展镜像离线构建与实测、SBOM/许可证/漏洞/Secret 全量扫描、公开读延迟基线（实验记录）。执行过程中发现并修复四个生产缺陷（`DEC-064`／`DEC-065`／`DEC-066` 与 `/manage` 错误响应缺安全头）。**仍缺**：E2E 全路径（依赖 `C04`／`D01`–`D04`）、A 级像素与几何比对、负载与延迟门槛（需批准资源规格）、触控目标门槛（待裁决）、`90` §5 的 `40001`/`40P01` 受控重试。详见 5.23。 |
 | `WP-MVP-E02/E04/E05` | Not started | - |
 | `WP-P1A-01..09` | Not started / flag closed | - |
 | `WP-P1B-*` | Not started / flag closed | - |
@@ -1268,6 +1268,7 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 | 并发矩阵：治理命令 | **通过，2/2**。并发批准恰好生效一次且落库批准人正是成功那一路、版本恰好 +1；操作者自批 8 路并发全部失败、状态与版本纹丝不动、`approval_satisfied` 仍为假。本项首次执行即暴露并修复了 `DEC-065` 的缺陷。证据同上。 |
 | 并发矩阵：identity 三项 | **通过**。邮箱验证、密码恢复、邀请码消费/额度，各 8 路并发。邮箱验证除断言恰好一次成功外，还回读 `consumed` 标志——只看返回值排除不了「第二次也写了、只是返回幂等重放」；密码恢复在并发结束后再单独试一次并要求失败，把一次性验到底；邀请码额外核对实际只新增一个账号。证据见 [`identity-concurrency.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/identity-concurrency.txt)。 |
 | 并发矩阵：主题楼层 | **通过**。8 路 Worker × 每路 5 条 = 40 条并发回复，各用独立账号以避开 `DEC-060` 的每小时预算。断言楼层不重复、从 2 起连续（2–41）、主题 `next_floor` 与 `raw_reply_count` 与实际行数一致。本项首次执行即暴露并修复了 `DEC-064` 的 `forums` ACL 缺陷。证据见 [`content-concurrency.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/content-concurrency.txt)。 |
+| 未知提交（`CommitUnknown`，真实 PostgreSQL） | **通过**。`postgres_unknown_commit_never_replays_and_discards_the_connection`（crate 内，因 `simulate_lost_ack` 是 `#[cfg(test)]`，集成测试拿不到）。四层断言：结果为 `Unknown` 且带原操作 ID；业务闭包**恰好执行一次**（重放会把一次已提交的写变成两次）；提交/回滚两种模式下业务事实的落库状态分别正确；丢回执后的连接被丢弃、不放回池中复用。 |
 | 审计与搜索权限状态同事务提交 | **通过**。`audit_and_search_permission_state_commit_with_the_business_fact`：提交/回滚两轮对称断言审计与业务事实同生同灭；额外正面断言运行角色**读不到**审计表（`0002_engine.sql:92` 只授 INSERT，审计对应用只追加，可读即可试探），回读因此走迁移身份；并核对搜索投影携带全部五个权限判定列，缺任一列都会让检索绕过对应过滤。至此 `postgres_contract` 12/12。 |
 | 并发矩阵：Outbox lease | **通过**。120 条事件 / 8 路 Worker 并发 `claim`，四层断言：反空转（八路全部领到，非单线程退化）、至多一次（无重复租约）、不饿死（120 条全部领走）、两两不相交。数据库侧复核状态全为 `leased` 且计数相符。证据见 [`postgres-concurrency.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/postgres-concurrency.txt)。**只覆盖 `90` §5 并发九项中的一项**，其余见下表。 |
 | HTTP/E2E 状态矩阵（真实业务路由） | **八类全部通过**。补齐装配（三项 Secret + `active_token_version` + `local_test` 适配器 + 运维方式开 Flag）后业务路由可达：成功（`/`、`/new`、`/hot`、`/pinned`、`/featured`、`/search`、`/login`、`/robots.txt`、`/sitemap.xml`、`/feed.xml`）、空态（空搜索 200 且呈现「没有匹配的标题。」而非错误）、不存在（404）、未认证（`/settings/profile` 401）、未授权（`/me/topics` 403）、依赖失败（`/register` 503，挑战 provider 未装配时失败关闭）。CSRF：无令牌 POST 到 `/login`／`/register`／`/topics/new` 分别 400／400／403，无一条走进业务逻辑。公开页 CSP 含 `script-src 'none'`，与「页面脚本数为 0」互相印证。**过期**：带 CSRF 提交无效令牌返回 400，提示刻意通用、不透露令牌是否存在或已过期（避免枚举）。**冲突**：补齐邀请码与版块激活两项播种前置后走完真实 HTTP 全流程——注册 → 读 `local_test` 邮件取令牌 → 验证邮箱 → 登录 → 发主题 → 编辑（当前版本成功、`version` 升 2）→ 再以陈旧 `version=1` 提交得 **409**，且正文未被覆盖、版本停在 2。登录后 `/settings/profile`／`/me/topics` 由 401／403 转 200，认证边界同一路径两种结果。证据见 [`e2e-business-routes.txt`](../docs/evidence/mvp/wp-mvp-e04/dev-20260907/e2e-business-routes.txt)。 |
@@ -1287,7 +1288,7 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 
 | 检查 | 未执行原因 |
 |---|---|
-| 未知提交（`CommitUnknown`） | 触发需 `command.rs` 内 `#[cfg(test)]` 的 `simulate_lost_ack` 钩子，crate 外的集成测试拿不到；只能由 crate 内单元测试覆盖。 |
+
 | `40001`/`40P01` 受控重试 | 压出序列化失败或死锁必须**故意违反**固定锁顺序，而平台层会先一步拒绝（已由 `lock_order_is_frozen_…` 正面验证）。需另建绕过平台层的夹具，或承认该故障被设计挡在发生之前。 |
 
 | ~~应用的完整搜索模式~~ **已完成** | 2026-09-07 交付，见第 5.24 节。原登记如下：**阻塞性质已改变**：扩展镜像本轮已按 `M0-03` 的 Dockerfile 离线构建成功，`pg_jieba` 1.1.1 与 `pg_trgm` 1.6 实测可用（中文分词、`@@` 匹配、`similarity` 均正确），同一套合同 11 项在该镜像上亦全部通过。真正缺的是应用侧——`crates/content/src/search.rs` 目前只有 `SqliteTitleSearch` 一个 `SearchBackend` 实现，`pg_jieba + pg_trgm` 的 PostgreSQL 后端尚未编写。这属 `WP-MVP-C05` 的实现缺口，不再是 E01 的环境问题。证据见 [`pg-jieba-extension.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/pg-jieba-extension.txt)。**该缺口本轮已补齐**，全文检索通过真实 `pg_jieba` 验证。 |
@@ -1399,6 +1400,12 @@ PostgreSQL 中没有 schema `USAGE`，其下所有表级授权一律无效。**�
 控制台把「账号不存在／非 staff／密码错误」统一收敛为一个错误再渲染 401，这条设计本身正确（不给枚举线索）。问题在于**服务端同样没有记录**：反枚举要求的是不告诉客户端，不等于不记录在服务端。两点后果——首账号引导失败时运维无从诊断，无法区分密码错与装配缺失；针对 `/manage/login` 的凭证填充不留任何可检测信号，而这正是 `90` §5 安全矩阵「凭证填充」要防的场景之一。
 
 **未登记为已确认缺陷**：本轮没有定位到该 401 的确切成因，而「无法定位」恰是这条观察本身的内容。建议在管理登录失败分支补服务端记录（脱敏原因码 + 风险事件）后重跑该路径。证据见 [`manage-path-e2e.txt`](../docs/evidence/mvp/wp-mvp-e04/dev-20260907/manage-path-e2e.txt)。
+
+#### 一次自查抓到的空断言（2026-09-07）
+
+`postgres_unknown_commit_…` 的「连接被丢弃」原本用 `pg_backend_pid()` 前后比较来断言。加反空转前置后当场发现：**稳态下连续两次查询就落在不同连接上**（实测 PID 316／317），因为 sqlx 连接池随机派发空闲连接。也就是说原断言无论实现对错都会通过，是个空断言。
+
+改法是把该用例的连接池上限固定为 1，并保留「稳态下 PID 必须相同」的前置断言——前置不成立时直接失败，而不是让后面的比较悄悄失去意义。`Fixture::new_postgres_with` 因此不提供默认池大小：池大小会直接改变某些断言的含义，让调用方写出这个数字比给一个「通用」默认值更不容易出错。
 
 #### 状态影响
 
