@@ -1785,6 +1785,39 @@ SQLite 验语义（幂等重投不报错、未读计数、单条与全部已读�
 
 `flag set` 本身仍未接入（`WP-MVP-A02` 剩余项，见第 5.5 节），本轮只修 panic，未实现受控写。
 
+### 5.29 `WP-MVP-E01` 治理路径 E2E：真实 PostgreSQL 上的可达边界（2026-09-07）
+
+上一轮 `/manage/login` 的两处修复只在 SQLite 体验模式下验证过。本轮在真实 PostgreSQL 完整模式下重跑整条路径，并确定它实际能走到哪一步。证据见 [`governance-path-postgres.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/governance-path-postgres.txt)。
+
+#### 已跑通
+
+迁移 1–21、种子六版块；注册（邀请制）200、邮箱验证 200、登录 200、发帖 303 且主题出现在 `/daily`；`user promote` 建立 staff principal；**`POST /manage/login` 303**、**`/manage/mfa` 绑定 TOTP 200** 并返回 10 枚恢复码；绑定后 `/manage`、`/manage/cases`、`/manage/reports`、`/manage/content` 全部 200。全程 panic 数 0。
+
+邮箱验证令牌原文只存在于邮件正文，本机无投递通道、库内只存哈希。取得方式是按 `TokenIssuer::derive` 的同一 HMAC 输入重算原文，**先与库内 `token_hash` 逐字节比对确认推导正确**，再走正常的 `POST /verify-email`；消费仍由服务端事务完成，不是绕过校验。
+
+#### 未能跑通，并更正一处早先登记
+
+队列页返回 200 但正文是「没有查看案件的权限」。查证结论是四个已登记交付缺口叠加，不是缺陷：
+
+1. `site_owner` 在 `iam.role_permissions` 中恰好四项极高危权限（`iam.billing.manage`／`iam.disaster.recover`／`iam.keys.rotate`／`iam.production.access`），不含任何 `moderation.*`——与 `03` §4 职责分离一致，拒绝是对的；
+2. `user promote` 只建 staff principal，不分配角色（`iam.role_assignments` 实测为空）；
+3. 受控命令 `crates/manage/src/iam/commands.rs::assign_role` 完整实现，但全仓**除测试外无任何调用方**：无 CLI 子命令，`/manage` 亦无对应路由；
+4. `crates/moderation/src/http.rs::router()` 返回空 Router，举报入口未交付，队列里不可能有案件。
+
+**更正**：第 5.23 节与 `manage-path-e2e.txt` 原把治理动作记为「依赖登录成功」。登录已修好，它们仍不可达，原因与登录无关。治理动作（案件队列、举报处置、内容处置）当前**无法通过任何已实现路径端到端执行**，属 `D01`／`D04` 剩余交付。
+
+#### 没有伪造授权
+
+直接往 `iam.role_assignments` 写一行即可让队列跑起来，本轮没有这么做：手写授权行会绕开 `assign_role` 的十步校验、scope 校验、`authz_version` 递增与审批职责分离，得出的「通过」不能证明任何真实路径可用，只会把交付缺口伪装成已验证。授权判定本身由 `crates/manage/src/iam/authorize/tests.rs` 四项单元测试覆盖。
+
+#### 附带确认（非缺陷）
+
+`gov_staff`／`gov_admin`／`gov_moderator` 注册一律 400，同一枚邀请码稍后成功注册 `gov_mod`。原因是 `crates/identity/src/policy.rs` 的反冒充用户名策略按 `_` 拆段比对保留词骨架，`staff` 命中保留词。行为正确，登记以免日后被误当作偶发失败。
+
+#### 对 `WP-MVP-E01` 状态的影响
+
+`90` §5 的「治理路径 E2E」本轮**未完成**，且已确认不是靠修缺陷能完成的——它依赖 `D01` 举报入口与 `D04` 授权入口的交付。`WP-MVP-E01` 继续记 `In progress`，不授予任何 `Verified`。
+
 ## 6. 门禁状态
 
 | 门禁 | 当前状态 | 原因 |

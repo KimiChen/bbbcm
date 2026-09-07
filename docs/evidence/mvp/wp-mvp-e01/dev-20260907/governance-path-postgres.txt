@@ -1,0 +1,78 @@
+# WP-MVP-E01 治理路径 E2E：真实 PostgreSQL 上的可达边界（2026-09-07）
+
+环境：远端 Docker PostgreSQL 16（UTF8 / C.UTF-8），经本机回环 SSH 隧道访问；
+独立随机 schema 前缀，运行角色 `app_login` 仅属 `app_rw` 一个组。连接串、主机
+地址与账号口令一律走环境变量或本机 scratchpad，不入库。
+
+上一轮 `/manage/login` 的两处修复只在 SQLite 体验模式下验证过。本轮首次在真实
+PostgreSQL 完整模式下把整条路径重跑，并确定它到底能走到哪一步。
+
+## 已跑通（真实 PostgreSQL）
+
+| 步骤 | 结果 |
+|---|---|
+| 迁移 | 应用 1–21 |
+| 种子 | 新增 6 个版块、6 个规则占位版本 |
+| 注册（邀请制） | 200 |
+| 邮箱验证 | 200 |
+| 登录 | 200 |
+| 发布主题 | 303，主题出现在 `/daily` |
+| `bbbcm-cli user promote` | 建立 staff principal，打印 `[ALERT] AUTH-014` |
+| `POST /manage/login` | **303** |
+| `/manage/mfa` 绑定 TOTP | **200**，返回 10 枚一次性恢复码 |
+| 绑定后 `/manage`、`/manage/cases`、`/manage/reports`、`/manage/content` | 全部 **200** |
+| 全程 panic 数 | **0** |
+
+邮箱验证令牌的取得方式需说明：令牌原文只出现在邮件正文里，本机没有投递通道，
+库内只存哈希。因此按 `TokenIssuer::derive` 的同一 HMAC 输入（域串、key 版本、
+token_id、nonce、user_id、purpose、email_key、过期时间、credential_version）
+重算原文，**并先与库内 `token_hash` 逐字节比对确认推导正确**，再走正常的
+`POST /verify-email`。这不是绕过校验——消费仍由服务端事务完成。
+
+## 未能跑通：案件队列与举报处置
+
+绑定完成后队列页返回 200，但正文是「没有查看案件的权限」「没有查看举报的权限」。
+逐层查证后，这不是缺陷，而是**三个已登记的交付缺口叠加**：
+
+**其一，`site_owner` 本就没有治理权限。** 库内 `iam.role_permissions` 实测：
+
+```
+site_owner -> iam.billing.manage / iam.disaster.recover
+              iam.keys.rotate    / iam.production.access
+```
+
+恰好四项极高危权限，不含任何 `moderation.*`。这与 `03` §4 的职责分离一致——
+站点所有者不是版主，拒绝是对的。
+
+**其二，`user promote` 不分配角色。** 实测 `iam.role_assignments` 为空。引导命令
+只建 staff principal，授权需要另一条路径。
+
+**其三，那条路径没有调用方。** `crates/manage/src/iam/commands.rs::assign_role`
+是完整实现的受控命令，但全仓**除测试外没有任何调用者**：没有 CLI 子命令，
+`/manage` 也没有对应路由（`03` 十六条路由中十一条未注册）。
+
+因此首个站点所有者可以登录后台，却无法被授予任何治理角色。
+
+**其四，举报入口未交付。** `crates/moderation/src/http.rs::router()` 返回空
+Router，没有举报提交入口，队列里也不可能有案件。
+
+这四点合起来的结论：**治理动作（案件队列、举报处置、内容处置）当前无法通过任何
+已实现路径端到端执行**，属 `D01`／`D04` 的剩余交付，不是本轮可修的缺陷。
+
+需要更正一处早先的登记：上一轮把治理动作记为「依赖登录成功」。登录已经修好，
+它们仍然不可达，原因与登录无关。
+
+### 没有伪造授权
+
+本可以直接往 `iam.role_assignments` 写一行来让队列跑起来。没有这么做：手写授权
+行会绕开 `assign_role` 的十步校验、scope 校验、`authz_version` 递增与审批职责
+分离，跑出来的「通过」不能证明任何真实路径可用，只会把一个交付缺口伪装成已验证。
+授权判定本身另有单元测试覆盖（`crates/manage/src/iam/authorize/tests.rs` 四项，
+含十步逐项否决、版块 scope 随目标当前版块、高危需异人审批）。
+
+## 附带确认（非缺陷）
+
+`gov_staff`／`gov_admin`／`gov_moderator` 注册一律 400，而同一枚邀请码稍后可以
+成功注册 `gov_mod`。原因是 `crates/identity/src/policy.rs` 的反冒充用户名策略：
+`reserved()` 会把用户名按 `_` 拆开逐段比对保留词骨架，`gov_staff` 拆出的 `staff`
+命中保留词。行为正确，此处记录以免日后被误当作偶发失败。
