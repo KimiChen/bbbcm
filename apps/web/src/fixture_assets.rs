@@ -30,6 +30,13 @@ pub const SOURCES: &[SourceAsset] = &[
         bytes: include_bytes!("../static/css/pages.css"),
     },
     SourceAsset {
+        // 无障碍叠加层（DEC-067）：必须排在三份参考样式之后加载才能生效。
+        name: "a11y.css",
+        logical: "css/a11y.css",
+        mime: "text/css; charset=utf-8",
+        bytes: include_bytes!("../static/css/a11y.css"),
+    },
+    SourceAsset {
         name: "profile.css",
         logical: "css/profile.css",
         mime: "text/css; charset=utf-8",
