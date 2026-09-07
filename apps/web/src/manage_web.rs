@@ -148,18 +148,39 @@ impl ConsoleBackend for Backend {
         })
     }
 
+    fn preauth<'a>(&'a self) -> BoxFuture<'a, Result<(String, String), ConsoleError>> {
+        Box::pin(async move {
+            let identity = self.identity.as_ref().ok_or(ConsoleError::Unavailable)?;
+            let grant = identity
+                .create_preauth(Utc::now())
+                .await
+                .map_err(|_| ConsoleError::Unavailable)?;
+            Ok((
+                grant.token.expose().to_owned(),
+                grant.csrf.expose().to_owned(),
+            ))
+        })
+    }
+
     fn login<'a>(
         &'a self,
         username: &'a str,
         password: &'a str,
+        preauth: &'a str,
+        csrf: &'a str,
     ) -> BoxFuture<'a, Result<(String, String, bool), ConsoleError>> {
         Box::pin(async move {
             let identity = self.identity.as_ref().ok_or(ConsoleError::Unavailable)?;
-            // 复用与普通登录完全相同的请求上下文构造：四维限流、风险信号与挑战
-            // 都在这一层生效，管理登录不走任何简化路径。
+            // 复用与普通登录完全相同的请求上下文：四维限流、风险信号与挑战都在这一层
+            // 生效，管理登录不走任何简化路径。
+            //
+            // preauth 与 csrf 必须是登录页真实签发的那一对。此前这里用三个随机
+            // `new_operation_id()` 现造上下文，而身份层的 `repo::principal` 按 token
+            // 哈希查 `request_principals` 且**不创建**该行，于是查找必然失败——
+            // 管理控制台因此从来登录不上，而失败又被统一收敛成 401，看起来像密码错。
             let context = identity::contract::RequestContext::new(
-                identity::contract::Secret::from(platform::transaction::new_operation_id()),
-                identity::contract::Secret::from(platform::transaction::new_operation_id()),
+                identity::contract::Secret::from(preauth.to_owned()),
+                identity::contract::Secret::from(csrf.to_owned()),
                 platform::transaction::new_operation_id(),
             );
             identity

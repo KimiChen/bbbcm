@@ -23,6 +23,8 @@ use std::{collections::HashMap, sync::Arc};
 /// 浏览器据此拒绝任何子域写入，避免子域被攻陷后伪造管理会话。
 pub const SESSION_COOKIE: &str = "bcm_manage_session";
 pub const CSRF_COOKIE: &str = "bcm_manage_csrf";
+/// 登录页签发的一次性预认证 token。仅在登录这一步使用，成功后随会话 cookie 覆盖。
+const PREAUTH_COOKIE: &str = "bcm_manage_preauth";
 
 /// 装配层注入的后端。领域路由不直接持有服务句柄，便于未装配时整体关闭。
 pub trait ConsoleBackend: Send + Sync {
@@ -31,11 +33,22 @@ pub trait ConsoleBackend: Send + Sync {
         &'a self,
         raw_session: &'a str,
     ) -> BoxFuture<'a, Result<(String, bool), ConsoleError>>;
+    /// 为登录页签发一次预认证凭据，返回（preauth token, csrf）原始值。
+    ///
+    /// 管理登录与普通登录走同一条身份路径，而那条路径要求请求上下文对应一条
+    /// **已存在**的 `request_principals` 行（`repo::principal` 按 token 哈希查找且
+    /// 不创建）。因此登录页必须先取得真实 preauth，不能在提交时凭空构造一个——
+    /// 那样查找必然失败，且失败会被统一收敛成 401，看起来像是密码错。
+    fn preauth<'a>(&'a self) -> BoxFuture<'a, Result<(String, String), ConsoleError>>;
     /// 密码 + staff principal 校验，成功返回新的会话与 CSRF 原始值。
+    ///
+    /// `preauth` 与 `csrf` 来自登录页签发的那一对，必须原样带回。
     fn login<'a>(
         &'a self,
         username: &'a str,
         password: &'a str,
+        preauth: &'a str,
+        csrf: &'a str,
     ) -> BoxFuture<'a, Result<(String, String, bool), ConsoleError>>;
     /// 开始 TOTP 绑定，返回 Base32 密钥与 otpauth URI。
     fn begin_binding<'a>(
@@ -259,11 +272,21 @@ async fn page(
         let mut page = Page::new("管理登录");
         page.action = "/manage/login".into();
         page.submit = "登录";
-        page.csrf = csrf;
+        // 登录前没有管理会话，因此 CSRF 不可能来自管理 cookie；必须现签一对
+        // preauth。csrf 进表单、token 进仅限 /manage 的短期 cookie，提交时一并带回。
+        let issued = backend.preauth().await.ok();
+        page.csrf = issued
+            .as_ref()
+            .map(|(_, csrf)| csrf.clone())
+            .unwrap_or_default();
         page.fields.push(Field::input("username", "用户名", "text"));
         page.fields
             .push(Field::input("password", "密码", "password"));
-        return render(&state, &page, StatusCode::OK);
+        let mut response = render(&state, &page, StatusCode::OK);
+        if let Some((token, _)) = issued {
+            set_cookie(&state, &mut response, PREAUTH_COOKIE, &token);
+        }
+        return response;
     }
 
     let Some(raw) = session else {
@@ -421,7 +444,12 @@ async fn submit(
     if path == "/manage/login" {
         let username = form.get("username").map(String::as_str).unwrap_or_default();
         let password = form.get("password").map(String::as_str).unwrap_or_default();
-        return match backend.login(username, password).await {
+        // preauth token 来自登录页设置的短期 cookie，csrf 来自那张表单。
+        // 两者必须是同一次签发的一对，身份层据此定位 request_principals 行。
+        let preauth =
+            read_cookie(&headers, &cookie_name(&state, PREAUTH_COOKIE)).unwrap_or_default();
+        let form_csrf = form.get("csrf").map(String::as_str).unwrap_or_default();
+        return match backend.login(username, password, &preauth, form_csrf).await {
             Ok((session, csrf, bound)) => {
                 let mut response = redirect(if bound { "/manage" } else { "/manage/mfa" });
                 set_cookie(&state, &mut response, SESSION_COOKIE, &session);
@@ -434,10 +462,21 @@ async fn submit(
                 page.action = "/manage/login".into();
                 page.submit = "登录";
                 page.error = Some("登录失败，请检查用户名与密码。".into());
+                // 失败后必须重新签一对：preauth 是一次性的，沿用旧的会让用户
+                // 第二次提交必然再失败，看起来像是密码一直错。
+                let reissued = backend.preauth().await.ok();
+                page.csrf = reissued
+                    .as_ref()
+                    .map(|(_, csrf)| csrf.clone())
+                    .unwrap_or_default();
                 page.fields.push(Field::input("username", "用户名", "text"));
                 page.fields
                     .push(Field::input("password", "密码", "password"));
-                render(&state, &page, StatusCode::UNAUTHORIZED)
+                let mut response = render(&state, &page, StatusCode::UNAUTHORIZED);
+                if let Some((token, _)) = reissued {
+                    set_cookie(&state, &mut response, PREAUTH_COOKIE, &token);
+                }
+                response
             }
         };
     }

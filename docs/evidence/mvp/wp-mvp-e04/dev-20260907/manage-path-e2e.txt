@@ -17,7 +17,7 @@
 
 未认证一律不进入，且不泄露后台结构，与 `03` §1 一致。
 
-## 未能完成：登录后的治理路径
+## 登录路径：两处缺陷已修复
 
 以提权后的账号提交管理登录，持续返回 **401**。同一账号的**普通登录在同一次会话中
 是成功的**（并完成了发帖与编辑），因此凭据本身正确。根因已定位，见下节。
@@ -70,12 +70,43 @@ preauth 可渲染。普通登录表单里该值非空。
 **完整模式与体验模式下管理控制台都无法登录**，`AUTH-014` 的首账号引导因此走不通，
 `/manage` 全部治理功能不可达。`bbbcm-cli user promote` 本身正常，问题在登录一步。
 
-### 未一并修复的原因
+### 已修复
 
-修复需要控制台在 `GET /manage/login` 时签发 preauth、把 token 与 csrf 渲染进表单，
-并在 POST 时读回——涉及 `manage_web.rs` 的上下文构造与 `console/http.rs` 的表单
-渲染与读取两处，且需相应的失败分支用例。已定位与验证的部分先行登记，避免这条
-阻断缺陷停留在「未知原因的 401」。
+`ConsoleBackend` 新增 `preauth()`；`GET /manage/login` 签发一对 preauth，csrf 渲染进
+表单、token 写入仅限 `/manage` 的 HttpOnly cookie；POST 时两者一并带回，装配层据此
+构造 `RequestContext` 而不再现造随机值。登录失败分支**重新签发**一对——preauth 是
+一次性的，沿用旧的会让用户第二次提交必然再失败，看起来像密码一直错。
+
+### 修复过程中暴露的第二个缺陷：未认证端点可达的 panic
+
+preauth 修好后，流程首次真正走到命令执行，随即 **panic**：
+
+```
+thread 'tokio-rt-worker' panicked at crates/identity/src/core.rs:129
+```
+
+`management_login` 把 `"ready"`／`"binding"` 两个词当作 `resource_id` 传给
+`SafePayload::with_reference`，而 `platform::outbox::is_reference` 只接受**正整数或
+UUIDv7**。`with_reference` 返回 `Err`，紧随其后的 `.expect("core uses opaque references")`
+把它变成 panic。
+
+**严重性高于原来的 401**：`/manage/login` 是未认证可达端点，一次 panic 就是一个
+拒绝服务面。它此前被第一个缺陷掩盖——流程根本走不到这一步。全仓仅此一处把非
+数字串当作 `resource_id`（另一处 `response(Some(&reference))` 传的是真实 id）。
+
+已改为用受信整数编码访问级别（1 = 已绑定、2 = 需绑定），解码侧对未知取值一律按
+未认证处理，不猜默认值——猜「已绑定」会让未完成 MFA 的会话直接进入后台。
+
+### 修复后实测
+
+| 路径 | 登录前 | 登录后（未完成 TOTP 绑定） |
+|---|---|---|
+| `POST /manage/login` | 401 | **303**（无 panic） |
+| `/manage/mfa` | 303 | **200**（强制进入绑定流程） |
+| `/manage`、`/manage/cases`、`/manage/reports`、`/manage/content` | 303 | **303** |
+
+与 `AUTH-014` 提权时打印的「未完成前只能访问绑定流程」以及 `03` §1 完全一致：
+会话已建立，但未绑定 MFA 前只有绑定流程可达。
 
 ## 附带问题：失败不留服务端痕迹
 

@@ -964,9 +964,16 @@ impl IdentityService {
                     )
                     .await
                     {
+                        // 幂等结果体只接受**不透明引用**（正整数或 UUIDv7，见
+                        // `platform::outbox::is_reference`）。此前这里直接塞
+                        // `"ready"`／`"binding"` 两个词，`with_reference` 因此返回
+                        // `Err`，紧随其后的 `.expect` 把它变成一次 panic——而
+                        // `/manage/login` 是**未认证可达**的端点，等于一个拒绝服务面。
+                        // 改为用受信整数编码访问级别：1 = 已绑定可直接进入，
+                        // 2 = 需先完成 TOTP 绑定。
                         Ok(access) => Ok(response(Some(match access {
-                            crate::management::ManagementAccess::Ready => "ready",
-                            crate::management::ManagementAccess::BindingRequired => "binding",
+                            crate::management::ManagementAccess::Ready => "1",
+                            crate::management::ManagementAccess::BindingRequired => "2",
                         }))),
                         // 不是 staff：与密码错误返回同一种结果，不泄露谁是管理员。
                         Err(_) => Ok(rejected_response()),
@@ -976,14 +983,14 @@ impl IdentityService {
         )
         .await?;
         let result = mutation(outcome)?;
-        let Some(access) = result.resource_ref.as_deref() else {
-            return Err(IdentityError::Unauthenticated);
+        // 与上面的编码一一对应。未知取值一律按未认证处理，不猜一个默认值——
+        // 猜「已绑定」会让未完成 MFA 的会话直接进入后台。
+        let bound = match result.resource_ref.as_deref() {
+            Some("1") => true,
+            Some("2") => false,
+            _ => return Err(IdentityError::Unauthenticated),
         };
-        Ok(ManagementLoginResult {
-            token,
-            csrf,
-            bound: access == "ready",
-        })
+        Ok(ManagementLoginResult { token, csrf, bound })
     }
 
     pub async fn request_reset(

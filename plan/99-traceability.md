@@ -1289,7 +1289,7 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 | 检查 | 未执行原因 |
 |---|---|
 
-| `40001`/`40P01` 受控重试 | 压出序列化失败或死锁必须**故意违反**固定锁顺序，而平台层会先一步拒绝（已由 `lock_order_is_frozen_…` 正面验证）。需另建绕过平台层的夹具，或承认该故障被设计挡在发生之前。 |
+| `40001`/`40P01` 受控重试 | 载体已编写（`real_deadlocks_are_classified_and_absorbed_by_controlled_retry`），**当前失败**——根因是下节登记的 `lock_timeout` 缺陷，不是载体问题。 |
 
 | ~~应用的完整搜索模式~~ **已完成** | 2026-09-07 交付，见第 5.24 节。原登记如下：**阻塞性质已改变**：扩展镜像本轮已按 `M0-03` 的 Dockerfile 离线构建成功，`pg_jieba` 1.1.1 与 `pg_trgm` 1.6 实测可用（中文分词、`@@` 匹配、`similarity` 均正确），同一套合同 11 项在该镜像上亦全部通过。真正缺的是应用侧——`crates/content/src/search.rs` 目前只有 `SqliteTitleSearch` 一个 `SearchBackend` 实现，`pg_jieba + pg_trgm` 的 PostgreSQL 后端尚未编写。这属 `WP-MVP-C05` 的实现缺口，不再是 E01 的环境问题。证据见 [`pg-jieba-extension.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/pg-jieba-extension.txt)。**该缺口本轮已补齐**，全文检索通过真实 `pg_jieba` 验证。 |
 
@@ -1393,7 +1393,7 @@ PostgreSQL 中没有 schema `USAGE`，其下所有表级授权一律无效。**�
 
 **同时加了防再犯的断言**：`every_secret_variable_is_accepted_by_the_environment_allowlist` 逐个变量真实走一遍环境映射。这两处必须一致，却相距数百行且没有任何编译期联系；用真实装配而不是比对两份字面量清单，是因为清单会跟着代码一起被改错。已验证该断言的有效性——临时回退修复即失败，恢复即通过。
 
-#### 缺陷：`/manage/login` 永远不可能成功（2026-09-07 定位，阻断级）
+#### 缺陷：`/manage/login` 无法登录 + 未认证可达 panic（2026-09-07 定位并修复）
 
 推进治理路径 E2E 时，以 `bbbcm-cli user promote` 提权后的账号提交管理登录持续 401（同一账号的普通登录在同一会话中成功并完成发帖与编辑，凭据正确）。逐层缩小后定位到根因：
 
@@ -1407,7 +1407,11 @@ PostgreSQL 中没有 schema `USAGE`，其下所有表级授权一律无效。**�
 
 **影响**：完整模式与体验模式下管理控制台**都无法登录**，`AUTH-014` 首账号引导走不通，`/manage` 全部治理功能不可达。`bbbcm-cli user promote` 本身正常。
 
-**未一并修复**：需控制台在 `GET /manage/login` 签发 preauth、渲染 token 与 csrf 进表单并在 POST 读回，涉及 `manage_web.rs` 的上下文构造与 `console/http.rs` 的表单渲染／读取两处，且需相应失败分支用例。已定位与验证的部分先行登记，避免这条阻断缺陷停留在「未知原因的 401」。
+**已修复**：`ConsoleBackend` 新增 `preauth()`；`GET /manage/login` 签发一对 preauth，csrf 渲染进表单、token 写入仅限 `/manage` 的 HttpOnly cookie；POST 两者一并带回，装配层据此构造 `RequestContext`。失败分支重新签发——preauth 一次性，沿用旧的会让第二次提交必然再失败。
+
+**修复过程暴露第二个缺陷（严重性更高）**：preauth 修好后流程首次真正走到命令执行，随即 **panic**（`crates/identity/src/core.rs:129`）。`management_login` 把 `"ready"`／`"binding"` 当作 `resource_id` 传给 `SafePayload::with_reference`，而 `is_reference` 只接受正整数或 UUIDv7，返回 `Err` 后被 `.expect` 变成 panic。`/manage/login` 是**未认证可达**端点，一次 panic 即一个拒绝服务面；它此前被第一个缺陷掩盖，流程根本走不到。全仓仅此一处把非数字串当 `resource_id`。已改为受信整数编码（1 = 已绑定、2 = 需绑定），解码侧未知取值一律按未认证处理，不猜默认值——猜「已绑定」会让未完成 MFA 的会话直接进入后台。
+
+**修复后实测**：`POST /manage/login` 由 401 转 **303** 且无 panic；`/manage/mfa` 由 303 转 **200**（强制绑定流程）；`/manage`、`/manage/cases`、`/manage/reports`、`/manage/content` 保持 303。与 `AUTH-014` 与 `03` §1 一致：会话已建立，未绑定 MFA 前只有绑定流程可达。开发期最小集七步全绿，352 项单元测试。
 
 #### 附带问题：管理登录失败不留任何服务端痕迹
 
@@ -1416,6 +1420,37 @@ PostgreSQL 中没有 schema `USAGE`，其下所有表级授权一律无效。**�
 控制台把「账号不存在／非 staff／密码错误」收敛为同一错误再渲染 401 本身正确（不给枚举线索），问题在于**服务端也没记录**：反枚举要求的是不告诉客户端，不等于不记录在服务端。后果有二——运维无法区分「密码错」与「装配缺陷」，上面那条阻断缺陷正因此被掩盖成无解释的 401；针对 `/manage/login` 的凭证填充不留可检测信号，而这正是 `90` §5 安全矩阵「凭证填充」要防的场景之一。
 
 证据见 [`manage-path-e2e.txt`](../docs/evidence/mvp/wp-mvp-e04/dev-20260907/manage-path-e2e.txt)。
+
+#### 缺陷：`lock_timeout` 早于死锁检测触发，`40P01` 受控重试不可达（2026-09-07 发现，待裁决）
+
+补写 `90` §5「`40001`/`40P01` 受控重试」载体时发现三处设计互相抵触，结果是**锁冲突下一侧会拿到永久失败而不是被重试吸收**。
+
+先纠正本节此前的一处判断：原备注写「压出死锁必须**故意违反**固定锁顺序」，这是错的。用两条普通 `UPDATE` 反序打在不同行上即可制造锁冲突，该路径根本不经过 `conn.lock()` 的锁序守卫——冻结约束管的是 `conn.lock()` 的调用次序，故障注入并不违反它。载体据此写成，不需要任何裁决。
+
+实测（真实 PostgreSQL 16）：
+
+| 观察 | 实测值 |
+|---|---|
+| 容器 `deadlock_timeout` | 1000ms（PostgreSQL 默认） |
+| 每个写事务设置的 `lock_timeout` | 500ms（`platform::db::transaction_setup_sql`） |
+| 反序更新的牺牲者错误分类 | `Database(LockTimeout)`，**不是** `Deadlock` |
+| 同样负载走 `execute_command` | 一侧 `Ok(Committed)`，另一侧 **`Err(Database(LockTimeout))`** |
+
+三处抵触：
+
+1. `transaction_setup_sql` 对每个写事务设 `SET LOCAL lock_timeout = '500ms'`；
+2. PostgreSQL 的死锁检测在 `deadlock_timeout`（1s）才运行，因此锁等待**总是**先在 500ms 以 `55P03` 中止，`40P01` 永远不会产生；
+3. `55P03` 映射为 `LockTimeout`，而 `RetryBudget::take` 只对 `Serialization`／`Deadlock` 放行——`LockTimeout` 不重试。
+
+后果：`classify_database_code` 里的 `40P01` 分支与 `RetryBudget` 的 `Deadlock` 分支在写路径上**都是不可达代码**；而本该由「死锁检测 + 重试」自动化解的瞬时争用，现在变成直接抛给调用方的失败。`90` §5 要求的「`40001`/`40P01` 可控重试」因此无法成立。
+
+**未自行修复**：三条候选路径都会改变生产环境在锁争用下的失败行为，属设计决策——
+
+1. **抬高 `lock_timeout` 到 `deadlock_timeout` 之上**（如 1500ms），让死锁检测有机会运行、`40P01` 走既有重试。代价是锁等待的尾延迟上升。
+2. **降低 `deadlock_timeout` 到 `lock_timeout` 之下**（如 300ms），效果同上且尾延迟不变，但死锁检测更频繁，在高并发下有额外开销。
+3. **把 `LockTimeout` 纳入可重试集合**。改动最小，但语义变了：`lock_timeout` 本是「不要在锁上久等」的延迟护栏，让它自动重试等于把护栏变成退避循环，需重新审视它的定位。
+
+在裁决前载体保持失败并如实登记，不通过放宽断言或改配置把它「修绿」。
 
 #### 状态影响
 

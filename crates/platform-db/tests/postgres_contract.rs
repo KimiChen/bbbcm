@@ -1177,3 +1177,131 @@ async fn audit_and_search_permission_state_commit_with_the_business_fact() {
          实际 {columns} 列。表名 {docs}"
     );
 }
+
+// ---------------------------------------------------------------------------
+// 13. 40001 / 40P01 的受控重试
+// ---------------------------------------------------------------------------
+
+/// `90` §5：真实 PostgreSQL 抛出的 `40P01`／`40001` 必须被正确分类并受控重试。
+///
+/// 「固定锁顺序」一项已由 `lock_order_is_frozen_…` 覆盖——那验证的是**预防**。
+/// 本用例验证的是**兜底**：预防手段总有覆盖不到的角落（比如两条 `UPDATE` 直接
+/// 打在不同行上，根本不经过 `conn.lock()` 的锁序守卫），此时数据库自己会检测到
+/// 死锁并杀掉一方，平台必须认得那个错误码并重试，而不是把它当成永久失败上报。
+///
+/// **故障注入不等于违反设计**：这里刻意用反序 `UPDATE` 制造死锁，走的是普通
+/// `execute` 而非领域锁接口，因此没有绕过任何冻结的锁序约束——冻结约束管的是
+/// `conn.lock()` 的调用次序。
+///
+/// 两层断言：
+/// 1. 裸事务反序更新确实产生 `Deadlock`／`Serialization` 分类（证明错误码识别正确，
+///    而不是被归进 `Other` 当作永久失败）；
+/// 2. 同样的冲突负载走 `execute_command` 时，两侧**最终都提交成功**——重试真的
+///    把这类瞬时冲突吸收掉了，而不是把失败传给调用方。
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "需要显式隔离的 PostgreSQL 16 端点；见 docs/development/postgres.md"]
+async fn real_deadlocks_are_classified_and_absorbed_by_controlled_retry() {
+    let (pool, renderer) = prepared().await;
+    let users = renderer
+        .table(Backend::Postgres, "identity", "users")
+        .expect("表名");
+    let a = insert_user(&pool, &renderer, &marker()).await;
+    let b = insert_user(&pool, &renderer, &marker()).await;
+
+    // ---- 第一层：裸事务反序更新，确认错误码被正确分类 ----
+    let touch = |pool: Pool, users: String, first: i64, second: i64| async move {
+        let mut tx = DbTransaction::begin(&pool).await.expect("事务");
+        let sql = format!("UPDATE {users} SET bio = ? WHERE id = ?");
+        let out = async {
+            let mut c = tx.connection();
+            c.execute(&sql, &[DbValue::Text("x".into()), DbValue::I64(first)])
+                .await?;
+            // 让两侧都先拿到各自的第一把行锁，再去抢对方的——否则可能串行完成。
+            tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+            c.execute(&sql, &[DbValue::Text("y".into()), DbValue::I64(second)])
+                .await
+        }
+        .await;
+        match out {
+            Ok(_) => {
+                let _ = tx.commit().await;
+                None
+            }
+            Err(e) => {
+                let _ = tx.rollback().await;
+                Some(e)
+            }
+        }
+    };
+    let (left, right) = tokio::join!(
+        touch(pool.clone(), users.clone(), a, b),
+        touch(pool.clone(), users.clone(), b, a)
+    );
+    let victim = left
+        .or(right)
+        .expect("反序更新必须有一方成为死锁牺牲者；两侧都成功说明没有真正并发，本用例失去意义");
+    eprintln!("第一层：牺牲者的错误分类 = {victim:?}");
+    let classification_ok = matches!(
+        victim,
+        TransactionError::Database(DbErrorClass::Deadlock | DbErrorClass::Serialization)
+    );
+
+    // ---- 第二层：同样的冲突走 execute_command，重试必须把它吸收掉 ----
+    let body = platform::outbox::SafePayload::empty()
+        .to_json()
+        .expect("载荷");
+    let now = chrono::Utc::now();
+    let run = |first: i64, second: i64| {
+        let pool = pool.clone();
+        let renderer = renderer.clone();
+        let users = users.clone();
+        let body = body.clone();
+        async move {
+            let ident = CommandIdentity {
+                scope: "integration.deadlock.probe".into(),
+                actor_id: 1,
+                idempotency_key: format!("dl-{}", new_operation_id()),
+                request_hash: request_hash(b"deadlock-probe"),
+                operation_id: new_operation_id(),
+            };
+            let plan = LockPlan::new(Vec::<LockTarget>::new());
+            execute_command(&pool, &renderer, &ident, &plan, now, move |c| {
+                let users = users.clone();
+                let body = body.clone();
+                Box::pin(async move {
+                    let sql = format!("UPDATE {users} SET bio = ? WHERE id = ?");
+                    c.execute(&sql, &[DbValue::Text("p".into()), DbValue::I64(first)])
+                        .await?;
+                    tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+                    c.execute(&sql, &[DbValue::Text("q".into()), DbValue::I64(second)])
+                        .await?;
+                    Ok(StoredResponse {
+                        status_code: 200,
+                        body,
+                    })
+                })
+            })
+            .await
+        }
+    };
+    let (one, two) = tokio::join!(run(a, b), run(b, a));
+    eprintln!("第二层：正序 = {one:?}");
+    eprintln!("第二层：反序 = {two:?}");
+    let absorbed = [&one, &two]
+        .iter()
+        .all(|o| matches!(o, Ok(CommitOutcome::Committed(_))));
+    pool.close().await;
+
+    // 两层都观测完再断言，这样一次运行就能看清全貌，而不是被第一条断言截断。
+    assert!(
+        classification_ok,
+        "真实锁冲突必须被识别为 Deadlock/Serialization（`90` §5 要求对这两类受控重试），\
+         实际为 {victim:?}——根因见 `99` §5.23 的缺陷登记：写事务的 \
+         `SET LOCAL lock_timeout = '500ms'`（`platform::db::transaction_setup_sql`）\
+         早于 PostgreSQL 默认 1s 的 deadlock_timeout 触发，因此 `40P01` 不可达。"
+    );
+    assert!(
+        absorbed,
+        "冲突负载应被受控重试吸收并最终提交；实际 正序={one:?} 反序={two:?}"
+    );
+}
