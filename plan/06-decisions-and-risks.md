@@ -252,9 +252,23 @@ PostgreSQL 的 `SELECT … FOR UPDATE` 需要 `UPDATE` 或 `DELETE` 权限，只
 
 `05` §6 的 44px 据此下调为 24px，并在该节登记本条为出处。实现落在 `a11y.css` 叠加层，四类控件各取「刚好越过 24px」的最小值：`.post-title` 加行内垂直内边距（行内元素，不参与行盒高度，**不改变任何布局**，命中盒 17→25px）、`.topic-pages a` 撑到 25×24（间距只有 3px，叠加热区必然重叠，只能真正撑大）、`.footer-links a` 与 `.error-link` 各加 1px 上下内边距（22.75→24.75）。复测 14 页 × 两主题 @390px，AA 不达标 **0 项**，横向溢出 0，对比度失败 0。这四条构成 `05` §10 像素基准的**已登记例外**，与 `DEC-067` 的五处颜色例外并列。
 
-**（二）负载基线须先指定生产近似规格再重跑。**
+**（二）负载基线的生产近似规格（2026-09-07 批准取值）。**
 
-当前 p95 数据（公开读 7.2–8.1ms，门槛 400ms）跑在 tmpfs + `fsync=off` + `synchronous_commit=off` 的容器上，是明确的非生产配置。项目所有者批准：指定持久磁盘、`fsync=on`、`synchronous_commit=on` 并固定 CPU／内存配额后重跑，结果方具备门禁效力。规格数值待定；在此之前现有数据继续按 `90` §6 表末只作实验记录。
+原数据跑在 tmpfs + `fsync=off` + `synchronous_commit=off` 的容器上，是明确的非生产配置。`02` §19 写明生产 VPS／卷／连接池规格在 `DEC-004-B/013` 批准前不设默认，故无现成规格可照搬。项目所有者按 `90` §6 的 1 万用户／100 万主题目标与单 VPS 拓扑批准下表：
+
+| 项 | 批准取值 |
+|---|---|
+| CPU／内存配额 | 4 vCPU / 8 GiB |
+| 存储 | 宿主 NVMe 持久绑定挂载（非 tmpfs） |
+| `fsync` / `synchronous_commit` / `full_page_writes` | on / on / on |
+| `shared_buffers` / `effective_cache_size` | 2.5GB / 7.5GB |
+| `work_mem` / `maintenance_work_mem` | 16MB / 512MB |
+| `max_connections` | 200 |
+| `wal_level` / `max_wal_size` / `checkpoint_timeout` | replica / 4GB / 15min |
+| `random_page_cost` | 1.1（NVMe） |
+| 编码 / locale | UTF8 / C.UTF-8 |
+
+**该规格下已取得的测量自此具备门禁效力**，不再只作实验记录。仍须随数据登记的限制：应用层与数据库不同机（测试进程经回环 SSH 隧道，实测 RTT 1.121ms，占 400ms 门槛 0.3%），生产拓扑为单 VPS 同机，故这些数字代表**领域读路径 + 约 1.1ms 网络**，不含模板渲染与 HTTP 往返；SSR 首屏 p95 与 200 read/s 吞吐仍不能由此判定。
 
 **（三）正式视觉基准 `visual-baseline-v1` 的截图集，仓库内只存 manifest。**
 

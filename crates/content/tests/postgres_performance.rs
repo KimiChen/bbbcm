@@ -188,10 +188,14 @@ async fn seed(prefix: &str, topics: usize) -> (Pool, SchemaRenderer, i64, i64) {
                     &[DbValue::I64(topic_id), DbValue::I64(author), DbValue::Text(body.clone()),
                       DbValue::Time(DateTime::UNIX_EPOCH), DbValue::Time(now), DbValue::Time(DateTime::UNIX_EPOCH), DbValue::I64(seq)]).await.expect("插首帖");
                 let post_id = c.last_insert_id().await.expect("帖子 ID");
-                c.execute(&format!("INSERT INTO {docs} (post_id, topic_id, forum_id, title, title_normalized, body, visibility, forum_visibility, publication, moderation, deleted_at, entity_version, topic_version, create_seq) VALUES (?, ?, ?, ?, ?, ?, 'public', 'public', 'published', 'normal', ?, 1, 1, ?)"),
+                // created_at 必须逐行不同：物化排序键若全是同一个值，`(created_at, topic_id)`
+                // 上的有序扫描就退化成按 topic_id 扫全表，测出来的不是真实排序行为。
+                // 这里按序列号递增，与主题的 created_at 语义一致。
+                let doc_created = now + chrono::Duration::seconds(seq);
+                c.execute(&format!("INSERT INTO {docs} (post_id, topic_id, forum_id, title, title_normalized, body, visibility, forum_visibility, publication, moderation, deleted_at, entity_version, topic_version, create_seq, created_at) VALUES (?, ?, ?, ?, ?, ?, 'public', 'public', 'published', 'normal', ?, 1, 1, ?, ?)"),
                     &[DbValue::I64(post_id), DbValue::I64(topic_id), DbValue::I64(forum),
                       DbValue::Text(title.clone()), DbValue::Text(title.to_lowercase()), DbValue::Text(body),
-                      DbValue::Time(DateTime::UNIX_EPOCH), DbValue::I64(seq)]).await.expect("插检索文档");
+                      DbValue::Time(DateTime::UNIX_EPOCH), DbValue::I64(seq), DbValue::Time(doc_created)]).await.expect("插检索文档");
             }
         }
         tx.commit().await.expect("提交批次");

@@ -893,11 +893,15 @@ pub(crate) async fn refresh_projection(
                 p.version.into(),
                 topic.version.into(),
                 p.create_seq.into(),
+                // 物化排序键（`99` §5.39）。取主题的 created_at 而不是帖子的：
+                // 搜索结果按主题排序，取帖子时间会让同一主题的多行给出不同的
+                // 排序位置，DISTINCT 之后顺序不确定。
+                date(topic.created_at),
                 p.id.into(),
             ];
-            let affected=tx.execute(&format!("UPDATE {t} SET topic_id = ?, forum_id = ?, title = ?, title_normalized = ?, body = ?, visibility = ?, forum_visibility = ?, publication = ?, moderation = ?, deleted_at = ?, entity_version = ?, topic_version = ?, create_seq = ? WHERE post_id = ?"),&values).await?;
+            let affected=tx.execute(&format!("UPDATE {t} SET topic_id = ?, forum_id = ?, title = ?, title_normalized = ?, body = ?, visibility = ?, forum_visibility = ?, publication = ?, moderation = ?, deleted_at = ?, entity_version = ?, topic_version = ?, create_seq = ?, created_at = ? WHERE post_id = ?"),&values).await?;
             if affected == 0 {
-                tx.execute(&format!("INSERT INTO {t} (topic_id, forum_id, title, title_normalized, body, visibility, forum_visibility, publication, moderation, deleted_at, entity_version, topic_version, create_seq, post_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),&values).await?;
+                tx.execute(&format!("INSERT INTO {t} (topic_id, forum_id, title, title_normalized, body, visibility, forum_visibility, publication, moderation, deleted_at, entity_version, topic_version, create_seq, created_at, post_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),&values).await?;
             }
         }
     }

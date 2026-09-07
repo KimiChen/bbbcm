@@ -293,7 +293,6 @@ pub fn full_text_search_sql(
         return Ok(None);
     }
     let docs = renderer.table(backend, "community", "search_documents")?;
-    let topics = renderer.table(backend, "community", "topics")?;
     // 过滤条件与 `repo::search_titles` 逐条对齐：已发布、未被处置、未删除、
     // 可见性、版块、时间范围。全文检索**不放宽任何一条**——放宽等于用搜索
     // 把权限过滤绕过去。
@@ -301,18 +300,24 @@ pub fn full_text_search_sql(
         " AND d.publication = ? AND d.moderation = ? AND d.deleted_at = ?",
         " AND (? = 1 OR (d.visibility = ? AND d.forum_visibility = ?))",
         " AND (? = 0 OR d.forum_id = ?)",
-        " AND (? = ? OR t.created_at >= ?) AND (? = ? OR t.created_at < ?)"
+        " AND (? = ? OR d.created_at >= ?) AND (? = ? OR d.created_at < ?)"
     );
+    // 排序键取自 `search_documents` 自己的 `created_at`（迁移 0022 物化），
+    // 因此**不再连接 `topics`**。这不是省一次连接那么简单：排序键在被连接的表上
+    // 时，必须先取回全部匹配、连接、再全量排序才能取前 50，排序无法提前截断——
+    // 实测十万篇语料下命中 1,000 条即超门槛 3.5 倍（`99` §5.39）。
+    // 物化之后 `(created_at, topic_id)` 上的有序扫描可以凑满 50 条就停；低命中率
+    // 仍走 GIN，高命中率走有序扫描，由规划器按选择性各取所需。
     let head = format!(
         "SELECT DISTINCT d.topic_id AS topic_id, d.title AS title, d.forum_id AS forum_id, \
-         t.created_at AS created_at FROM {docs} d JOIN {topics} t ON t.id = d.topic_id \
+         d.created_at AS created_at FROM {docs} d \
          WHERE (to_tsvector('public.jiebaqry', d.title) @@ plainto_tsquery('public.jiebacfg', ?) \
          OR to_tsvector('public.jiebaqry', d.body) @@ plainto_tsquery('public.jiebacfg', ?))"
     );
     let tail = if newest_first {
-        " ORDER BY t.created_at DESC, d.topic_id DESC LIMIT ?"
+        " ORDER BY d.created_at DESC, d.topic_id DESC LIMIT ?"
     } else {
-        " ORDER BY t.created_at ASC, d.topic_id ASC LIMIT ?"
+        " ORDER BY d.created_at ASC, d.topic_id ASC LIMIT ?"
     };
     Ok(Some(format!("{head}{filters}{tail}")))
 }

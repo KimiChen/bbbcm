@@ -385,6 +385,8 @@ pub const INDEXES: &[(&str, &str)] = &[
     ("community", "history_topic_idx"),
     ("community", "publication_owner_idx"),
     ("community", "search_topic_idx"),
+    // 检索结果的排序键索引（`99` §5.39）：让高命中率查询能按时间序扫描并提前截断。
+    ("community", "search_sort_idx"),
     // 完整模式搜索索引（`postgres-search` 轨）。只在装有 pg_jieba 的实例上存在，
     // 因此不出现在三库基线轨里；名字仍须在此登记，受信标识符渲染没有例外。
     ("community", "search_title_gin_idx"),

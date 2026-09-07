@@ -62,6 +62,7 @@ mod tests {
             include_str!("../../../db/migrations/postgres/0019_iam_schema_usage.sql"),
             include_str!("../../../db/migrations/postgres/0020_feedback.sql"),
             include_str!("../../../db/migrations/postgres/0021_notifications.sql"),
+            include_str!("../../../db/migrations/postgres/0022_search_sort_key.sql"),
             // 搜索索引轨也纳入：不变量是「每张登记表都有显式 REVOKE」，
             // 不因为某张表只存在于附加轨就豁免。
             include_str!("../../../db/migrations/postgres-search/0001_search_index.sql"),
