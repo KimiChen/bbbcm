@@ -20,14 +20,66 @@
 ## 未能完成：登录后的治理路径
 
 以提权后的账号提交管理登录，持续返回 **401**。同一账号的**普通登录在同一次会话中
-是成功的**（并完成了发帖与编辑），因此凭据本身正确。
+是成功的**（并完成了发帖与编辑），因此凭据本身正确。根因已定位，见下节。
 
-控制台把账号不存在、非 staff、密码错误统一收敛为一个错误，再统一渲染为 401——
-这条设计本身正确（不给枚举线索）。但由此带来的后果见下。
+## 缺陷（已定位）：`/manage/login` 永远不可能成功
 
-## 观察：管理登录失败不留任何服务端痕迹
+排查上述 401 已定位到根因，属**阻断级**：管理控制台无人能登录。
 
-排查上述 401 时发现，两次失败的管理登录：
+### 证据链
+
+| 观察 | 结论 |
+|---|---|
+| `trust.risk_events` 无 `manage.login` 事件 | 失败发生在 `record_risk` 之前 |
+| `platform.idempotency_records` 无 `identity.manage.login` scope | 失败发生在 `execute_command` **之前** |
+| `management_login` 在 `execute_command` 前只调 `prepare_challenge` 与 `public_command` | 缩小到这两处 |
+| `prepare_challenge` 在无挑战要求时提前 `Ok(None)` | 排除 |
+| `public_command` → `repo::principal` | **定位于此** |
+
+### 根因
+
+`repo::principal`（`crates/identity/src/repo.rs:106`）按 `token_hash = sha256(preauth)`
+查 `identity.request_principals`，**要求该行必须已存在**（`.ok_or(InvalidInput)`）。
+
+普通登录的上下文来自 `GET /login` 时 `create_preauth` 签发的真实 preauth
+（`crates/identity/src/http.rs:460`），token 与 csrf 被渲染进表单、POST 时带回，
+因此 principal 行存在。
+
+而控制台在 `apps/web/src/manage_web.rs:160` 用**三个随机 `new_operation_id()`**
+现造 `RequestContext`：
+
+```rust
+// 复用与普通登录完全相同的请求上下文构造：四维限流、风险信号与挑战
+// 都在这一层生效，管理登录不走任何简化路径。
+let context = identity::contract::RequestContext::new(
+    identity::contract::Secret::from(platform::transaction::new_operation_id()),
+    identity::contract::Secret::from(platform::transaction::new_operation_id()),
+    platform::transaction::new_operation_id(),
+);
+```
+
+该注释与实际行为相反：它并未复用普通登录的上下文构造，而是凭空造了一个。
+随机 token 在 `request_principals` 里没有对应行，`repo::principal` 必然返回
+`InvalidInput`，`public_command` 失败，`management_login` 报错，控制台统一收敛为 401。
+
+**旁证**：`/manage/login` 表单里 `csrf` 的 `value` 是空字符串——因为控制台没有
+preauth 可渲染。普通登录表单里该值非空。
+
+### 影响
+
+**完整模式与体验模式下管理控制台都无法登录**，`AUTH-014` 的首账号引导因此走不通，
+`/manage` 全部治理功能不可达。`bbbcm-cli user promote` 本身正常，问题在登录一步。
+
+### 未一并修复的原因
+
+修复需要控制台在 `GET /manage/login` 时签发 preauth、把 token 与 csrf 渲染进表单，
+并在 POST 时读回——涉及 `manage_web.rs` 的上下文构造与 `console/http.rs` 的表单
+渲染与读取两处，且需相应的失败分支用例。已定位与验证的部分先行登记，避免这条
+阻断缺陷停留在「未知原因的 401」。
+
+## 附带问题：失败不留服务端痕迹
+
+排查过程本身暴露了第二个问题。两次失败的管理登录：
 
 | 位置 | 是否留痕 |
 |---|---|
@@ -35,18 +87,13 @@
 | `trust.risk_events` | **无 `manage.login` 事件**——同一会话的 `registration`／`login`／`topic`／`edit` 四条都在 |
 | `audit.audit_events` | 仅有提权那一条 |
 
-两点后果：
+控制台把「账号不存在／非 staff／密码错误」收敛为同一错误再渲染 401，这条设计本身
+正确（不给枚举线索）。问题在于**服务端也没有记录**：反枚举要求的是不告诉客户端，
+不等于不记录在服务端。
 
-1. **运维无法诊断**。首账号引导失败时，操作者只看到一句「登录失败」，服务端也没有
-   任何可查线索，无法区分「密码错」与「装配缺失」。反枚举要求的是**不告诉客户端**，
-   不等于**不记录在服务端**。
-2. **针对管理入口的凭证填充不可见**。失败尝试既不进日志也不进风险事件，意味着对
-   `/manage/login` 的暴力尝试不会留下任何可检测信号，而这正是 `90` §5 安全矩阵
-   「凭证填充」要防的场景之一。
-
-本轮**未将其登记为已确认缺陷**：我没有定位到那 401 的确切成因，而「无法定位」正是
-这条观察本身的内容。建议在管理登录的失败分支补上服务端记录（脱敏后的原因码 +
-风险事件），再重跑本路径。
+两点后果：运维在首账号引导失败时无法区分「密码错」与「装配缺陷」——上面那条阻断
+缺陷正因此被掩盖成一个无解释的 401；以及针对 `/manage/login` 的凭证填充不留任何
+可检测信号，而这正是 `90` §5 安全矩阵「凭证填充」要防的场景之一。
 
 ## 未覆盖
 

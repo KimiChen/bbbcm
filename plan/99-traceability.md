@@ -1393,19 +1393,29 @@ PostgreSQL 中没有 schema `USAGE`，其下所有表级授权一律无效。**�
 
 **同时加了防再犯的断言**：`every_secret_variable_is_accepted_by_the_environment_allowlist` 逐个变量真实走一遍环境映射。这两处必须一致，却相距数百行且没有任何编译期联系；用真实装配而不是比对两份字面量清单，是因为清单会跟着代码一起被改错。已验证该断言的有效性——临时回退修复即失败，恢复即通过。
 
-#### 观察：管理登录失败不留任何服务端痕迹（2026-09-07）
+#### 缺陷：`/manage/login` 永远不可能成功（2026-09-07 定位，阻断级）
 
-推进治理路径 E2E 时，以 `bbbcm-cli user promote` 提权后的账号提交管理登录持续返回 401（同一账号的普通登录在同一次会话中成功，并完成了发帖与编辑，凭据本身正确）。排查中发现两次失败的管理登录：应用日志 159 行**无任何 manage 相关记录**；`trust.risk_events` **无 `manage.login` 事件**——而同一会话的 `registration`／`login`／`topic`／`edit` 四条都在；`audit.audit_events` 仅有提权那一条。
+推进治理路径 E2E 时，以 `bbbcm-cli user promote` 提权后的账号提交管理登录持续 401（同一账号的普通登录在同一会话中成功并完成发帖与编辑，凭据正确）。逐层缩小后定位到根因：
 
-控制台把「账号不存在／非 staff／密码错误」统一收敛为一个错误再渲染 401，这条设计本身正确（不给枚举线索）。问题在于**服务端同样没有记录**：反枚举要求的是不告诉客户端，不等于不记录在服务端。两点后果——首账号引导失败时运维无从诊断，无法区分密码错与装配缺失；针对 `/manage/login` 的凭证填充不留任何可检测信号，而这正是 `90` §5 安全矩阵「凭证填充」要防的场景之一。
+| 观察 | 结论 |
+|---|---|
+| `trust.risk_events` 无 `manage.login` 事件 | 失败在 `record_risk` 之前 |
+| `platform.idempotency_records` 无 `identity.manage.login` scope | 失败在 `execute_command` **之前** |
+| 该段只调 `prepare_challenge` 与 `public_command`，前者无挑战要求时提前返回 | 定位于 `public_command` → `repo::principal` |
 
-**未登记为已确认缺陷**：本轮没有定位到该 401 的确切成因，而「无法定位」恰是这条观察本身的内容。建议在管理登录失败分支补服务端记录（脱敏原因码 + 风险事件）后重跑该路径。证据见 [`manage-path-e2e.txt`](../docs/evidence/mvp/wp-mvp-e04/dev-20260907/manage-path-e2e.txt)。
+`repo::principal`（`crates/identity/src/repo.rs:106`）按 `token_hash = sha256(preauth)` 查 `identity.request_principals`，**要求该行已存在**。普通登录的上下文来自 `GET /login` 时 `create_preauth` 签发的真实 preauth（`crates/identity/src/http.rs:460`），token 与 csrf 渲染进表单、POST 带回，因此行存在。而控制台在 `apps/web/src/manage_web.rs:160` 用**三个随机 `new_operation_id()` 现造** `RequestContext`——其上方注释写着「复用与普通登录完全相同的请求上下文构造」，与实际行为相反。随机 token 在 `request_principals` 无对应行，`repo::principal` 必然 `InvalidInput`。旁证：`/manage/login` 表单的 `csrf` value 为空字符串，因为控制台没有 preauth 可渲染。
 
-#### 一次自查抓到的空断言（2026-09-07）
+**影响**：完整模式与体验模式下管理控制台**都无法登录**，`AUTH-014` 首账号引导走不通，`/manage` 全部治理功能不可达。`bbbcm-cli user promote` 本身正常。
 
-`postgres_unknown_commit_…` 的「连接被丢弃」原本用 `pg_backend_pid()` 前后比较来断言。加反空转前置后当场发现：**稳态下连续两次查询就落在不同连接上**（实测 PID 316／317），因为 sqlx 连接池随机派发空闲连接。也就是说原断言无论实现对错都会通过，是个空断言。
+**未一并修复**：需控制台在 `GET /manage/login` 签发 preauth、渲染 token 与 csrf 进表单并在 POST 读回，涉及 `manage_web.rs` 的上下文构造与 `console/http.rs` 的表单渲染／读取两处，且需相应失败分支用例。已定位与验证的部分先行登记，避免这条阻断缺陷停留在「未知原因的 401」。
 
-改法是把该用例的连接池上限固定为 1，并保留「稳态下 PID 必须相同」的前置断言——前置不成立时直接失败，而不是让后面的比较悄悄失去意义。`Fixture::new_postgres_with` 因此不提供默认池大小：池大小会直接改变某些断言的含义，让调用方写出这个数字比给一个「通用」默认值更不容易出错。
+#### 附带问题：管理登录失败不留任何服务端痕迹
+
+排查过程本身暴露第二个问题：两次失败的管理登录，应用日志 159 行**无任何 manage 记录**，`trust.risk_events` **无 `manage.login` 事件**（同一会话的 `registration`／`login`／`topic`／`edit` 四条都在），`audit_events` 仅有提权那条。
+
+控制台把「账号不存在／非 staff／密码错误」收敛为同一错误再渲染 401 本身正确（不给枚举线索），问题在于**服务端也没记录**：反枚举要求的是不告诉客户端，不等于不记录在服务端。后果有二——运维无法区分「密码错」与「装配缺陷」，上面那条阻断缺陷正因此被掩盖成无解释的 401；针对 `/manage/login` 的凭证填充不留可检测信号，而这正是 `90` §5 安全矩阵「凭证填充」要防的场景之一。
+
+证据见 [`manage-path-e2e.txt`](../docs/evidence/mvp/wp-mvp-e04/dev-20260907/manage-path-e2e.txt)。
 
 #### 状态影响
 
