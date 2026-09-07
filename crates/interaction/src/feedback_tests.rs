@@ -222,3 +222,168 @@ async fn database_constraints_reject_self_feedback_and_duplicates() {
         "同一用户对同一对象的第二行必须被 UNIQUE 拒绝"
     );
 }
+
+// ---------------------------------------------------------------------------
+// NOTIFY-001／002／003 站内通知
+// ---------------------------------------------------------------------------
+
+/// `NOTIFY-003` 幂等 + `NOTIFY-002` 未读计数与已读。
+///
+/// 重复投递**不报错**这一点单独断言：重试是正常路径，报错会让 Worker 把成功的
+/// 重试当成失败继续重试下去，形成一个永远消不掉的队列项。
+#[tokio::test]
+async fn notifications_are_idempotent_and_read_state_is_per_recipient() {
+    use crate::notification::{self, Delivery, NotificationKind, SourceKind};
+
+    let f = Fixture::new(3).await;
+    let recipient = f.users[0];
+    let other = f.users[1];
+    let actor = f.users[2];
+
+    let delivery = |key: &str, to: i64| Delivery {
+        recipient_id: to,
+        kind: NotificationKind::Reply,
+        source: SourceKind::Post,
+        source_id: 77,
+        actor_id: actor,
+        idempotency_key: key.to_owned(),
+    };
+
+    let first = f
+        .run({
+            let d = delivery("evt-1", recipient);
+            move |c, r| Box::pin(async move { notification::deliver(c, r, &d, at()).await })
+        })
+        .await
+        .unwrap();
+    assert!(first.created);
+
+    // 同键重投：不新建，也不报错。
+    let retry = f
+        .run({
+            let d = delivery("evt-1", recipient);
+            move |c, r| Box::pin(async move { notification::deliver(c, r, &d, at()).await })
+        })
+        .await
+        .unwrap();
+    assert!(!retry.created, "同幂等键不得产生第二条通知");
+
+    // 不同键：正常新建。
+    f.run({
+        let d = delivery("evt-2", recipient);
+        move |c, r| Box::pin(async move { notification::deliver(c, r, &d, at()).await })
+    })
+    .await
+    .unwrap();
+
+    let count = f
+        .run(|c, r| Box::pin(notification::unread_count(c, r, recipient)))
+        .await
+        .unwrap();
+    assert_eq!(count, 2, "两条不同事件应各计一次未读");
+
+    // 取第一条的 ID，验证「单条已读」与越权边界。
+    let mut tx = DbTransaction::begin_read(&f.pool).await.unwrap();
+    let id = {
+        let mut c = tx.connection();
+        let t =
+            f.r.table(c.backend(), "interaction", "notifications")
+                .unwrap();
+        c.fetch_optional(
+            &format!("SELECT id FROM {t} WHERE idempotency_key = ?"),
+            &[DbValue::Text("evt-1".into())],
+        )
+        .await
+        .unwrap()
+        .unwrap()
+        .i64("id")
+        .unwrap()
+    };
+    tx.rollback().await.unwrap();
+
+    // ID 替换越权：拿到别人的通知 ID 也不能把它标为已读。
+    let stolen = f
+        .run(|c, r| Box::pin(notification::mark_read(c, r, other, id, at())))
+        .await
+        .unwrap();
+    assert!(!stolen, "他人不得标记不属于自己的通知");
+
+    let ok = f
+        .run(|c, r| Box::pin(notification::mark_read(c, r, recipient, id, at())))
+        .await
+        .unwrap();
+    assert!(ok);
+    // 重复标记：不报错、不重复计数。
+    let again = f
+        .run(|c, r| Box::pin(notification::mark_read(c, r, recipient, id, at())))
+        .await
+        .unwrap();
+    assert!(!again, "重复标记应为无操作");
+
+    assert_eq!(
+        f.run(|c, r| Box::pin(notification::unread_count(c, r, recipient)))
+            .await
+            .unwrap(),
+        1
+    );
+
+    let all = f
+        .run(|c, r| Box::pin(notification::mark_all_read(c, r, recipient, at())))
+        .await
+        .unwrap();
+    assert_eq!(all, 1, "全部已读只应影响剩下的那条");
+    assert_eq!(
+        f.run(|c, r| Box::pin(notification::unread_count(c, r, recipient)))
+            .await
+            .unwrap(),
+        0
+    );
+}
+
+/// `NOTIFY-001`：`adopted` 只预留类型，MVP 不得产生该类通知。
+///
+/// 单独一条而不是靠调用方自觉：一旦被误用，用户会收到一条指向尚不存在功能的
+/// 通知，点进去是空的。另断言不给自己发通知。
+#[tokio::test]
+async fn reserved_kind_and_self_notification_are_rejected() {
+    use crate::notification::{self, Delivery, NotificationKind, SourceKind};
+
+    let f = Fixture::new(2).await;
+    let recipient = f.users[0];
+    let actor = f.users[1];
+
+    let reserved = Delivery {
+        recipient_id: recipient,
+        kind: NotificationKind::Adopted,
+        source: SourceKind::Post,
+        source_id: 1,
+        actor_id: actor,
+        idempotency_key: "reserved".into(),
+    };
+    assert_eq!(
+        f.run(move |c, r| Box::pin(
+            async move { notification::deliver(c, r, &reserved, at()).await }
+        ))
+        .await
+        .unwrap_err(),
+        InteractionError::InvalidInput
+    );
+
+    let to_self = Delivery {
+        recipient_id: recipient,
+        kind: NotificationKind::Reply,
+        source: SourceKind::Post,
+        source_id: 1,
+        actor_id: recipient,
+        idempotency_key: "self".into(),
+    };
+    assert_eq!(
+        f.run(move |c, r| Box::pin(
+            async move { notification::deliver(c, r, &to_self, at()).await }
+        ))
+        .await
+        .unwrap_err(),
+        InteractionError::InvalidInput,
+        "自己回复自己的主题不该产生「有人回复了你」"
+    );
+}

@@ -61,6 +61,7 @@ mod tests {
             include_str!("../../../db/migrations/postgres/0018_search_normalized_column.sql"),
             include_str!("../../../db/migrations/postgres/0019_iam_schema_usage.sql"),
             include_str!("../../../db/migrations/postgres/0020_feedback.sql"),
+            include_str!("../../../db/migrations/postgres/0021_notifications.sql"),
         ]
         .join("\n");
         for prefix in ["bcm_", "review42_"] {

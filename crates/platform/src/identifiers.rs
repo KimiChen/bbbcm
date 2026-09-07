@@ -39,6 +39,12 @@ pub const TABLES: &[TableRegistration] = &[
         identity_column: Some("id"),
     },
     TableRegistration {
+        // NOTIFY-001/002/003 站内通知。幂等键唯一约束见 0021 迁移。
+        schema: "interaction",
+        table: "notifications",
+        identity_column: Some("id"),
+    },
+    TableRegistration {
         schema: "identity",
         table: "challenges",
         identity_column: None,
@@ -363,6 +369,7 @@ pub const TABLES: &[TableRegistration] = &[
 /// 仅本轮引擎所需索引；迁移与表注册同时版本化。
 pub const INDEXES: &[(&str, &str)] = &[
     ("interaction", "feedback_target_idx"),
+    ("interaction", "notification_inbox_idx"),
     ("community", "topic_forum_idx"),
     ("community", "topic_owner_idx"),
     ("community", "post_floor_idx"),

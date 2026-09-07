@@ -1,0 +1,52 @@
+# WP-MVP-C04 切片：NOTIFY-001／002／003 站内通知（2026-09-07）
+
+直接目的：解锁 `90` §5 并发矩阵最后一项「通知去重」。加上同日交付的正向反馈切片，
+并发九项**全部执行完毕**。
+
+```
+test feedback_tests::notifications_are_idempotent_and_read_state_is_per_recipient ... ok
+test feedback_tests::feedback_is_once_per_user_idempotent_and_never_self ... ok
+test feedback_tests::reserved_kind_and_self_notification_are_rejected ... ok
+test feedback_tests::database_constraints_reject_self_feedback_and_duplicates ... ok
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s
+test concurrent_delivery_of_one_event_creates_a_single_notification ... ok
+test concurrent_feedback_from_one_user_counts_once ... ok
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.49s
+```
+
+## 交付
+
+| 位置 | 内容 |
+|---|---|
+| `db/migrations/{postgres,sqlite}/0021_notifications.sql` | `interaction.notifications`。`idempotency_key` UNIQUE 是 `NOTIFY-003` 的落点。`kind` 封闭枚举含 `adopted`——按 `NOTIFY-001` 只预留，MVP 不产生。 |
+| `crates/interaction/src/notification.rs` | `deliver`／`unread_count`／`mark_read`／`mark_all_read`。不判断谁该收到通知：拉黑、通知偏好、内容可见性由调用方在产生通知的同一事务内重读。 |
+
+## 关键设计
+
+**幂等靠唯一键，不靠投递前先查**。Outbox 是「至少一次」语义,同一事件必然被投递多次，
+多个 Worker 并行时还会同时投。先查再插在并发下必然漏——两路同时查到「还没有」就各插一条。
+
+**重复投递不报错**。返回 `created = false`。若报错，Worker 会把成功的重试当成失败继续
+重试下去，形成一个永远消不掉的队列项。
+
+**未读用哨兵时间戳而非可空列**。可空列会让「未读」在 SQL 里变成 NULL 语义，
+而三库对 NULL 的排序与比较差异正是 `DEC-022` 要避开的。与 community 侧 `deleted_at` 同一约定。
+
+**`mark_read` 的条件含 `recipient_id`**。只用 id 的话，拿到别人的通知 ID 就能把它标为已读，
+是一次典型的 ID 替换越权。测试正面断言他人无法标记。
+
+**不给自己发通知**。自己回复自己的主题不该产生「有人回复了你」。
+
+**不存未读计数**。冗余计数与已读状态一旦不一致，用户会看到「有未读但点进去是空的」，
+那种 bug 极难复现。
+
+## 并发验证（E01 矩阵「通知去重」）
+
+8 路并发投递同一幂等键，真实 PostgreSQL。四层断言：每路都得到确定结果、恰好一路
+`created = true`、库里只有一行、**未读计数为 1**——最后一条防的是「计数 8 但列表 1 条」。
+
+## 未做
+
+`NOTIFY-004`（安全邮件不可被营销退订关闭）与 `NOTIFY-005`（按事件类型配置）未实现；
+`SOCIAL-001` 收藏、`SOCIAL-004` 关注、阅读位置未实现；HTTP 入口未接线。
+`WP-MVP-C04` 维持 `In progress`，本切片不使任何 `NOTIFY-*` 进入 `Implemented`。

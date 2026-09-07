@@ -119,7 +119,7 @@
 | `WP-MVP-C02` | In progress | 内容/楼层/修订/本人维护/事务与权限合同齐备，发布政策按DEC-054/055/060装配，TOPIC-001/002/003/008 已推进为 Implemented（见5.19）；管理写入口（移帖、状态转换）无HTTP路由，附件与重复文本限速未实现。 |
 | `WP-MVP-C03` | In progress | 安全Markdown和预览已接；完整编辑器、草稿、上传及媒体全链仍缺，见5.9。 |
 | `WP-MVP-C05` | In progress | 同事务权威 search_documents、搜索页/SEO/Feed/sitemap 已交付；**本轮补齐 PostgreSQL 完整模式全文检索**（`pg_jieba` 索引侧 `jiebaqry`／查询侧 `jiebacfg`，能力按实测探测装配，权限过滤与体验模式逐条对齐），见 5.24。GIN 索引与百万级重建属性能矩阵，仍缺。 |
-| `WP-MVP-C04` | In progress | **本轮交付 `SOCIAL-002`／`SOCIAL-003` 正向反馈切片**（迁移 0020、`interaction` 领域服务与仓库、唯一性与自我反馈的库层约束），并据此补齐 `90` §5 并发矩阵的「互动唯一性」，见 5.25。收藏、关注、阅读位置、站内通知与 HTTP 入口仍缺；无可达路由，不标完成。 |
+| `WP-MVP-C04` | In progress | **本轮交付两个切片**：`SOCIAL-002`／`SOCIAL-003` 正向反馈（迁移 0020，见 5.25）与 `NOTIFY-001`／`002`／`003` 站内通知（迁移 0021，见 5.26），并据此补齐 `90` §5 并发矩阵的「互动唯一性」与「通知去重」，使并发九项全部执行完毕。收藏（`SOCIAL-001`）、关注（`SOCIAL-004`）、阅读位置、`NOTIFY-004/005` 与 HTTP 入口仍缺；无可达路由，不标完成。 |
 | `WP-MVP-D01..D04` | Not started | - |
 | `WP-MVP-E01` | In progress | 已通过并留证：真实 Redis 8 合同、真实 PostgreSQL 16 双前缀集成 11 项、并发矩阵九项中的**八项**、安全矩阵中不依赖未完成功能的六项、`90` §6 参数门槛六项、SQLite 体验模式四项、浏览器结构化检查（对比度经 `DEC-067` 修复后达标）、`pg_jieba` 扩展镜像离线构建与实测、SBOM/许可证/漏洞/Secret 全量扫描、公开读延迟基线（实验记录）。执行过程中发现并修复四个生产缺陷（`DEC-064`／`DEC-065`／`DEC-066` 与 `/manage` 错误响应缺安全头）。**仍缺**：通知去重（依赖 `C04` 的 `NOTIFY-*`）、E2E 全路径（依赖 `C04`／`D01`–`D04`）、A 级像素与几何比对、负载与延迟门槛（需批准资源规格）、触控目标门槛（待裁决）、`90` §5 部分 PostgreSQL 条目（`CommitUnknown`、`40001`/`40P01` 受控重试、审计与搜索权限状态同事务提交）。详见 5.23。 |
 | `WP-MVP-E02/E04/E05` | Not started | - |
@@ -1262,6 +1262,7 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 |---|---|
 | 真实 Redis 8 合同（`crates/platform/tests/redis_contract.rs`） | **通过**。在 `127.0.0.1:6399` 的隔离实例上执行（独立数据目录、关闭 RDB/AOF 持久化），覆盖原子性、命名空间隔离与恢复。测试自身强制要求显式隔离确认、回环地址与 `redis_version:8.` 大版本断言，非回环端点一律拒绝。运行版本口径见 `DEC-063`。 |
 | 真实 PostgreSQL 16 集成（`crates/platform-db/tests/postgres_contract.rs`） | **通过，11/11**。服务端为供应链锁定镜像 `postgres@sha256:421b84e0…`（`PG_VERSION=16.15`，UTF8 / C.UTF-8），一次性容器 + tmpfs 数据目录，经本机回环 `127.0.0.1:5433` 连接，取证后销毁。默认 `bcm_` 与本次运行新建的随机非默认前缀并存。运行身份 `<prefix>app_login` 仅属 `app_rw`，迁移身份 `<prefix>mig_login` 仅属 `migrator`，均为 `INHERIT FALSE` / `SET TRUE`。证据见 [`postgres-contract.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/postgres-contract.txt)，运行手册见 [`docs/development/postgres.md`](../docs/development/postgres.md)。 |
+| 并发矩阵：通知去重 | **通过**。8 路并发投递同一幂等键（真实 PostgreSQL），四层断言：每路都得到确定结果、恰好一路 `created = true`、库里只有一行、**未读计数为 1**（防「计数 8 但列表 1 条」）。为执行此项本轮交付了 `NOTIFY-001/002/003` 切片，见 5.26。证据见 [`notifications.txt`](../docs/evidence/mvp/wp-mvp-c04/dev-20260907/notifications.txt)。 |
 | 并发矩阵：互动唯一性 | **通过**。8 路并发对同一 `(user, target)` 提交反馈（真实 PostgreSQL），四层断言：每路都得到确定结果、恰好一路是真正首写、库里只有一行、有效计数为 1。为执行此项本轮交付了 `SOCIAL-002`／`SOCIAL-003` 切片，见 5.25。证据见 [`feedback.txt`](../docs/evidence/mvp/wp-mvp-c04/dev-20260907/feedback.txt)。 |
 | 并发矩阵：举报合并 | **通过**。8 路并发举报同一目标，恰好建一个案件、全部挂到同一案件，并回读库中该目标只有一行案件、每位举报人各留一条工单。本项首次执行即暴露并修复了 `DEC-066` 的缺陷。证据见 [`governance-concurrency.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/governance-concurrency.txt)。 |
 | 并发矩阵：治理命令 | **通过，2/2**。并发批准恰好生效一次且落库批准人正是成功那一路、版本恰好 +1；操作者自批 8 路并发全部失败、状态与版本纹丝不动、`approval_satisfied` 仍为假。本项首次执行即暴露并修复了 `DEC-065` 的缺陷。证据同上。 |
@@ -1287,7 +1288,7 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 | `40001`/`40P01` 受控重试 | 压出序列化失败或死锁必须**故意违反**固定锁顺序，而平台层会先一步拒绝（已由 `lock_order_is_frozen_…` 正面验证）。需另建绕过平台层的夹具，或承认该故障被设计挡在发生之前。 |
 | 审计与搜索权限状态的同事务提交 | 本轮只验证了 Outbox 一侧。 |
 | ~~应用的完整搜索模式~~ **已完成** | 2026-09-07 交付，见第 5.24 节。原登记如下：**阻塞性质已改变**：扩展镜像本轮已按 `M0-03` 的 Dockerfile 离线构建成功，`pg_jieba` 1.1.1 与 `pg_trgm` 1.6 实测可用（中文分词、`@@` 匹配、`similarity` 均正确），同一套合同 11 项在该镜像上亦全部通过。真正缺的是应用侧——`crates/content/src/search.rs` 目前只有 `SqliteTitleSearch` 一个 `SearchBackend` 实现，`pg_jieba + pg_trgm` 的 PostgreSQL 后端尚未编写。这属 `WP-MVP-C05` 的实现缺口，不再是 E01 的环境问题。证据见 [`pg-jieba-extension.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/pg-jieba-extension.txt)。**该缺口本轮已补齐**，全文检索通过真实 `pg_jieba` 验证。 |
-| 并发矩阵：通知去重 | 属 `WP-MVP-C04` 的 `NOTIFY-*`，**功能尚不存在**，不是载体问题。并发九项中其余八项已全部通过。 |
+
 | `90` §6 公开读延迟（实验结果） | **载体已编写并执行**（`crates/content/tests/postgres_performance.rs`）。2,000 与 100,000 两个数据量下，公开列表与版块列表的 p95 分别为 7.9／8.1ms 与 **7.4／7.2ms**，远低于 400ms 门槛；50 倍数据量增长几乎不改变 p95，与 keyset 游标分页的预期一致。**但资源规格未获批准**，按 `90` §6 表末规定只作实验记录，不支持 Production Approved。运行条件（含 tmpfs 数据目录、`fsync=off` 等非生产配置）已全量登记。证据见 [`read-latency-baseline.txt`](../docs/evidence/mvp/wp-mvp-e02/dev-20260907/read-latency-baseline.txt)。 |
 | `90` §6 其余负载门槛 | 100 万主题基线（载体支持，按当前播种速率需约 1 小时，本轮未跑）、写负载 20/s 与写 p95、SSR 首屏 p95（本载体测领域读路径，未含模板渲染与 HTTP 往返）、200 read/s 吞吐（本机非生产规格，堆并发只会测出连接池排队）均未执行。 |
 | 安全矩阵：上传相关 | 上传 MIME／文件头／压缩炸弹／像素炸弹与下载鉴权依赖 `WP-MVP-C03` 的上传链，**功能尚未实现**。 |
@@ -1380,7 +1381,7 @@ PostgreSQL 中没有 schema `USAGE`，其下所有表级授权一律无效。**�
 
 #### 状态影响
 
-**没有任何需求或工作包因本节推进为 `Verified`。** `DEC-020` 规定 `Verified` 只能在统一硬化阶段凭**完整矩阵**证据授予。本轮完成的是矩阵中的 Redis 合同、PostgreSQL 集成的十一项、并发九项中的七项（Outbox lease、主题楼层、邮箱验证、密码恢复、邀请码消费/额度、举报合并、治理命令）、安全矩阵中不依赖未完成功能的六项、`90` §6 参数门槛一致性六项、SQLite 体验模式矩阵、浏览器结构化检查的五项（含 `DEC-067` 后达标的对比度）、公开读延迟基线（实验记录）、`pg_jieba` 扩展镜像的离线构建与实测、SBOM/许可证/漏洞/Secret 全量扫描，以及开发期最小集；安全、并发、性能、E2E 与视觉矩阵仍未执行，`90` §5 的 PostgreSQL 条目也只覆盖了一部分（未覆盖清单见上表与 [`docs/development/postgres.md`](../docs/development/postgres.md)）。`WP-MVP-E01` 由 `Not started` 转 `In progress`——它的退出条件是整套矩阵，跑通若干项不等于包完成。
+**没有任何需求或工作包因本节推进为 `Verified`。** `DEC-020` 规定 `Verified` 只能在统一硬化阶段凭**完整矩阵**证据授予。本轮完成的是矩阵中的 Redis 合同、PostgreSQL 集成的十一项、**并发九项全部**（Outbox lease、主题楼层、邮箱验证、密码恢复、邀请码消费/额度、举报合并、治理命令、互动唯一性、通知去重）、安全矩阵中不依赖未完成功能的六项、`90` §6 参数门槛一致性六项、SQLite 体验模式矩阵、浏览器结构化检查的五项（含 `DEC-067` 后达标的对比度）、公开读延迟基线（实验记录）、`pg_jieba` 扩展镜像的离线构建与实测、SBOM/许可证/漏洞/Secret 全量扫描，以及开发期最小集；安全、并发、性能、E2E 与视觉矩阵仍未执行，`90` §5 的 PostgreSQL 条目也只覆盖了一部分（未覆盖清单见上表与 [`docs/development/postgres.md`](../docs/development/postgres.md)）。`WP-MVP-E01` 由 `Not started` 转 `In progress`——它的退出条件是整套矩阵，跑通若干项不等于包完成。
 
 #### 环境阻塞已解除
 
@@ -1483,6 +1484,35 @@ SQLite 上验语义（幂等、撤销—重做复用同一行、库层约束独�
 #### 未做
 
 `C04` 其余需求——收藏（`SOCIAL-001`）、关注（`SOCIAL-004`）、阅读位置、站内通知（`NOTIFY-*`）、通知偏好——均未涉及；HTTP 入口未接线，因此 `SOCIAL-002/003` **尚无可达路由**。按 `README` 第 6 节「部分路径可用不得记 Implemented」，本切片不使 `SOCIAL-002/003` 进入 `Implemented`，`WP-MVP-C04` 维持 `In progress`。并发矩阵剩余的「通知去重」仍依赖 `NOTIFY-*`。
+
+### 5.26 `WP-MVP-C04` 切片：`NOTIFY-001`／`002`／`003` 站内通知（2026-09-07）
+
+产品决策与最终批准：项目所有者（用户）；执行与登记：Claude。
+
+**动机**：`90` §5 并发矩阵的「通知去重」是最后一项无法执行的条目，原因是 `NOTIFY-*` 功能不存在。本切片交付它，使并发九项全部执行完毕。
+
+#### 交付物
+
+| 位置 | 内容 |
+|---|---|
+| `db/migrations/{postgres,sqlite}/0021_notifications.sql` | `interaction.notifications`。`idempotency_key` UNIQUE 是 `NOTIFY-003` 的落点；`kind` 封闭枚举含 `adopted`，按 `NOTIFY-001` 只预留、MVP 不产生。PostgreSQL 轨含 `app_rw` 与 `worker_rw` 双角色 ACL——通知由 Outbox 消费方投递，Worker 必须能写。 |
+| `crates/interaction/src/notification.rs` | `deliver`／`unread_count`／`mark_read`／`mark_all_read`。**不判断谁该收到通知**：拉黑、通知偏好、内容可见性由调用方在产生通知的同一事务内重读。 |
+
+#### 关键设计
+
+- **幂等靠唯一键，不靠投递前先查**。Outbox 是「至少一次」语义，同一事件必然被投递多次，多 Worker 并行时还会同时投；先查再插在并发下必然漏。
+- **重复投递不报错**，返回 `created = false`。若报错，Worker 会把成功的重试当成失败继续重试，形成永远消不掉的队列项。
+- **未读用哨兵时间戳而非可空列**。可空列会让「未读」在 SQL 里变成 NULL 语义，而三库对 NULL 的排序与比较差异正是 `DEC-022` 要避开的；与 community 侧 `deleted_at` 同一约定。
+- **`mark_read` 的条件含 `recipient_id`**。只用 id 的话，拿到他人通知 ID 即可标记已读，是典型的 ID 替换越权；测试正面断言他人无法标记。
+- **不给自己发通知**，且**不存未读计数**——冗余计数与已读状态一旦不一致，用户会看到「有未读但点进去是空的」，极难复现。
+
+#### 验证
+
+SQLite 验语义（幂等重投不报错、未读计数、单条与全部已读、ID 替换越权被拒、预留类型与自我通知被拒）；**通知去重的并发在真实 PostgreSQL 上验**——8 路并发同一幂等键，四层断言含未读计数为 1，防「计数 8 但列表 1 条」。开发期最小集七步全绿，351 项单元测试、SQLite 冒烟 100 条路由。
+
+#### 未做
+
+`NOTIFY-004`（安全邮件不可被营销退订关闭）、`NOTIFY-005`（按事件类型配置）未实现；`SOCIAL-001` 收藏、`SOCIAL-004` 关注、阅读位置未实现；HTTP 入口未接线。按 `README` 第 6 节，本切片不使任何 `NOTIFY-*` 进入 `Implemented`。
 
 ## 6. 门禁状态
 

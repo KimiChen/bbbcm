@@ -207,3 +207,110 @@ async fn concurrent_feedback_from_one_user_counts_once() {
     assert_eq!(count, 1, "有效计数必须为 1");
     f.pool.close().await;
 }
+
+/// `90` §5 并发「通知去重」：同一事件被并发投递，只能产生一条通知。
+///
+/// `NOTIFY-003` 要求任务重试不产生重复通知，而 Outbox 的「至少一次」语义意味着
+/// 同一事件**必然**会被投递多次，多个 Worker 并行时还会同时投。幂等键的
+/// UNIQUE 是唯一拦截点——投递前先查一次在并发下必然漏。
+///
+/// 四层断言：
+/// 1. 每路都得到确定结果，不允许静默失败；
+/// 2. 恰好一路 `created = true`，其余观察到「已存在」；
+/// 3. 库里只有一行；
+/// 4. 未读计数为 1——用户看到的也是一条，而不是「计数 8 但列表 1 条」。
+#[tokio::test(flavor = "multi_thread", worker_threads = 8)]
+#[ignore = "需要显式隔离的 PostgreSQL 16 端点；见 docs/development/postgres.md"]
+async fn concurrent_delivery_of_one_event_creates_a_single_notification() {
+    use interaction::notification::{self, Delivery, NotificationKind, SourceKind};
+
+    const WORKERS: u32 = 8;
+    let Some(f) = fixture(WORKERS).await else {
+        eprintln!("跳过：未提供隔离 PostgreSQL 端点。跳过不等于通过。");
+        return;
+    };
+    let recipient = f.users[0];
+    let actor = f.users[1];
+    let key = format!("evt-{}", new_operation_id());
+
+    let mut tasks = Vec::new();
+    for _ in 0..WORKERS {
+        let pool = f.pool.clone();
+        let r = f.r.clone();
+        let delivery = Delivery {
+            recipient_id: recipient,
+            kind: NotificationKind::Reply,
+            source: SourceKind::Post,
+            source_id: 77,
+            actor_id: actor,
+            idempotency_key: key.clone(),
+        };
+        tasks.push(tokio::spawn(async move {
+            for _ in 0..32 {
+                let mut tx = DbTransaction::begin(&pool).await.expect("事务");
+                let out = {
+                    let mut c = tx.connection();
+                    notification::deliver(&mut c, &r, &delivery, at()).await
+                };
+                match out {
+                    Ok(o) => {
+                        if tx.commit().await.is_ok() {
+                            return Some(o.created);
+                        }
+                        // 提交失败按可重试处理：并发下两路同时插入，唯一约束会挡下一路。
+                        tokio::task::yield_now().await;
+                    }
+                    Err(InteractionError::Conflict) | Err(InteractionError::Unavailable) => {
+                        let _ = tx.rollback().await;
+                        tokio::task::yield_now().await;
+                    }
+                    Err(other) => panic!("非预期错误：{other:?}"),
+                }
+            }
+            None
+        }));
+    }
+
+    let mut done = 0usize;
+    let mut created = 0usize;
+    for t in tasks {
+        match t.await.expect("任务不应 panic") {
+            Some(c) => {
+                done += 1;
+                if c {
+                    created += 1;
+                }
+            }
+            None => panic!("有一路始终没能得到确定结果"),
+        }
+    }
+    assert_eq!(done, WORKERS as usize, "每一路都应得到确定结果");
+    assert_eq!(
+        created, 1,
+        "同一事件只能新建一条通知，实际新建 {created} 条"
+    );
+
+    let mut tx = DbTransaction::begin_read(&f.pool).await.unwrap();
+    let (rows, unread) = {
+        let mut c = tx.connection();
+        let t =
+            f.r.table(c.backend(), "interaction", "notifications")
+                .unwrap();
+        let rows = c
+            .fetch_all(
+                &format!("SELECT id FROM {t} WHERE idempotency_key = ?"),
+                &[DbValue::Text(key.clone())],
+            )
+            .await
+            .unwrap()
+            .len();
+        let unread = notification::unread_count(&mut c, &f.r, recipient)
+            .await
+            .unwrap();
+        (rows, unread)
+    };
+    tx.rollback().await.unwrap();
+    assert_eq!(rows, 1, "并发投递只能留下一行");
+    assert_eq!(unread, 1, "未读计数必须为 1，不能出现「计数与列表不符」");
+    f.pool.close().await;
+}
