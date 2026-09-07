@@ -124,7 +124,7 @@
 | `WP-MVP-D02` | In progress | 2026-09-06（§5.16）交付十类动作封闭枚举与作用面校验、`MOD-006` 完整记录（原因码／规则版本／证据摘要／执行人／期限／前后状态）、只追加的撤销历史、不依赖清理任务的自然到期、`MOD-011` 一次申诉＋职责分离＋三种结论（减轻必须真的更轻）、`MOD-007` 用户可读说明（刻意不含内部备注、证据正文与执行人身份）。§5.18.2 将 `record`／`revoke`／`review_appeal` 接入真实授权，能力按动作作用面自动选择。剩余：`/manage` 尚无处罚与申诉入口，通知投递属 `C04`／`A06`，`MOD-010` 规则版本发布管理未做。 |
 | `WP-MVP-D03` | Not started | 客服、账号恢复、紧急升级和隐私请求未开始，无实施登记。 |
 | `WP-MVP-D04` | In progress | 三波交付：§5.17 权限 registry（`registry.toml` 10 权限／5 角色，`build.rs` 构建期生成并校验、SiteOwner 恰好四项极高危、`03` §4 十步授权纯函数、`global`／`forums` 两类 ABAC 按目标当前版块判定、`authz_version` 失效旧管理会话、高危权限需异人审批、IAM 目录对 `app_rw` 只读）；§5.18 代码／registry／数据库三方一致性校验、五条受控命令、审批职责分离下沉到 SQL、`move_topic` 接线；§5.20／§5.21 `/manage` 五条路由、独立 cookie 与 CSRF、绑定门禁、安全响应头、C2 视图模型层无正文字段、全 SSR 无 JavaScript，以及移帖两步化、动作反馈、举报队列与版块选择器。E01 发现并修复 `DEC-065`（`iam` schema 缺 `USAGE`，完整模式下整个 `/manage` 不可用）与 404／500 缺安全响应头。剩余：`03` 十六条路由中十一条未注册，批量、配置、作业、分析看板与审计查询页未做。 |
-| `WP-MVP-E01` | In progress | 已通过并留证：真实 Redis 8 合同、真实 PostgreSQL 16 双前缀集成 11 项、并发矩阵九项**全部通过**（通知去重随 5.26 的 `NOTIFY-*` 切片补齐）、安全矩阵中不依赖未完成功能的六项、`90` §6 参数门槛六项、SQLite 体验模式四项、浏览器结构化检查（对比度经 `DEC-067` 修复后达标）、`pg_jieba` 扩展镜像离线构建与实测、SBOM/许可证/漏洞/Secret 全量扫描、公开读延迟基线（实验记录）。执行过程中发现并修复四个生产缺陷（`DEC-064`／`DEC-065`／`DEC-066` 与 `/manage` 错误响应缺安全头）。**仍缺**：E2E 全路径（依赖 `C04`／`D01`–`D04`）、A 级像素与几何比对、负载与延迟门槛（需批准资源规格）、触控目标门槛（待裁决）、`90` §5 的 `40001`/`40P01` 受控重试。详见 5.23。 |
+| `WP-MVP-E01` | In progress | 已通过并留证：真实 Redis 8 合同、真实 PostgreSQL 16 双前缀集成 11 项、并发矩阵九项**全部通过**（通知去重随 5.26 的 `NOTIFY-*` 切片补齐）、安全矩阵中不依赖未完成功能的六项、`90` §6 参数门槛六项、SQLite 体验模式四项、浏览器结构化检查（对比度经 `DEC-067` 修复后达标）、`pg_jieba` 扩展镜像离线构建与实测、SBOM/许可证/漏洞/Secret 全量扫描、公开读延迟基线（实验记录）。执行过程中发现并修复四个生产缺陷（`DEC-064`／`DEC-065`／`DEC-066` 与 `/manage` 错误响应缺安全头）。**仍缺**：E2E 全路径（依赖 `C04`／`D01`–`D04`）、A 级像素与几何比对、负载与延迟门槛（需批准资源规格）、触控目标门槛（待裁决）。`90` §5 的 `40001`/`40P01` 受控重试**已通过**（需 `deadlock_timeout < lock_timeout` 的环境前置，生产取值待裁决）。详见 5.23。 |
 | `WP-MVP-E02` | In progress | 接收 M0-05 的容量派生模型与负载档案；公开读延迟基线载体已建并在 2,000 与 100,000 两档数据量上实测，p95 远低于门槛且对数据量不敏感（§5.23）。**资源规格未获批准，按 `90` §6 表末只作实验记录，不构成门禁证据**。剩余：百万级灌数、写负载、SSR 首屏与吞吐未做。 |
 | `WP-MVP-E04` | In progress | `05` §6 的 B 级结构级检查已执行 154 个「页面×视口×主题」组合：无横向溢出、键盘可达、无 JavaScript 可用与错误态可达全部通过；对比度经 `DEC-067` 无障碍叠加层修复后两主题全量达标（§5.23）。剩余：触控目标门槛在 `05` §6 的 44px 与 `90` §5 的 WCAG 2.2 AA 之间待裁决；A 级像素与几何比对未执行，受阻于 `visual-baseline-v1` 的字体环境要求（见 §5.23）。 |
 | `WP-MVP-E05` | Not started | 全量回归、版本冻结和 go/no-go 包未开始。 |
@@ -1274,6 +1274,7 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 | 并发矩阵：identity 三项 | **通过**。邮箱验证、密码恢复、邀请码消费/额度，各 8 路并发。邮箱验证除断言恰好一次成功外，还回读 `consumed` 标志——只看返回值排除不了「第二次也写了、只是返回幂等重放」；密码恢复在并发结束后再单独试一次并要求失败，把一次性验到底；邀请码额外核对实际只新增一个账号。证据见 [`identity-concurrency.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/identity-concurrency.txt)。 |
 | 并发矩阵：主题楼层 | **通过**。8 路 Worker × 每路 5 条 = 40 条并发回复，各用独立账号以避开 `DEC-060` 的每小时预算。断言楼层不重复、从 2 起连续（2–41）、主题 `next_floor` 与 `raw_reply_count` 与实际行数一致。本项首次执行即暴露并修复了 `DEC-064` 的 `forums` ACL 缺陷。证据见 [`content-concurrency.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/content-concurrency.txt)。 |
 | 未知提交（`CommitUnknown`，真实 PostgreSQL） | **通过**。`postgres_unknown_commit_never_replays_and_discards_the_connection`（crate 内，因 `simulate_lost_ack` 是 `#[cfg(test)]`，集成测试拿不到）。四层断言：结果为 `Unknown` 且带原操作 ID；业务闭包**恰好执行一次**（重放会把一次已提交的写变成两次）；提交/回滚两种模式下业务事实的落库状态分别正确；丢回执后的连接被丢弃、不放回池中复用。 |
+| `40001`/`40P01` 受控重试 | **通过**（`real_deadlocks_are_classified_and_absorbed_by_controlled_retry`）。两层断言：裸事务反序更新的牺牲者分类为 `Database(Deadlock)`（真实 `40P01`）；同样冲突走 `execute_command` 时正反两向都被受控重试吸收并提交。**环境前置**：载体要求 `deadlock_timeout < lock_timeout` 并在运行时读 `current_setting` 断言，本次在一次性容器上执行 `ALTER DATABASE bbbcm_contract SET deadlock_timeout = '200ms'`。生产默认相反，见下节缺陷登记。 |
 | 审计与搜索权限状态同事务提交 | **通过**。`audit_and_search_permission_state_commit_with_the_business_fact`：提交/回滚两轮对称断言审计与业务事实同生同灭；额外正面断言运行角色**读不到**审计表（`0002_engine.sql:92` 只授 INSERT，审计对应用只追加，可读即可试探），回读因此走迁移身份；并核对搜索投影携带全部五个权限判定列，缺任一列都会让检索绕过对应过滤。至此 `postgres_contract` 12/12。 |
 | 并发矩阵：Outbox lease | **通过**。120 条事件 / 8 路 Worker 并发 `claim`，四层断言：反空转（八路全部领到，非单线程退化）、至多一次（无重复租约）、不饿死（120 条全部领走）、两两不相交。数据库侧复核状态全为 `leased` 且计数相符。证据见 [`postgres-concurrency.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/postgres-concurrency.txt)。**只覆盖 `90` §5 并发九项中的一项**，其余见下表。 |
 | HTTP/E2E 状态矩阵（真实业务路由） | **八类全部通过**。补齐装配（三项 Secret + `active_token_version` + `local_test` 适配器 + 运维方式开 Flag）后业务路由可达：成功（`/`、`/new`、`/hot`、`/pinned`、`/featured`、`/search`、`/login`、`/robots.txt`、`/sitemap.xml`、`/feed.xml`）、空态（空搜索 200 且呈现「没有匹配的标题。」而非错误）、不存在（404）、未认证（`/settings/profile` 401）、未授权（`/me/topics` 403）、依赖失败（`/register` 503，挑战 provider 未装配时失败关闭）。CSRF：无令牌 POST 到 `/login`／`/register`／`/topics/new` 分别 400／400／403，无一条走进业务逻辑。公开页 CSP 含 `script-src 'none'`，与「页面脚本数为 0」互相印证。**过期**：带 CSRF 提交无效令牌返回 400，提示刻意通用、不透露令牌是否存在或已过期（避免枚举）。**冲突**：补齐邀请码与版块激活两项播种前置后走完真实 HTTP 全流程——注册 → 读 `local_test` 邮件取令牌 → 验证邮箱 → 登录 → 发主题 → 编辑（当前版本成功、`version` 升 2）→ 再以陈旧 `version=1` 提交得 **409**，且正文未被覆盖、版本停在 2。登录后 `/settings/profile`／`/me/topics` 由 401／403 转 200，认证边界同一路径两种结果。证据见 [`e2e-business-routes.txt`](../docs/evidence/mvp/wp-mvp-e04/dev-20260907/e2e-business-routes.txt)。 |
@@ -1294,7 +1295,6 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 | 检查 | 未执行原因 |
 |---|---|
 
-| `40001`/`40P01` 受控重试 | 载体已编写（`real_deadlocks_are_classified_and_absorbed_by_controlled_retry`），**当前失败**——根因是下节登记的 `lock_timeout` 缺陷，不是载体问题。 |
 
 | ~~应用的完整搜索模式~~ **已完成** | 2026-09-07 交付，见第 5.24 节。原登记如下：**阻塞性质已改变**：扩展镜像本轮已按 `M0-03` 的 Dockerfile 离线构建成功，`pg_jieba` 1.1.1 与 `pg_trgm` 1.6 实测可用（中文分词、`@@` 匹配、`similarity` 均正确），同一套合同 11 项在该镜像上亦全部通过。真正缺的是应用侧——`crates/content/src/search.rs` 目前只有 `SqliteTitleSearch` 一个 `SearchBackend` 实现，`pg_jieba + pg_trgm` 的 PostgreSQL 后端尚未编写。这属 `WP-MVP-C05` 的实现缺口，不再是 E01 的环境问题。证据见 [`pg-jieba-extension.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/pg-jieba-extension.txt)。**该缺口本轮已补齐**，全文检索通过真实 `pg_jieba` 验证。 |
 
@@ -1455,7 +1455,18 @@ PostgreSQL 中没有 schema `USAGE`，其下所有表级授权一律无效。**�
 2. **降低 `deadlock_timeout` 到 `lock_timeout` 之下**（如 300ms），效果同上且尾延迟不变，但死锁检测更频繁，在高并发下有额外开销。
 3. **把 `LockTimeout` 纳入可重试集合**。改动最小，但语义变了：`lock_timeout` 本是「不要在锁上久等」的延迟护栏，让它自动重试等于把护栏变成退避循环，需重新审视它的定位。
 
-在裁决前载体保持失败并如实登记，不通过放宽断言或改配置把它「修绿」。
+**载体已与缺陷解耦（2026-09-07）**：原先载体因该缺陷保持失败。现在把「40P01 发生时分类与重试是否正确」和「生产配置能否产生 40P01」拆成两件事——载体显式声明环境前置 `deadlock_timeout < lock_timeout`，用 `SELECT current_setting(...)` 在运行时断言，不满足即报错并给出该执行的 `ALTER DATABASE`。
+
+中途尝试过在事务内 `SET LOCAL lock_timeout` 抬高本事务的取值，被 `validate_repository_sql` 拒绝：仓库 SQL 只允许 `SELECT`／`INSERT`／`UPDATE`／`DELETE`／`WITH`，借用者不得执行任意语句。**该守卫是对的，没有为测试削弱它**，改走服务端配置。
+
+在 `deadlock_timeout = 200ms` 下的实测结果，同时构成对候选修法 2 的实证：
+
+| 层 | 结果 |
+|---|---|
+| 裸事务反序更新，牺牲者分类 | `Database(Deadlock)` —— 真实 `40P01`，分类正确 |
+| 同冲突走 `execute_command` | 正序与反序**双双** `Ok(Committed)` —— 受控重试确实吸收了死锁 |
+
+即：**候选修法 2 一旦采用，`90` §5 要求的受控重试立刻成立**，`classify_database_code` 的 `40P01` 分支与 `RetryBudget` 的 `Deadlock` 分支也不再是不可达代码。这只是对修法可行性的验证，**生产取值仍待裁决**；本轮未改 `transaction_setup_sql`，缺陷登记继续有效。
 
 #### 环境约束：`visual-baseline-v1` 必须固定操作系统字体，不只是浏览器（2026-09-07 核实）
 
@@ -1523,7 +1534,7 @@ PostgreSQL 中没有 schema `USAGE`，其下所有表级授权一律无效。**�
 
 | # | 阻塞项 | 性质 | 可由本会话解决？ |
 |---|---|---|---|
-| 1 | `lock_timeout` 早于死锁检测，`40P01` 受控重试载体**当前失败** | 缺陷，三个候选修法已登记 | **否**，改动生产故障行为，待用户裁决 |
+| 1 | `lock_timeout` 早于死锁检测，生产环境 `40P01` 不可达 | 缺陷，三个候选修法已登记；**载体已解耦并通过**，候选修法 2 已获实证 | **否**，生产取值改动故障行为，待用户裁决 |
 | 2 | 触控目标门槛：`05` §6 的 44px 与 `90` §5 的 WCAG 2.2 AA（24×24）冲突 | 事实源冲突 | **否**，待用户裁决 |
 | 3 | `90` §6 负载门槛 | 资源规格未获批准，结果只能作实验记录 | **否**，待用户批准规格 |
 | 4 | A 级像素与几何比对 | 需固定操作系统字体的采集环境 | **否**，本机不具备 |
