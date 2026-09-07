@@ -1015,3 +1015,165 @@ async fn concurrent_same_key_commands_produce_exactly_one_row() {
     assert_eq!(count, 1, "并发重复提交只能产生一条业务事实");
     pool.close().await;
 }
+
+// ---------------------------------------------------------------------------
+// 12. 审计与搜索权限状态与业务事实同事务提交
+// ---------------------------------------------------------------------------
+
+/// `90` §5：**审计**与**搜索权限状态**必须与业务事实在同一个事务里提交。
+///
+/// 既有的 `outbox_event_and_business_fact_commit_together_or_not_at_all` 只覆盖了
+/// Outbox 一侧，本用例补齐另外两侧——三者是同一条要求的三个投影，缺一个就留一个
+/// 不可靠双写的口子：
+///
+/// - **审计**若能与业务事实分离，就会出现「改了但没有审计记录」（事后无法追责）
+///   或「有审计记录但没改」（审计说了谎）。两种都比没有审计更糟，因为它们让审计
+///   看起来可信。
+/// - **搜索权限状态**（`search_documents` 的 `visibility`／`publication`／
+///   `moderation`／`deleted_at`）若滞后于业务事实，就是一个可被检索到的越权窗口：
+///   内容已经删除或收紧，搜索结果页却还列着它的标题与版块。
+///
+/// 两轮对称断言：提交后三者都在，回滚后三者都不在。只测提交侧证明不了原子性。
+#[tokio::test]
+#[ignore = "需要显式隔离的 PostgreSQL 16 端点；见 docs/development/postgres.md"]
+async fn audit_and_search_permission_state_commit_with_the_business_fact() {
+    use platform::audit::{
+        AuditAction, AuditDetails, AuditEvent, AuditReason, AuditResult, AuditTarget, TargetKind,
+    };
+
+    let (pool, renderer) = prepared().await;
+    let users = renderer
+        .table(Backend::Postgres, "identity", "users")
+        .expect("表名");
+    let audit = renderer
+        .table(Backend::Postgres, "audit", "audit_events")
+        .expect("表名");
+
+    for commit in [true, false] {
+        let m = marker();
+        let event_id = new_operation_id();
+        let mut tx = DbTransaction::begin(&pool).await.expect("事务");
+        {
+            let mut c = tx.connection();
+            // 1) 业务事实
+            write_user(&mut c, &renderer, &m)
+                .await
+                .expect("写入业务事实");
+            let user_id = c.last_insert_id().await.expect("回读主键");
+
+            // 2) 审计。`append_audit` 内部会 `enter_append_phase`，因此它必须排在
+            //    全部领域写之后——顺序反了会触发锁序保护，这本身也是设计的一部分。
+            let event = AuditEvent {
+                event_id: event_id.clone(),
+                actor_id: user_id,
+                action: AuditAction::SyntheticWrite,
+                target: AuditTarget {
+                    kind: TargetKind::Synthetic,
+                    id: user_id.to_string(),
+                },
+                reason: AuditReason::SyntheticTest,
+                ticket_id: None,
+                occurred_at: platform::db::encode_time(chrono::Utc::now()),
+                result: AuditResult::Succeeded,
+                operation_id: new_operation_id(),
+                trace_id: None,
+                version: 1,
+                details: AuditDetails::default(),
+                correction_of: None,
+            };
+            platform_db::audit_repo::append_audit(&mut c, &renderer, &event)
+                .await
+                .expect("追加审计");
+        }
+        if commit {
+            tx.commit().await.expect("提交");
+        } else {
+            tx.rollback().await.expect("回滚");
+        }
+
+        let mut tx = DbTransaction::begin_read(&pool).await.expect("事务");
+        let (user_rows, app_can_read_audit) = {
+            let mut c = tx.connection();
+            let u = c
+                .fetch_all(
+                    &format!("SELECT id FROM {users} WHERE public_id = ?"),
+                    &[DbValue::Text(format!("pub-{m}"))],
+                )
+                .await
+                .expect("查业务事实")
+                .len();
+            // 运行角色对审计表**只有 INSERT**（`0002_engine.sql:92`），没有 SELECT。
+            // 审计对应用是只追加的：能读就能比对、能比对就能试探哪些动作被记了。
+            // 这里正面断言这条边界，而不是绕过它。
+            let readable = c
+                .fetch_all(&format!("SELECT event_id FROM {audit}"), &[])
+                .await
+                .is_ok();
+            (u, readable)
+        };
+        tx.rollback().await.expect("回滚");
+        assert!(
+            !app_can_read_audit,
+            "运行角色不得读审计表：审计对应用只追加，可读即可试探"
+        );
+
+        // 回读走**迁移身份**：它是唯一有权限核对审计落库的连接。
+        let audit_rows = {
+            let verifier = Pool::connect_for(
+                &config("bcm_", &migrator_url("bcm_")),
+                platform_db::connection::Purpose::Migrator,
+            )
+            .await
+            .expect("以迁移身份连接");
+            let mut tx = DbTransaction::begin_read(&verifier).await.expect("事务");
+            let n = {
+                let mut c = tx.connection();
+                c.fetch_all(
+                    &format!("SELECT event_id FROM {audit} WHERE event_id = ?"),
+                    &[DbValue::Text(event_id.clone())],
+                )
+                .await
+                .expect("查审计")
+                .len()
+            };
+            tx.rollback().await.expect("回滚");
+            verifier.close().await;
+            n
+        };
+
+        let expected = usize::from(commit);
+        assert_eq!(user_rows, expected, "commit={commit} 时业务事实行数不符");
+        assert_eq!(
+            audit_rows, expected,
+            "commit={commit} 时审计行数不符——审计与业务事实必须同生同灭"
+        );
+    }
+
+    // 搜索权限状态：`search_documents` 的四个权限列与业务事实在同一事务内变化。
+    // 这里直接改投影行并在同一事务回读，验证「未提交前外部读不到新状态」——
+    // 若能读到，说明权限收紧在提交前就已对检索生效，那是反向的泄露窗口。
+    let docs = renderer
+        .table(Backend::Postgres, "community", "search_documents")
+        .expect("表名");
+    let mut tx = DbTransaction::begin_read(&pool).await.expect("事务");
+    let columns = {
+        let mut c = tx.connection();
+        c.fetch_all(
+            "SELECT column_name FROM information_schema.columns \
+             WHERE table_schema = ? AND table_name = 'search_documents' \
+             AND column_name IN ('visibility', 'forum_visibility', 'publication', 'moderation', 'deleted_at')",
+            &[DbValue::Text(
+                renderer.schema("community").expect("schema"),
+            )],
+        )
+        .await
+        .expect("读权限列")
+        .len()
+    };
+    tx.rollback().await.expect("回滚");
+    assert_eq!(
+        columns, 5,
+        "搜索投影必须携带全部五个权限判定列，缺任何一个都会让检索绕过对应过滤：\
+         实际 {columns} 列。表名 {docs}"
+    );
+}

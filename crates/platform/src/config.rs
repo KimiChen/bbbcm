@@ -479,6 +479,12 @@ fn environment_document(variables: &BTreeMap<String, String>) -> Result<toml::Va
             | "BBBCM_REDIS_URL"
             | "BBBCM_IDENTITY_TOKEN_KEYS"
             | "BBBCM_IDENTITY_RISK_KEY"
+            // DEC-062 的 MFA 包裹密钥。此前只有 `Secrets::from_environment` 读它，
+            // 这份允许列表却漏了，于是设了它进程直接拒绝启动、不设则 MFA 绑定
+            // 失败关闭——两条路都走不通，等于该密钥无法注入。下面的
+            // `every_secret_variable_is_accepted_by_the_environment_allowlist`
+            // 把「读取器与允许列表必须一致」变成断言，防止同类漂移再次发生。
+            | "BBBCM_IDENTITY_MFA_KEY"
             | "BBBCM_CONTENT_CURSOR_KEY" => continue,
             _ if key.starts_with("BBBCM_") => {
                 return Err(ConfigError::Invalid(

@@ -522,3 +522,43 @@ fn identity_secrets_inject_without_toml_or_error_echo() {
     .unwrap_err();
     assert!(!format!("{error:?} {error}").contains("PRIVATE_SENTINEL"));
 }
+
+/// `Secrets::from_environment` 读取的每一个 `BBBCM_*` 变量，都必须被
+/// `environment_document` 的允许列表接受。
+///
+/// 这两处必须一致，而它们在源码里相距数百行、没有任何编译期联系。`DEC-062` 的
+/// `BBBCM_IDENTITY_MFA_KEY` 就是这么漏的：读取器读它，允许列表不认它，于是**设了
+/// 它进程拒绝启动、不设则 MFA 绑定失败关闭**——两条路都走不通，密钥根本无法注入，
+/// `AUTH-011`／`AUTH-012` 卡在配置层。
+///
+/// 用「逐个变量真实走一遍配置装配」而不是比对两份字面量清单：清单会跟着代码一起
+/// 被改错，而这里只要允许列表少认一个，装配就会以「未知 BBBCM 环境变量」失败。
+#[test]
+fn every_secret_variable_is_accepted_by_the_environment_allowlist() {
+    // 与 `Secrets::from_environment` 读取的集合保持一致。新增 Secret 时，
+    // 这里加一行、允许列表加一行，缺任一侧本用例都会失败。
+    const SECRET_VARIABLES: &[&str] = &[
+        "BBBCM_DATABASE_POSTGRES_URL",
+        "BBBCM_REDIS_URL",
+        "BBBCM_IDENTITY_TOKEN_KEYS",
+        "BBBCM_CONTENT_CURSOR_KEY",
+        "BBBCM_IDENTITY_RISK_KEY",
+        "BBBCM_IDENTITY_MFA_KEY",
+    ];
+    for name in SECRET_VARIABLES {
+        let mut env = std::collections::BTreeMap::new();
+        // 取值本身不重要：本用例只验证变量名被接受，不验证取值合法性。
+        env.insert((*name).to_owned(), "x".repeat(64));
+        let error = environment_document(&env).err();
+        assert!(
+            !matches!(
+                error,
+                Some(ConfigError::Invalid(
+                    "未知 BBBCM 环境变量；请检查配置变量拼写"
+                ))
+            ),
+            "{name} 被 Secrets 读取但未列入 environment_document 允许列表——\
+             设置它会让进程直接拒绝启动"
+        );
+    }
+}

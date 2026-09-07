@@ -121,7 +121,7 @@
 | `WP-MVP-C05` | In progress | 同事务权威 search_documents、搜索页/SEO/Feed/sitemap 已交付；**本轮补齐 PostgreSQL 完整模式全文检索**（`pg_jieba` 索引侧 `jiebaqry`／查询侧 `jiebacfg`，能力按实测探测装配，权限过滤与体验模式逐条对齐），见 5.24。GIN 索引与百万级重建属性能矩阵，仍缺。 |
 | `WP-MVP-C04` | In progress | **本轮交付两个切片**：`SOCIAL-002`／`SOCIAL-003` 正向反馈（迁移 0020，见 5.25）与 `NOTIFY-001`／`002`／`003` 站内通知（迁移 0021，见 5.26），并据此补齐 `90` §5 并发矩阵的「互动唯一性」与「通知去重」，使并发九项全部执行完毕。收藏（`SOCIAL-001`）、关注（`SOCIAL-004`）、阅读位置、`NOTIFY-004/005` 与 HTTP 入口仍缺；无可达路由，不标完成。 |
 | `WP-MVP-D01..D04` | Not started | - |
-| `WP-MVP-E01` | In progress | 已通过并留证：真实 Redis 8 合同、真实 PostgreSQL 16 双前缀集成 11 项、并发矩阵九项**全部通过**（通知去重随 5.26 的 `NOTIFY-*` 切片补齐）、安全矩阵中不依赖未完成功能的六项、`90` §6 参数门槛六项、SQLite 体验模式四项、浏览器结构化检查（对比度经 `DEC-067` 修复后达标）、`pg_jieba` 扩展镜像离线构建与实测、SBOM/许可证/漏洞/Secret 全量扫描、公开读延迟基线（实验记录）。执行过程中发现并修复四个生产缺陷（`DEC-064`／`DEC-065`／`DEC-066` 与 `/manage` 错误响应缺安全头）。**仍缺**：E2E 全路径（依赖 `C04`／`D01`–`D04`）、A 级像素与几何比对、负载与延迟门槛（需批准资源规格）、触控目标门槛（待裁决）、`90` §5 部分 PostgreSQL 条目（`CommitUnknown`、`40001`/`40P01` 受控重试、审计与搜索权限状态同事务提交）。详见 5.23。 |
+| `WP-MVP-E01` | In progress | 已通过并留证：真实 Redis 8 合同、真实 PostgreSQL 16 双前缀集成 11 项、并发矩阵九项**全部通过**（通知去重随 5.26 的 `NOTIFY-*` 切片补齐）、安全矩阵中不依赖未完成功能的六项、`90` §6 参数门槛六项、SQLite 体验模式四项、浏览器结构化检查（对比度经 `DEC-067` 修复后达标）、`pg_jieba` 扩展镜像离线构建与实测、SBOM/许可证/漏洞/Secret 全量扫描、公开读延迟基线（实验记录）。执行过程中发现并修复四个生产缺陷（`DEC-064`／`DEC-065`／`DEC-066` 与 `/manage` 错误响应缺安全头）。**仍缺**：E2E 全路径（依赖 `C04`／`D01`–`D04`）、A 级像素与几何比对、负载与延迟门槛（需批准资源规格）、触控目标门槛（待裁决）、`90` §5 部分 PostgreSQL 条目（`CommitUnknown`、`40001`/`40P01` 受控重试）。详见 5.23。 |
 | `WP-MVP-E02/E04/E05` | Not started | - |
 | `WP-P1A-01..09` | Not started / flag closed | - |
 | `WP-P1B-*` | Not started / flag closed | - |
@@ -1268,6 +1268,7 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 | 并发矩阵：治理命令 | **通过，2/2**。并发批准恰好生效一次且落库批准人正是成功那一路、版本恰好 +1；操作者自批 8 路并发全部失败、状态与版本纹丝不动、`approval_satisfied` 仍为假。本项首次执行即暴露并修复了 `DEC-065` 的缺陷。证据同上。 |
 | 并发矩阵：identity 三项 | **通过**。邮箱验证、密码恢复、邀请码消费/额度，各 8 路并发。邮箱验证除断言恰好一次成功外，还回读 `consumed` 标志——只看返回值排除不了「第二次也写了、只是返回幂等重放」；密码恢复在并发结束后再单独试一次并要求失败，把一次性验到底；邀请码额外核对实际只新增一个账号。证据见 [`identity-concurrency.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/identity-concurrency.txt)。 |
 | 并发矩阵：主题楼层 | **通过**。8 路 Worker × 每路 5 条 = 40 条并发回复，各用独立账号以避开 `DEC-060` 的每小时预算。断言楼层不重复、从 2 起连续（2–41）、主题 `next_floor` 与 `raw_reply_count` 与实际行数一致。本项首次执行即暴露并修复了 `DEC-064` 的 `forums` ACL 缺陷。证据见 [`content-concurrency.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/content-concurrency.txt)。 |
+| 审计与搜索权限状态同事务提交 | **通过**。`audit_and_search_permission_state_commit_with_the_business_fact`：提交/回滚两轮对称断言审计与业务事实同生同灭；额外正面断言运行角色**读不到**审计表（`0002_engine.sql:92` 只授 INSERT，审计对应用只追加，可读即可试探），回读因此走迁移身份；并核对搜索投影携带全部五个权限判定列，缺任一列都会让检索绕过对应过滤。至此 `postgres_contract` 12/12。 |
 | 并发矩阵：Outbox lease | **通过**。120 条事件 / 8 路 Worker 并发 `claim`，四层断言：反空转（八路全部领到，非单线程退化）、至多一次（无重复租约）、不饿死（120 条全部领走）、两两不相交。数据库侧复核状态全为 `leased` 且计数相符。证据见 [`postgres-concurrency.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/postgres-concurrency.txt)。**只覆盖 `90` §5 并发九项中的一项**，其余见下表。 |
 | HTTP/E2E 状态矩阵（真实业务路由） | **七类通过**。补齐装配（三项 Secret + `active_token_version` + `local_test` 适配器 + 运维方式开 Flag）后业务路由可达：成功（`/`、`/new`、`/hot`、`/pinned`、`/featured`、`/search`、`/login`、`/robots.txt`、`/sitemap.xml`、`/feed.xml`）、空态（空搜索 200 且呈现「没有匹配的标题。」而非错误）、不存在（404）、未认证（`/settings/profile` 401）、未授权（`/me/topics` 403）、依赖失败（`/register` 503，挑战 provider 未装配时失败关闭）。CSRF：无令牌 POST 到 `/login`／`/register`／`/topics/new` 分别 400／400／403，无一条走进业务逻辑。公开页 CSP 含 `script-src 'none'`，与「页面脚本数为 0」互相印证。**过期**：带 CSRF 提交无效令牌返回 400，提示刻意通用、不透露令牌是否存在或已过期（避免枚举）。**冲突**是唯一未在 HTTP 层构造的一类——它在领域与数据库层已验（`version_conflict_prevents_lost_update` 与内容并发楼层用例），HTTP 层需连续五步直接改库才能走到，本轮选择不拼装该环境并如实标为未覆盖。证据见 [`e2e-business-routes.txt`](../docs/evidence/mvp/wp-mvp-e04/dev-20260907/e2e-business-routes.txt)。 |
 | HTTP/E2E 行为矩阵（不依赖未交付路由的部分） | **通过**。状态矩阵（成功/空态/错误态/未认证/不存在/路径穿越）；真实浏览器的**刷新、返回、重试**——返回后路径、标题、激活导航项与正文长度四项完全恢复，重试同一 GET 快照逐字节相同；**多标签页隔离**——A 跳转后 B 纹丝不动，两者主题与背景色各自独立；**JavaScript 开启/关闭**——页面 `<script>` 数为 0、外部主机资源为 0，主题切换靠 SSR + URL 参数，有无 JS 行为完全相同；**移动真实设备模拟**（375×812、移动 UA、5 触摸点、`pointer: coarse`）横向溢出 0、移动导航正确切换。业务路由的 E2E、下载鉴权与 A 级像素比对未覆盖，原因见证据。证据见 [`e2e-behaviour.txt`](../docs/evidence/mvp/wp-mvp-e04/dev-20260907/e2e-behaviour.txt)。 |
@@ -1288,7 +1289,7 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 |---|---|
 | 未知提交（`CommitUnknown`） | 触发需 `command.rs` 内 `#[cfg(test)]` 的 `simulate_lost_ack` 钩子，crate 外的集成测试拿不到；只能由 crate 内单元测试覆盖。 |
 | `40001`/`40P01` 受控重试 | 压出序列化失败或死锁必须**故意违反**固定锁顺序，而平台层会先一步拒绝（已由 `lock_order_is_frozen_…` 正面验证）。需另建绕过平台层的夹具，或承认该故障被设计挡在发生之前。 |
-| 审计与搜索权限状态的同事务提交 | 本轮只验证了 Outbox 一侧。 |
+
 | ~~应用的完整搜索模式~~ **已完成** | 2026-09-07 交付，见第 5.24 节。原登记如下：**阻塞性质已改变**：扩展镜像本轮已按 `M0-03` 的 Dockerfile 离线构建成功，`pg_jieba` 1.1.1 与 `pg_trgm` 1.6 实测可用（中文分词、`@@` 匹配、`similarity` 均正确），同一套合同 11 项在该镜像上亦全部通过。真正缺的是应用侧——`crates/content/src/search.rs` 目前只有 `SqliteTitleSearch` 一个 `SearchBackend` 实现，`pg_jieba + pg_trgm` 的 PostgreSQL 后端尚未编写。这属 `WP-MVP-C05` 的实现缺口，不再是 E01 的环境问题。证据见 [`pg-jieba-extension.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/pg-jieba-extension.txt)。**该缺口本轮已补齐**，全文检索通过真实 `pg_jieba` 验证。 |
 
 | `90` §6 公开读延迟（实验结果） | **载体已编写并执行**（`crates/content/tests/postgres_performance.rs`）。2,000 与 100,000 两个数据量下，公开列表与版块列表的 p95 分别为 7.9／8.1ms 与 **7.4／7.2ms**，远低于 400ms 门槛；50 倍数据量增长几乎不改变 p95，与 keyset 游标分页的预期一致。**但资源规格未获批准**，按 `90` §6 表末规定只作实验记录，不支持 Production Approved。运行条件（含 tmpfs 数据目录、`fsync=off` 等非生产配置）已全量登记。证据见 [`read-latency-baseline.txt`](../docs/evidence/mvp/wp-mvp-e02/dev-20260907/read-latency-baseline.txt)。 |
@@ -1380,6 +1381,16 @@ PostgreSQL 中没有 schema `USAGE`，其下所有表级授权一律无效。**�
 
 - **对比度已修复并全量达标**：新增 `apps/web/static/css/a11y.css` 在参考样式之后加载，五处颜色按实测求得的最小偏离取值调整，14 页 × 两视口 × 两主题复测失败项为 0。这五处构成 `05` §10 像素基准的已登记例外。
 - **触控热区实测否决**：390px 下 8 类受控元素的 68 个实例中 54 个扩大后与相邻目标重叠，点击归属不确定比目标偏小更糟；且规模远超批准前提——同视口 559 个非内联交互目标中 505 个低于 44px。**该项仍待裁决**，并需注意 `05` §6 的 44px 相当于 WCAG 2.5.5（AAA），而 `90` §5 要求的 AA 对应 2.5.8 的 24×24 且允许间距替代，按 AA 口径不达标的是 192 个而非 505 个。
+
+#### 缺陷：`BBBCM_IDENTITY_MFA_KEY` 无法注入，MFA 密钥在任何部署中都配不上（2026-09-07 发现并修复）
+
+补写「审计同事务提交」用例时，`bbbcm-cli` 因新增的本机配置而要求注入身份密钥，注入后进程反而以「未知 BBBCM 环境变量」拒绝启动。核对发现该变量在 `crates/platform/src/config.rs` 中**只出现一次**——`Secrets::from_environment` 读它（`:83`），而 `environment_document` 的允许列表没有它。
+
+**影响面**：设置该变量则进程直接拒绝启动，不设置则 MFA 绑定与验签按 `DEC-062` 失败关闭。两条路都走不通，等于 MFA 包裹密钥在任何真实部署中都无法注入，`AUTH-011`／`AUTH-012` 卡在配置层。此前没被发现，是因为本机开发一直不注入该变量，走的是「失败关闭」分支，看起来像预期行为。
+
+**已直接修复，未另行请示**：`DEC-062` 与本节第 5.20.1 小节都明确写着「按 `DEC-062` 新增独立的 `identity.mfa_key` 配置（`BBBCM_IDENTITY_MFA_KEY`）」，允许列表只是漏了一项，不存在事实源冲突。
+
+**同时加了防再犯的断言**：`every_secret_variable_is_accepted_by_the_environment_allowlist` 逐个变量真实走一遍环境映射。这两处必须一致，却相距数百行且没有任何编译期联系；用真实装配而不是比对两份字面量清单，是因为清单会跟着代码一起被改错。已验证该断言的有效性——临时回退修复即失败，恢复即通过。
 
 #### 状态影响
 
