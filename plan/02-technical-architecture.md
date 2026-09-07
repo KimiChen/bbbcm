@@ -309,6 +309,23 @@ MySQL 8.0 接入后与完整模式同级定位，搜索使用 `FULLTEXT + ngram`
 
 FTS5 探测：启动时在 temp 库尝试创建探针虚表，成功即判定可用并随即删除，失败只记一行日志、不阻断启动；结果缓存进后端能力集，运行期不重复探测。
 
+### 6.6 版块 slug 保留字
+
+`DEC-068` 把版块页放到顶级 `/{slug}`，版块 slug 因此与站点级静态路由共用同一段命名空间。路由匹配时静态段优先于参数段，所以取用已注册路径段的版块不会报错，而是**永远匹配不到自己的页面**——一个没有任何错误信号的失效。必须在写入时拒绝，不能留到运行期观察。
+
+保留字为「全部已注册的顶级静态路径段」，由路由表推导而非另抄一份常量，避免新增路由时清单漏更。当前取值：
+
+```
+health  status  assets  search  new  pinned  featured  hot  tags  t  topics
+posts   me      u       login   register     logout    settings      manage
+forums  media   feed.xml       robots.txt    sitemap.xml   content
+polls   bounties      lotteries      red-packets    top    verified
+rules   terms   privacy  __fixtures  __diagnostics
+```
+
+清单同时包含尚未实现但已在 `01` 第 10 节登记的路由（`polls`、`top`、`verified` 等）：先占位比日后为了让路由上线而改动线上版块 slug 代价低得多。
+
+校验点有两处，缺一不可：种子写入（`seed_repo`）和将来的建版块入口。两处都拒绝保留字、拒绝空串与非 `[a-z0-9-]` 字符。
 ## 7. PostgreSQL 逻辑 schema
 
 默认物理前缀为 `bcm_`，同时支持测试中的受信非默认前缀；SQLite/MySQL 使用 `<前缀><逻辑 schema>_<表名>`（`DEC-029`），逻辑 schema 到物理表名的映射由 `SchemaRenderer` 负责，并对 `(schema, table)` 参数做受信注册表校验。15 个逻辑 schema：

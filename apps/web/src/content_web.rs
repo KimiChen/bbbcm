@@ -68,7 +68,7 @@ mod tests {
             author: attack.into(),
             author_href: "/u/synthetic".into(),
             forum: "问答/实战".into(),
-            forum_href: "/forums/practice".into(),
+            forum_href: "/daily".into(),
             created_at: "2026-01-01 00:00 UTC".into(),
             last_reply: None,
             replies: None,
@@ -84,7 +84,7 @@ mod tests {
             title: attack.into(),
             forum: Link {
                 label: "问答/实战".into(),
-                href: "/forums/practice".into(),
+                href: "/daily".into(),
                 active: false,
             },
             tags: Vec::new(),

@@ -75,7 +75,7 @@ fn cli_migrates_reports_and_seeds_repeatedly() {
         "已应用跳过 [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]"
     ));
     assert!(succeeds(f.db(&["status"])).contains("applied"));
-    assert!(succeeds(f.db(&["seed"])).contains("新增 4 个版块、4 个规则"));
+    assert!(succeeds(f.db(&["seed"])).contains("新增 6 个版块、6 个规则"));
     assert!(succeeds(f.db(&["seed"])).contains("新增 0 个版块、0 个规则"));
     assert!(!f.db(&["migrate", "--backend", "mysql8"]).status.success());
     assert!(

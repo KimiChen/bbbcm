@@ -141,7 +141,7 @@ async fn no_response_leaks_secrets_connection_strings_or_host_paths() {
         "/does-not-exist",
         "/assets/unknown.css",
         "/t/1",
-        "/forums/nope",
+        "/nope",
         "/search?q=x",
         "/robots.txt",
         "/sitemap.xml",

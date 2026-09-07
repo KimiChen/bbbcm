@@ -153,7 +153,18 @@ fn content_route(path: &str) -> Option<HttpRoute> {
     let segments: Vec<_> = path.strip_prefix('/')?.split('/').collect();
     let valid = |s: &str| !s.is_empty() && !s.contains(['?', '#']);
     match segments.as_slice() {
-        ["forums" | "tags", id] if valid(id) => Some(HttpRoute::ContentList),
+        ["tags", id] if valid(id) => Some(HttpRoute::ContentList),
+        // DEC-068：版块页是顶级 `/{slug}`。只匹配路由形状，slug 本身永不进入
+        // 指标维度——版块名可能是私有或未公开的，和用户 ID 一样不能外泄。
+        //
+        // 排除含 `.` 的单段：`feed.xml`、`robots.txt`、`sitemap.xml` 是抓取入口
+        // 而不是版块页，归到版块列表会污染这一维。
+        //
+        // 未知的单段路径同样归为 ContentList：它们确实被路由到版块列表处理器
+        // 并在那里 404，按处理器归类比记成 Other 更贴近真实分布。`/search`
+        // 与 `/hot` 之前落到 Other，现在随之并入 ContentList——它们本就是内容
+        // 列表路由，此前只是没有显式登记。
+        [slug] if valid(slug) && !slug.contains('.') => Some(HttpRoute::ContentList),
         ["u", id, "topics" | "posts" | "replies"] if valid(id) => Some(HttpRoute::ContentList),
         ["topics" | "posts", id] if valid(id) => Some(HttpRoute::ContentDetail),
         ["topics", id, "reply"] | ["posts", id, "edit" | "delete"] if valid(id) => {
@@ -492,7 +503,9 @@ mod tests {
             ("/pinned", HttpRoute::ContentList),
             ("/featured", HttpRoute::ContentList),
             ("/me/topics", HttpRoute::ContentList),
-            ("/forums/PRIVATE_SENTINEL", HttpRoute::ContentList),
+            ("/PRIVATE_SENTINEL", HttpRoute::ContentList),
+            ("/search", HttpRoute::ContentList),
+            ("/hot", HttpRoute::ContentList),
             ("/tags/PRIVATE_SENTINEL", HttpRoute::ContentList),
             ("/u/PRIVATE_SENTINEL/topics", HttpRoute::ContentList),
             ("/topics/PRIVATE_SENTINEL", HttpRoute::ContentDetail),

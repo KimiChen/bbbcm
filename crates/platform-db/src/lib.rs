@@ -190,6 +190,7 @@ pub mod connection;
 pub mod flags_repo;
 pub mod idempotency_repo;
 pub mod migrations;
+pub mod reserved_slug;
 pub mod seed;
 mod seed_repo;
 pub mod transaction;

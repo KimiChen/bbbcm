@@ -45,7 +45,7 @@ pub fn page(name: &str, theme: Theme) -> Option<A00Template> {
         "new" => ("最新主题", "new"),
         "pinned" => ("置顶主题", "pinned"),
         "featured" => ("精华主题", "featured"),
-        "forum" => ("问答/实战", "forum"),
+        "forum" => ("日常", "forum"),
         "topic" => ("合成主题：草莓论坛视觉夹具", "home"),
         "login" => ("登录", "login"),
         "register" => ("注册", "register"),
@@ -107,7 +107,7 @@ fn topics() -> Vec<TopicView> {
     const IDS: [&str; 12] = [
         "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12",
     ];
-    const CATEGORIES: [&str; 4] = ["问答/实战", "AI", "域名与主机", "站务"];
+    const CATEGORIES: [&str; 6] = ["日常", "酷品", "AI", "主机", "版本", "站务"];
     const AUTHORS: [&str; 4] = ["合成果农甲", "合成果农乙", "合成果农丙", "合成果农丁"];
     const REPLIES: [&str; 4] = ["0", "2", "8", "16"];
     const VIEWS: [&str; 4] = ["12", "24", "48", "96"];

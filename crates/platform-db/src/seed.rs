@@ -85,8 +85,8 @@ mod tests {
             assert_eq!(
                 seed(&cfg).await.unwrap(),
                 SeedSummary {
-                    forums_created: 4,
-                    rules_created: 4
+                    forums_created: 6,
+                    rules_created: 6
                 }
             );
             let mut conn = DatabaseConnection::connect(&cfg.database, Purpose::Migrator, false)
@@ -121,7 +121,7 @@ mod tests {
                     .fetch_one(&mut *c)
                     .await
                     .unwrap();
-            assert_eq!(count, 4);
+            assert_eq!(count, 6);
             conn.close().await.unwrap();
             assert_eq!(seed(&cfg).await.unwrap(), SeedSummary::default());
             let mut conn = DatabaseConnection::connect(&cfg.database, Purpose::Migrator, false)

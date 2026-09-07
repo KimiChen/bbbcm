@@ -65,7 +65,12 @@ pub fn router<S: Clone + Send + Sync + 'static>(state: ContentWebState) -> Route
         "/search",
         // NAV-004 首页「热门」：DEC-030 的累计阅读量降序视图。
         "/hot",
-        "/forums/{slug}",
+        // DEC-068：版块页是顶级 `/{slug}`。放在静态路由之后声明只是可读性，
+        // 匹配优先级由路由器按「静态段优先于参数段」决定，与声明顺序无关；
+        // 因此 `/new`、`/search` 等仍走各自的处理器，不会被版块段吃掉。
+        // 反向的风险（版块 slug 撞静态段导致该版块永远不可达）由
+        // `platform_db::reserved_slug` 在写入时挡住，见 `02` §6.6。
+        "/{slug}",
         "/tags/{slug}",
         // DEC-056：`/t/{id}` 是权威永久链接，不含版块段，因此移帖不会让旧链接失效。
         // `/topics/{id}` 与 `/posts/{id}` 保留为兼容入口，一律 301 到规范 URL。
@@ -94,7 +99,7 @@ pub fn router<S: Clone + Send + Sync + 'static>(state: ContentWebState) -> Route
         .route("/robots.txt", get(robots))
         .route("/sitemap.xml", get(sitemap))
         .route("/feed.xml", get(feed))
-        .route("/forums/{slug}/feed.xml", get(feed))
+        .route("/{slug}/feed.xml", get(feed))
         .route("/content/operations", axum::routing::post(operation))
         .layer(DefaultBodyLimit::max(1_048_576))
         .with_state(state)
@@ -386,7 +391,7 @@ async fn frame(
     page.forums.extend(catalog.forums.iter().map(|forum| {
         link(
             &forum.name,
-            page_href(&format!("/forums/{}", encode(&forum.slug)), theme, None),
+            page_href(&format!("/{}", encode(&forum.slug)), theme, None),
         )
     }));
     // NAV-004 站点统计。取不到时整段不渲染，而不是显示 0 冒充观测。
@@ -429,11 +434,7 @@ fn row(topic: TopicView, theme: &str) -> view::TopicRow {
         author: topic.author.username,
         author_href: format!("/u/{}", encode(&topic.author.public_id)),
         forum: topic.forum.name,
-        forum_href: page_href(
-            &format!("/forums/{}", encode(&topic.forum.slug)),
-            theme,
-            None,
-        ),
+        forum_href: page_href(&format!("/{}", encode(&topic.forum.slug)), theme, None),
         created_at: topic.created_at.format("%Y-%m-%d %H:%M UTC").to_string(),
         last_reply,
         replies: topic.reply_count,
@@ -666,7 +667,7 @@ async fn read(
                 forum: link(
                     detail.topic.forum.name,
                     page_href(
-                        &format!("/forums/{}", encode(&detail.topic.forum.slug)),
+                        &format!("/{}", encode(&detail.topic.forum.slug)),
                         page.theme,
                         None,
                     ),
@@ -751,7 +752,7 @@ async fn read(
                                 author: String::new(),
                                 author_href: String::new(),
                                 forum: String::new(),
-                                forum_href: format!("/forums/{}", hit.forum_id),
+                                forum_href: format!("/{}", hit.forum_id),
                                 created_at: hit.created_at.format("%Y-%m-%d %H:%M UTC").to_string(),
                                 last_reply: None,
                                 replies: None,

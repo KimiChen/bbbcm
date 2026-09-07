@@ -10,11 +10,18 @@ const SELECT_RULE: &str = "SELECT id FROM {table} WHERE forum_id = ? AND version
 const INSERT_RULE: &str =
     "INSERT INTO {table} (forum_id, version, body, status) VALUES (?, ?, ?, ?)";
 
+/// 首发六版块（`DEC-068`，`01` §4.4 `CAT-000`）。顺序即 `position`，也是导航顺序。
+///
+/// slug 同时是版块页的顶级路由段（`/daily` 等），因此每一项都必须先过
+/// `reserved_slug::check`——取用已注册的顶级静态路径段不会报错，只会让该版块
+/// 永远匹配不到自己的页面。
 pub const FORUMS: &[(&str, &str)] = &[
-    ("practice", "问答/实战"),
+    ("daily", "日常"),
+    ("showcase", "酷品"),
     ("ai", "AI"),
-    ("domains-hosting", "域名与主机"),
-    ("site", "站务"),
+    ("hosting", "主机"),
+    ("releases", "版本"),
+    ("meta", "站务"),
 ];
 const RULE_PLACEHOLDER: &str =
     "开发规则占位版本：内容范围、商业规则和发帖模板待项目负责人批准；不用于公开发布。";
@@ -42,6 +49,9 @@ pub async fn insert_missing(
         .map_err(|_| DatabaseError::InvalidConfiguration)?;
     let mut result = SeedSummary::default();
     for (position, (slug, name)) in FORUMS.iter().enumerate() {
+        // `02` §6.6：种子是两个强制校验点之一。放在插入之前，让非法 slug 在
+        // 初始化时就失败，而不是变成一个上线后没人能访问、也不报错的版块。
+        crate::reserved_slug::check(slug).map_err(|_| DatabaseError::InvalidConfiguration)?;
         let id: Option<i64> = match conn {
             DatabaseConnection::Postgres(c) => {
                 sqlx::query_scalar(&forum_select)

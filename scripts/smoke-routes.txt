@@ -28,6 +28,7 @@
 /pinned 404
 /featured 404
 /hot 404
+/daily 404
 /forums/practice 404
 /tags/synthetic 404
 /t/1 404

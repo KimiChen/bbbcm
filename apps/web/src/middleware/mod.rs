@@ -156,7 +156,11 @@ mod tests {
             series.dimensions,
             SeriesKey::HttpHeadersSeconds {
                 backend: platform::observability::DatabaseBackend::Sqlite,
-                route: HttpRoute::Other,
+                // DEC-068 之后单段路径归为 ContentList：真实路由里 `/{slug}`
+                // 是版块页，任何未知单段都由版块列表处理器接手并在那里 404。
+                // 本用例关心的是敏感值不外泄，而 ContentList 与 Other 一样
+                // 是不含路径内容的枚举值，断言意图不变。
+                route: HttpRoute::ContentList,
                 method: HttpMethod::Get,
                 status_class: HttpStatusClass::ServerError,
                 cache_state: CacheState::NotConnected,
