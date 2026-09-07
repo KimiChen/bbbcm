@@ -1852,9 +1852,11 @@ SQLite 验语义（幂等重投不报错、未读计数、单条与全部已读�
 
 仓库唯一成套的实现侧截图在 `docs/visual/a00/implementation/`（7 张），其 `manifest.json` 自述 `"A00 developer preview only; not a visual baseline, WCAG or E04 result"`。`DEC-057` 冻结的 `visual-baseline-v1` 指的是夹具、资产与文案这批**产物**，并写明基准截图要在硬化阶段「用固定浏览器、字体、缩放、视口与主题**重拍验证**」——该截图集目前尚不存在。用开发预览图顶替属 `05` §10 明令禁止。
 
-#### 阻塞二：浏览器版本不匹配
+#### 阻塞二（同日解除，并更正一处误判）
 
-参考侧 computed JSON 由 Chrome/152.0.7977.76 采集，本机当前可用为 Chrome/148.0.7778.280。`05` §3 要求记录 Chromium 精确版本，§10 禁止「改变浏览器/字体」获得通过。跨版本文字度量差异正落在 2px 门禁量级，因此下列数据是开发期观察，不是门禁结果；其中量级远超版本差异的项不受此限。
+上一版登记「本机可用 Chrome/148.0.7778.280，与参考侧 152.0.7977.76 不一致，构成环境阻塞」。**该判断是错的**：本机装的就是 152.0.7977.76，`9222` 调试端口一直开着，与参考观察完全同版本。`AGENTS.md` 写明「涉及 Chrome 时优先连接已有的 `9222` 调试端口」，我没有先查这一条就用了应用内浏览器（148），把自己的工具选择错误写成了环境阻塞。
+
+已改用 CDP 连 `9222` 重测：`Emulation.setDeviceMetricsOverride`（deviceScaleFactor 1、zoom 1、非移动）、`prefers-reduced-motion: reduce`、等 `document.fonts.ready`，独立浏览器上下文只开新标签访问本机夹具，不读已有标签／cookie／存储。四视口 `bodyWidth` 与参考侧逐一相同（1425／753／745／375）。采集脚本入库为 `scripts/a00-geometry-compare.mjs`。
 
 #### 观察结果（1440 light 首页，97 个选择器）
 
@@ -1867,11 +1869,13 @@ SQLite 验语义（幂等重投不报错、未读计数、单条与全部已读�
    - 760／390 的 +4.00／+3.45 **已定位并修复**：根因是 `site.css` 中一条 ≤760 的 `.nav-mine { padding: 5px 8px; }` 覆盖。参考站 `a.nav-mine` 在四个已采视口宽度一律 50px（内边距 10px），本站桌面档亦为 10px，唯独 ≤760 被压到 8px、控件宽 46px，弹性搜索框吃掉省下的 4px。移除该覆盖后，760 与 390 的 `a.nav-mine`、`form.search-form`、`a.brand` 与参考**逐值相同（差 0）**。改动只删一行内边距覆盖，不动模板结构与类名，符合 `DEC-021` 冻结范围；复跑 14 页 × 六视口 112 个组合横向溢出 0，`a.nav-mine` 全部 50px（含 320px 最窄档），触控目标一并由 46 改善到 50px 宽。
    - 该结果顺带限定了阻塞二的适用范围：这几项在 Chrome 148 下与 Chrome 152 采集的参考逐值相同，说明页头这些是版本无关的盒模型量；阻塞二对整体门禁仍成立，但不适用于这几项。
    - 搜索入口按 `DEC-037` 不可遮罩，两项都不能用遮罩规避。
-4. **六个结构差异**：`div.top`、`button.forum-more-toggle`、`form.script-toggle`、`button.theme-toggle`、`div.main-panel`、`div.topic-toolbar` 在参考侧存在、本站无。其中 `script-toggle` 与 `theme-toggle` 是参考站的 JS 控件，本站改为纯 SSR 链接——这正是 `90` §5「无 JavaScript 可用」得以通过（页面 `<script>` 数为 0）的原因。`AGENTS.md` 记明 A00 模板结构与类名已冻结，本轮不改动；是否补齐属 `05` 裁决范围。
+4. **结构差异：先前的「六项」计数是错的**。上一版按**带标签名**的选择器匹配，把标签不同但组件存在的元素误记为缺失。按类名重新匹配后，真正缺失的是 **10 项**（1440）：抽奖／红包／已结束三个 `topic-badge`（按 `01` 属 P1-A／P2 未交付功能）、侧栏「新用户」卡五项、分页细节两项。其余是标签差异——`mobile-forum-strip`（div→nav）、`mobile-menu-button`／`theme-toggle`／`forum-more-toggle`（button→`summary`／`a`）、`mobile-menu-backdrop`／`mobile-menu-close`（div／button→span），集中在 `button` → `<details>/<summary>` 的**无 JavaScript 改写**，正是 `90` §5「无 JavaScript 可用」得以通过（页面 `<script>` 数为 0）的原因。A00 结构与类名已冻结，本轮不改动；是否补齐缺失组件属 `05` 裁决范围。
+
+5. **同版本重测的页头结果**：760 与 390 的 `div.bar`／`a.brand`／`form.search-form`／`input.search-input`／`button.search-btn`／`a.nav-mine` 共十二项 **Δ 全部为 0**，独立印证本轮 `.nav-mine` 修正正确；768 仅 `a.forum-more-toggle.nav-sister` 宽 +17.26（本项目批准文案比参考站标签长，属文字内容差异）；1440 的差异是导航条目数的级联，两端（品牌、`nav-mine`、`bar`）逐值相同。页脚 `footer-legal`／`footer-version` 各宽约 +63px，同属文案长度差异。
 
 #### 状态
 
-`WP-MVP-E04` 与 `05` §15 各条目均**未通过也未失败**，本轮不授予任何 `Verified`。解除阻塞需要两件事：采齐 `visual-baseline-v1` 的正式基准截图集（含 `05` §3 全套环境记录），以及提供与参考观察同版本的 Chromium。本轮已顺带修掉一处确定的几何偏差（见上第 3 条）。
+`WP-MVP-E04` 与 `05` §15 各条目均**未通过也未失败**，本轮不授予任何 `Verified`。几何这半的环境阻塞已不存在（同版本浏览器可用且已重测）；**像素这半仍无基准可比**——`visual-baseline-v1` 的正式基准截图集尚未采集，这是 A 级门禁当前唯一的实质阻塞。此外 `05` §3 要求的完整基准记录（截图尺寸与 SHA-256、遮罩区域与原因、字体文件与 fallback 清单）尚未成套产出，故几何结果虽已可测，仍不作为门禁结论。
 
 ### 5.32 触控目标按 WCAG 2.5.8 完整条文重算：AA 不达标由 192 修正为 48（2026-09-07）
 
