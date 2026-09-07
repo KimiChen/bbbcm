@@ -42,6 +42,14 @@ fn env_usize(key: &str, default: usize) -> usize {
 
 /// 分位数：对已排序样本取最近秩。样本量小时 p99 意义有限，因此一并打印样本数，
 /// 让读报告的人自己判断这个 p99 值不值得信。
+/// `search_documents` 的受信表名。分档回读要直接查这张表统计真实命中数，
+/// 而 `ContentService::search` 受 `LIMIT 50` 限制，数不出总量。
+fn r_docs(renderer: &SchemaRenderer, backend: platform::db::Backend) -> String {
+    renderer
+        .table(backend, "community", "search_documents")
+        .expect("表名")
+}
+
 fn percentile(sorted: &[f64], q: f64) -> f64 {
     if sorted.is_empty() {
         return f64::NAN;
@@ -160,7 +168,22 @@ async fn seed(prefix: &str, topics: usize) -> (Pool, SchemaRenderer, i64, i64) {
                       DbValue::I64(seq), DbValue::I64(seq), DbValue::I64(seq),
                       DbValue::Time(DateTime::UNIX_EPOCH), DbValue::Bool(false), DbValue::Bool(false), DbValue::Bool(false)]).await.expect("插主题");
                 let topic_id = c.last_insert_id().await.expect("主题 ID");
-                let body = format!("基线正文 {n}，含独有词 曼陀罗，用于检索路径测量。");
+                // 按可控命中率注入标记词。原来每篇都写「曼陀罗」，只能测出
+                // 命中率 100% 的最坏边界——真实语料上一个词命中全部文档不会发生。
+                // 这里额外按 10%／1%／0.1% 三档注入互不共字的词，让延迟能按命中率
+                // 分档测量。选词避免共享汉字：jieba 会把「紫檀」「檀香」都切出
+                // 「檀」，共字会让零命中那一档失真。
+                let mut markers = String::new();
+                if n % 10 == 0 {
+                    markers.push_str(" 蓝莓");
+                }
+                if n % 100 == 0 {
+                    markers.push_str(" 猕猴桃");
+                }
+                if n % 1000 == 0 {
+                    markers.push_str(" 山竹");
+                }
+                let body = format!("基线正文 {n}，含独有词 曼陀罗{markers}，用于检索路径测量。");
                 c.execute(&format!("INSERT INTO {p} (topic_id, author_id, floor_no, body, quote_post_id, publication, moderation, deleted_at, created_at, edited_at, create_seq, version) VALUES (?, ?, 1, ?, 0, 'published', 'normal', ?, ?, ?, ?, 1)"),
                     &[DbValue::I64(topic_id), DbValue::I64(author), DbValue::Text(body.clone()),
                       DbValue::Time(DateTime::UNIX_EPOCH), DbValue::Time(now), DbValue::Time(DateTime::UNIX_EPOCH), DbValue::I64(seq)]).await.expect("插首帖");
@@ -388,68 +411,117 @@ async fn search_latency_baseline() {
     };
 
     // 预热：首次检索要建连接、载入词典并填缓冲池，算进 p95 等于测冷启动。
-    for _ in 0..concurrency {
-        let _ = search(service.clone(), "曼陀罗").await;
+    // **每个词都要预热**——只热一个词时，其余各档的第一次查询仍要付冷启动的钱，
+    // 那笔开销会落进某一档的尾部。实测零命中档曾因此出现 p99 4472ms 的孤立离群值。
+    for term in ["紫檀", "山竹", "猕猴桃", "蓝莓", "曼陀罗"] {
+        for _ in 0..concurrency {
+            let _ = search(service.clone(), term).await;
+        }
     }
 
-    // 先各跑一次确认召回符合预期，否则「零命中很快」这种结论会是假的。
-    let full_recall = search(service.clone(), "曼陀罗").await;
-    let zero_recall = search(service.clone(), "紫檀").await;
-    assert!(
-        full_recall > 0,
-        "「曼陀罗」应命中语料中的文档；命中 0 条说明分词或索引没生效，后续延迟数字无意义"
-    );
-    assert_eq!(
-        zero_recall, 0,
-        "「紫檀」不在语料里，应零命中；实际 {zero_recall} 条说明匹配过宽"
-    );
+    // 五档命中率，从 0% 到 100%。真实语料上一个词命中全部文档不会发生，
+    // 只测 100% 得到的是最坏边界；只测 0% 得到的是最好边界。中间三档才是
+    // 判断门槛能否达成的依据。
+    //
+    // 各档标记词在播种时按 `n % 10 / 100 / 1000` 注入，取词互不共字——
+    // jieba 会把「紫檀」「檀香」都切出「檀」，共字会让零命中那一档失真。
+    const RATES: &[(&str, &str, f64)] = &[
+        ("零命中", "紫檀", 0.0),
+        ("0.1% 命中", "山竹", 0.001),
+        ("1% 命中", "猕猴桃", 0.01),
+        ("10% 命中", "蓝莓", 0.10),
+        ("全量命中", "曼陀罗", 1.0),
+    ];
 
-    let s1 = service.clone();
-    let hit = (
-        "全量命中（「曼陀罗」）",
-        run(concurrency, rounds, move || {
-            let s = s1.clone();
-            async move {
-                let query = SearchQuery::build("曼陀罗", None, None, None, "", 50).expect("查询");
-                s.search(&query, None, at()).await.expect("检索");
-            }
-        })
-        .await,
-    );
-    let s2 = service.clone();
-    let miss = (
-        "零命中（「紫檀」）",
-        run(concurrency, rounds, move || {
-            let s = s2.clone();
-            async move {
-                let query = SearchQuery::build("紫檀", None, None, None, "", 50).expect("查询");
-                s.search(&query, None, at()).await.expect("检索");
-            }
-        })
-        .await,
-    );
+    // 防空：先回读每个标记词在库里的**真实**匹配数，与预期比例核对。播种若因
+    // 分词、批次或累积而偏离，后面的延迟数字就是在测另一件事。
+    let mut tx = DbTransaction::begin(&pool).await.expect("事务");
+    let mut actual = Vec::new();
+    for (label, term, expected) in RATES {
+        let n = {
+            let mut c = tx.connection();
+            let docs = r_docs(&renderer, c.backend());
+            c.fetch_all(
+                &format!(
+                    "SELECT COUNT(*) AS n FROM {docs} WHERE to_tsvector('public.jiebaqry', body) @@ plainto_tsquery('public.jiebacfg', ?)"
+                ),
+                &[DbValue::Text((*term).to_owned())],
+            )
+            .await
+            .expect("回读命中数")
+            .first()
+            .expect("计数应有一行")
+            .i64("n")
+            .expect("计数列")
+        };
+        let rate = n as f64 / documents as f64;
+        // 容差取预期的一半到两倍：批次边界与分词都可能让实际值略有出入，
+        // 但数量级必须对得上，否则「1% 档」测的可能其实是 10%。
+        if *expected > 0.0 {
+            assert!(
+                rate >= expected / 2.0 && rate <= expected * 2.0,
+                "{label}（「{term}」）实际命中率 {:.4}（{n} / {documents}）偏离预期 {expected}，档位标签不成立",
+                rate
+            );
+        } else {
+            assert_eq!(
+                n, 0,
+                "{label}（「{term}」）应零命中，实际 {n} 条说明匹配过宽"
+            );
+        }
+        actual.push((*label, *term, n, rate));
+    }
+    tx.rollback().await.expect("回滚只读事务");
 
-    println!("\n===== WP-MVP-E01/E02 搜索读延迟基线 =====");
+    let mut results = Vec::new();
+    for (label, term, _, _) in &actual {
+        let s = service.clone();
+        let term_owned = (*term).to_owned();
+        results.push((
+            *label,
+            *term,
+            run(concurrency, rounds, move || {
+                let s = s.clone();
+                let term = term_owned.clone();
+                async move {
+                    let query = SearchQuery::build(&term, None, None, None, "", 50).expect("查询");
+                    s.search(&query, None, at()).await.expect("检索");
+                }
+            })
+            .await,
+        ));
+    }
+
+    println!("\n===== WP-MVP-E01/E02 搜索读延迟：按命中率分档 =====");
     println!("数据量：{documents} 篇检索文档（本次新增 {topics}），播种耗时 {seed_secs:.1}s");
-    println!("召回：全量命中 {full_recall} 条（每页取前 50）、零命中 0 条");
     println!("并发：{concurrency} 路 × 每路 {rounds} 次；连接池上限 16");
     println!("检索：PostgreSQL 完整模式（pg_jieba，索引侧 jiebaqry / 查询侧 jiebacfg）");
     println!("缓存：无应用层缓存（未注入 Redis）；数据库缓冲池与词典已预热");
-    for (label, s) in [&hit, &miss] {
+    println!("每页取前 50；命中率为回读实测值，非请求值");
+    for ((label, term, n, rate), (_, _, s)) in actual.iter().zip(results.iter()) {
         println!(
-            "{label}: n={} p50={:.1}ms p95={:.1}ms p99={:.1}ms max={:.1}ms",
-            s.n, s.p50, s.p95, s.p99, s.max
+            "{label}（「{term}」，实测 {n} 条 / {:.3}%）: p50={:.1}ms p95={:.1}ms p99={:.1}ms max={:.1}ms",
+            rate * 100.0,
+            s.p50,
+            s.p95,
+            s.p99,
+            s.max
         );
     }
     println!("门槛：搜索读归公开读 p95 ≤ {PUBLIC_READ_P95_MS}ms");
     println!("效力：资源规格未获批准前，本结果只作实验记录，不支持 Production Approved。\n");
 
-    for (label, s) in [&hit, &miss] {
-        assert!(
-            s.p95 <= PUBLIC_READ_P95_MS,
-            "{label} 的 p95 {:.1}ms 超出 90 §6 的 {PUBLIC_READ_P95_MS}ms 门槛",
-            s.p95
-        );
-    }
+    // 逐档判定后一次性汇总：先断言第一档会让后面几档根本不输出，
+    // 而「哪些档过了、哪些没过」正是本用例要回答的问题。
+    let failed: Vec<String> = results
+        .iter()
+        .filter(|(_, _, s)| s.p95 > PUBLIC_READ_P95_MS)
+        .map(|(label, term, s)| format!("{label}（「{term}」）p95 {:.1}ms", s.p95))
+        .collect();
+    assert!(
+        failed.is_empty(),
+        "以下档位超出 90 §6 的 {PUBLIC_READ_P95_MS}ms 门槛：{}",
+        failed.join("；")
+    );
     pool.close().await;
 }
