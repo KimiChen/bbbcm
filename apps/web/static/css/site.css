@@ -346,7 +346,6 @@ summary::-webkit-details-marker { display: none; }
   .mobile-menu-body h2 { font-size: 13px; color: var(--text-subtle); }
   .mobile-menu-body a { display: block; padding: 8px 10px; border-radius: 6px; }
   .search-form { width: auto; flex: 1; }
-  .nav-mine { padding: 5px 8px; }
   .wrap { padding: 12px 12px 48px; }
   .forum-layout { grid-template-columns: minmax(0, 1fr); }
   .mobile-forum-strip { display: flex; gap: 6px; padding: 0 0 2px; margin-bottom: 10px; overflow-x: auto; scrollbar-width: none; }
