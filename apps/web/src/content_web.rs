@@ -67,7 +67,7 @@ mod tests {
             title: attack.into(),
             author: attack.into(),
             author_href: "/u/synthetic".into(),
-            forum: "问答/实战".into(),
+            forum: "日常".into(),
             forum_href: "/daily".into(),
             created_at: "2026-01-01 00:00 UTC".into(),
             last_reply: None,
@@ -83,7 +83,7 @@ mod tests {
         page.topic = Some(TopicDetail {
             title: attack.into(),
             forum: Link {
-                label: "问答/实战".into(),
+                label: "日常".into(),
                 href: "/daily".into(),
                 active: false,
             },
