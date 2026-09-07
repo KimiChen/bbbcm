@@ -2246,6 +2246,52 @@ SQLite 验语义（幂等重投不报错、未读计数、单条与全部已读�
 
 搜索延迟不受影响：五档在 release 与新数据下重测通过（最差 73.3ms），它走 `search_documents` 单表，不经列表的 N+1 路径。
 
+### 5.45 列表页批量加载：查询数降 6.3 倍，瓶颈转移到候选查询（2026-09-07）
+
+第 5.44 节定位的 N+1 已修复。两层：`ReadContext` 增加请求内备忘缓存（作者、主题），只在一次读事务内有效、随事务丢弃，因此不需要失效策略；`prefetch_topics` 在取回候选 id 后一次性批量读入整批的主题、首帖、标签与作者。**可见性与权限判定不在预取里做**，仍由 `topic_view` 逐行执行，读到的值与逐条查询完全相同；预取缺项回落单条查询，详情页路径不预取。
+
+三条批量 SQL 放在 `platform::db` 而非 Repository：`sql_lint` 规定 Repository 的模板占位只允许出现在表位置、禁止 `.join`／`.push` 一类调用。变长 `IN` 是正当需求（变的只有占位符个数，无取值进入 SQL 文本），但正当不等于可以在 Repository 破例——与 `full_text_search_sql`、`outbox_claim_update_sql` 一样收拢到受信位置，规则不放松。占位符上限 1000，无界 `IN` 会把「取一批」悄悄变成「取全表」。
+
+#### 实测
+
+| 指标 | 修前 | 修后 |
+|---|---:|---:|
+| 首页单次渲染查询数 | 约 820 | **130** |
+| 首页空载单请求 | 0.851s | **0.726s** |
+
+**查询数降 6.3 倍，延迟只降 15%——瓶颈已经转移。**
+
+#### 新的瓶颈：候选查询单条 220ms（未修，需裁决）
+
+`EXPLAIN (ANALYZE)` 于 `repo::candidates` 的主题分支：
+
+```
+Limit  →  Sort (top-N heapsort, 10 万行)
+  →  Hash Join (rows=100000)
+       ->  Index Only Scan Backward using topics_pkey        (rows=100000)
+       ->  Seq Scan on topic_history                          (rows=100000)
+       SubPlan 2  ->  ... Index Only Scan ...                 loops=200000
+Execution Time: 220.052 ms
+```
+
+710ms 数据库总耗时中约 690ms 来自这条查询（每页调用 4 次）。三处结构性成本：
+
+1. 判定「当前版本」的**关联 `MAX` 子查询执行 20 万次**（每主题 2 次）；
+2. 排序键是 `CASE WHEN ? = 1 THEN h.last_reply_seq ELSE h.create_seq END`，参数化表达式无法走索引；
+3. 因此必须物化全部 10 万行再 top-N 排序，只为取 100 条。
+
+**三条候选修法，均属设计裁决，未自行选择**：
+
+- **拆成两条固定排序的语句**（`last_reply_seq` 一条、`create_seq` 一条），消除 `CASE`，配 `(last_reply_seq, topic_id)` 索引。同一文件里「两条完整语句而不是把 ORDER BY 拼进模板」已有先例。但关联子查询仍在。
+- **给 `topic_history` 加「当前版本」标记列或偏索引**，消除关联子查询。偏索引 MySQL 8.0 不支持（与 `DEC-022` 冲突，参见 `DEC-066` 同类取舍），标记列需在写路径维护。
+- **窗口函数改写**（`ROW_NUMBER() OVER (PARTITION BY topic_id ORDER BY sequence_no DESC)`）。`AGENTS.md` 允许窗口函数，但仍会物化全表。
+
+按现有数据推算：该查询若降到毫秒级，整页可到 **30–50ms**，远在 400ms 门槛之内。路径是通的，只差这一步。
+
+#### 门禁状态未变
+
+`90` §6 的公开读 p95 400ms 与 100 read/s **仍未通过**。本节只是把差距从「N+1」收敛到「一条可定位的查询」。
+
 ## 6. 门禁状态
 
 | 门禁 | 当前状态 | 原因 |
