@@ -54,44 +54,50 @@ pub fn search_notice(capability: crate::search::SearchCapability) -> Option<&'st
     }
 }
 
+/// 只读页面的路由表。提为常量是为了让保留字一致性测试能逐条读到它——
+/// 顶级静态段一旦漏登记成保留字，同名版块就会永远打不开且没有任何报错。
+const WRITE_ROUTES: &[&str] = &[
+    "/topics/new",
+    "/topics/{id}/reply",
+    "/posts/{id}/edit",
+    "/posts/{id}/delete",
+];
+
+const READ_ROUTES: &[&str] = &[
+    "/",
+    "/new",
+    "/pinned",
+    "/featured",
+    // SEARCH-003：可分享的 GET URL，查询不依赖 POST 表单。
+    "/search",
+    // NAV-004 首页「热门」：DEC-030 的累计阅读量降序视图。
+    "/hot",
+    // DEC-068：版块页是顶级 `/{slug}`。放在静态路由之后声明只是可读性，
+    // 匹配优先级由路由器按「静态段优先于参数段」决定，与声明顺序无关；
+    // 因此 `/new`、`/search` 等仍走各自的处理器，不会被版块段吃掉。
+    // 反向的风险（版块 slug 撞静态段导致该版块永远不可达）由
+    // `platform_db::reserved_slug` 在写入时挡住，见 `02` §6.6。
+    "/{slug}",
+    "/tags/{slug}",
+    // DEC-056：`/t/{id}` 是权威永久链接，不含版块段，因此移帖不会让旧链接失效。
+    // `/topics/{id}` 与 `/posts/{id}` 保留为兼容入口，一律 301 到规范 URL。
+    "/t/{id}",
+    "/topics/{id}",
+    "/posts/{id}",
+    "/me/topics",
+    "/me/posts",
+    "/me/replies",
+    "/u/{id}/topics",
+    "/u/{id}/posts",
+    "/u/{id}/replies",
+];
+
 pub fn router<S: Clone + Send + Sync + 'static>(state: ContentWebState) -> Router<S> {
     let mut router = Router::new();
-    for path in [
-        "/",
-        "/new",
-        "/pinned",
-        "/featured",
-        // SEARCH-003：可分享的 GET URL，查询不依赖 POST 表单。
-        "/search",
-        // NAV-004 首页「热门」：DEC-030 的累计阅读量降序视图。
-        "/hot",
-        // DEC-068：版块页是顶级 `/{slug}`。放在静态路由之后声明只是可读性，
-        // 匹配优先级由路由器按「静态段优先于参数段」决定，与声明顺序无关；
-        // 因此 `/new`、`/search` 等仍走各自的处理器，不会被版块段吃掉。
-        // 反向的风险（版块 slug 撞静态段导致该版块永远不可达）由
-        // `platform_db::reserved_slug` 在写入时挡住，见 `02` §6.6。
-        "/{slug}",
-        "/tags/{slug}",
-        // DEC-056：`/t/{id}` 是权威永久链接，不含版块段，因此移帖不会让旧链接失效。
-        // `/topics/{id}` 与 `/posts/{id}` 保留为兼容入口，一律 301 到规范 URL。
-        "/t/{id}",
-        "/topics/{id}",
-        "/posts/{id}",
-        "/me/topics",
-        "/me/posts",
-        "/me/replies",
-        "/u/{id}/topics",
-        "/u/{id}/posts",
-        "/u/{id}/replies",
-    ] {
+    for path in READ_ROUTES {
         router = router.route(path, get(read));
     }
-    for path in [
-        "/topics/new",
-        "/topics/{id}/reply",
-        "/posts/{id}/edit",
-        "/posts/{id}/delete",
-    ] {
+    for path in WRITE_ROUTES {
         router = router.route(path, get(editor).post(submit));
     }
     router
@@ -532,11 +538,12 @@ async fn feed(State(state): State<ContentWebState>, OriginalUri(uri): OriginalUr
         return StatusCode::NOT_FOUND.into_response();
     };
     let parts: Vec<_> = uri.path().trim_matches('/').split('/').collect();
-    let forum = if parts.first() == Some(&"forums") {
+    // DEC-068：版块订阅源是 `/{slug}/feed.xml`（两段），全站源是 `/feed.xml`（一段）。
+    let forum = if parts.len() == 2 {
         let Ok(catalog) = service.catalog(Utc::now()).await else {
             return StatusCode::SERVICE_UNAVAILABLE.into_response();
         };
-        let Ok(slug) = decode_segment(parts.get(1).copied().unwrap_or_default()) else {
+        let Ok(slug) = decode_segment(parts.first().copied().unwrap_or_default()) else {
             return StatusCode::NOT_FOUND.into_response();
         };
         match catalog.iter().find(|f| f.slug == slug) {
@@ -764,8 +771,14 @@ async fn read(
                     }
                     return Ok(response(&state, &page, StatusCode::OK));
                 }
-                "forums" => {
-                    let slug = decode_segment(parts[1])?;
+                // DEC-068：版块页是顶级单段 `/{slug}`。必须限定 `parts.len() == 1`，
+                // 否则 `/u/{id}/topics` 这类多段路径的首段会被当成版块 slug。
+                //
+                // 找不到就 404，绝不回落到「最新回复」：静默把未知版块渲染成全站
+                // 列表，会让打错的链接、被删的版块和权限不足三种情况一律看起来
+                // 「正常」，页面里没有任何线索说明你并不在自己以为的那个版块。
+                slug if parts.len() == 1 && !slug.is_empty() => {
+                    let slug = decode_segment(slug)?;
                     let forum = catalog
                         .forums
                         .iter()
@@ -1297,6 +1310,45 @@ async fn operation(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// `DEC-068`／`02` §6.6：版块页在顶级 `/{slug}`，因此每一个顶级静态路径段
+    /// 都必须同时是版块 slug 的保留字。
+    ///
+    /// 漏一个的后果不是报错，而是**沉默**：取了该名字的版块永远匹配不到自己的
+    /// 页面，没有异常、没有日志、没有 500。所以这里不抄一份清单，而是从真实
+    /// 路由表逐条推导——将来谁加一条顶级路由却忘了登记保留字，这条测试会失败。
+    #[test]
+    fn every_top_level_static_route_is_a_reserved_forum_slug() {
+        let statics = READ_ROUTES
+            .iter()
+            .chain(WRITE_ROUTES)
+            .chain(&[
+                "/robots.txt",
+                "/sitemap.xml",
+                "/feed.xml",
+                "/content/operations",
+            ])
+            .filter_map(|route| route.strip_prefix('/'))
+            .filter_map(|route| route.split('/').next())
+            // 参数段不是静态段；根路径（空串）也不是。
+            .filter(|first| !first.is_empty() && !first.starts_with('{'));
+        let mut checked = 0;
+        for segment in statics {
+            // 断言的是「建不出这个 slug」，不限定拒绝原因：`robots.txt` 这类
+            // 带点的段先被字符集规则挡下，同样达到目的。
+            assert!(
+                platform_db::reserved_slug::check(segment).is_err(),
+                "顶级路由段 {segment} 可以被建成版块 slug：\
+                 同名版块会永远无法访问且不报错，请补进 `02` §6.6 的清单"
+            );
+            checked += 1;
+        }
+        // 防空断言：上面的过滤条件写错时循环会一条不跑，测试仍然「通过」。
+        assert!(
+            checked >= 10,
+            "只检查到 {checked} 条顶级静态路由，过滤条件可疑"
+        );
+    }
 
     /// `90` §5 SQLite 体验模式：正文搜索入口必须给出受限提示，而不是错误或
     /// 无解释的空结果。完整模式则不应挂这条提示——否则等于对用户撒谎。

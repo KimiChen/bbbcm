@@ -78,10 +78,16 @@ fn cli_migrates_reports_and_seeds_repeatedly() {
     assert!(succeeds(f.db(&["seed"])).contains("新增 6 个版块、6 个规则"));
     assert!(succeeds(f.db(&["seed"])).contains("新增 0 个版块、0 个规则"));
     assert!(!f.db(&["migrate", "--backend", "mysql8"]).status.success());
+    // 受控 flag set 尚未接入（`WP-MVP-A02` 剩余项），必须失败。断言同时检查
+    // 失败原因：此前这里只断言「不成功」，而命令实际是在 clap 解析阶段 panic，
+    // 于是这条断言对「未接入」这件事是空的——把 panic 修好后它照样通过，
+    // 把实现写对但参数定义写坏也照样通过。
+    let refused = f.run(&["flag", "set", "public_read", "true"]);
+    assert!(!refused.status.success());
+    let stderr = String::from_utf8_lossy(&refused.stderr);
     assert!(
-        !f.run(&["flag", "set", "public_read", "true"])
-            .status
-            .success()
+        stderr.contains("尚未实现"),
+        "应因未接入而拒绝，实际 stderr={stderr}"
     );
 }
 #[test]

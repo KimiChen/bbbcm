@@ -1720,6 +1720,22 @@ SQLite 验语义（幂等重投不报错、未读计数、单条与全部已读�
 
 `00` §3 冷启动「约 10 篇种子内容」按四个版块所定，版块增至六个且「日常」「酷品」为零供给新品类后不再自洽。已在 `00` 与 `DEC-068` 标注待重估，未自行改数值。
 
+#### 真实 PostgreSQL 实测（2026-09-07，同日补做）
+
+六版块迁移与种子在真实 PostgreSQL 16 上执行通过（迁移 1–21，种子「新增 6 个版块、6 个规则占位版本」）。路由实测：六个版块页全部 200，`/nope` 与 `/forums/daily` 均 404，`/new`／`/search` 不被版块段吃掉，`/daily/feed.xml` 与 `/feed.xml` 各自 200 而 `/nope/feed.xml` 404；页面标题为对应版块名，说明 slug 参与了过滤。主导航渲染七项（全部主题 + 六版块）。证据见 [`forum-routes-postgres.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/forum-routes-postgres.txt)。
+
+**实测发现并修复一处自造缺陷**：改路由时只改了路由表，没改处理器里的路径分发。处理器按 `parts[0] == "forums"` 的两段形状取 slug，改成顶级单段后该分支再也匹配不到，`/daily` 与 `/nope` 全部落进 `_ => "最新回复"` 兜底分支，**返回 200 且内容与首页相同**。失败形态不报错：打错的链接、被删的版块、权限不足三种情况一律渲染成看起来正常的页面。已修复为单段 slug 分支并在找不到时 404，订阅源同步改为按段数判定。
+
+**新增回归防护**：`crates/content/src/http.rs::every_top_level_static_route_is_a_reserved_forum_slug` 从真实路由表逐条推导顶级静态段，断言每条都无法被建成版块 slug；不抄清单，新增顶级路由却漏登记保留字时会失败。已做变异验证（删掉 `hot` 后如期失败并指名该段），并带防空断言。
+
+#### 附带发现：`bbbcm-cli flag set` 无条件 panic（2026-09-07 修复）
+
+为打开 `manage_console` 调用 `flag set` 时发现该命令**必然 panic**，`flag set --help` 同样打不开：clap 的 derive 把位置参数 `value: bool` 映射成 `SetTrue`（开关语义），而位置参数必须取值，debug 构建的 `debug_assert` 在 `Cli::parse()` 一进来就触发。release 构建里该断言被编译掉，冲突不再报错，取值行为却仍不是预期的那个。已显式声明 `clap::ArgAction::Set`。
+
+**原有测试对此是空的**：`database_cli.rs` 只断言 `flag set public_read true` 不成功，而命令确实不成功——它是在参数解析阶段 panic，根本没走到「尚未实现」。该断言既盖不住 panic，也无法在将来实现写对而参数定义写坏时报警。已加固为同时检查 stderr 含「尚未实现」。
+
+`flag set` 本身仍未接入（`WP-MVP-A02` 剩余项，见第 5.5 节），本轮只修 panic，未实现受控写。
+
 ## 6. 门禁状态
 
 | 门禁 | 当前状态 | 原因 |

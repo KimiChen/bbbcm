@@ -84,7 +84,16 @@ enum FlagCommand {
     /// 从数据库列出当前值、版本、缺项与注册默认值
     List,
     /// 修改 flag（受控命令）
-    Set { name: String, value: bool },
+    Set {
+        name: String,
+        // clap 的 derive 默认把 `bool` 映射成 SetTrue（开关语义），而这是一个
+        // **位置**参数，位置参数必须取值，两者冲突。debug 构建里表现为
+        // `Cli::parse()` 一进来就 panic——连 `flag set --help` 都打不开；
+        // release 构建里 debug_assert 被编译掉，冲突不再报错，取值行为却仍然
+        // 不是这里想要的。显式声明 Set 动作，让它按「解析成 true/false」处理。
+        #[arg(action = clap::ArgAction::Set)]
+        value: bool,
+    },
 }
 
 #[tokio::main]
