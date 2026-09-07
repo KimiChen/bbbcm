@@ -1,0 +1,66 @@
+# WP-MVP-E01 HTTP/E2E：真实业务路由状态矩阵（2026-09-07）
+
+此前的 E2E 记录只能驱动 A00 夹具，因为内容/身份服务未装配。本次补齐装配后，
+**业务路由本身**可达，`90` §5「成功、空、错误、未认证、未授权、冲突、过期和
+依赖失败」八类状态中的六类已在真实路由上验证。
+
+## 装配
+
+装配缺的是三项 Secret 与两项本机配置，全部为一次性合成值，只经进程环境或
+已被 `.gitignore` 忽略的 `config/local.toml` 注入，不写入仓库：
+
+- `BBBCM_CONTENT_CURSOR_KEY`、`BBBCM_IDENTITY_TOKEN_KEYS`、`BBBCM_IDENTITY_RISK_KEY`
+- `identity.active_token_version`、`adapters.mode = "local_test"`（邮件只落库不外发）
+
+Feature Flag 由**运维方式**直接改库开启（`public_read`、`registration`、
+`email_verification`、`topic_creation`、`reply_creation`、`search`、`rss`）——
+`bbbcm-cli flag set` 随 `WP-MVP-A02` 才接入，当前没有受控写入口。
+
+## 状态矩阵
+
+| 类别 | 路径 | 状态 |
+|---|---|---|
+| **成功** | `/`、`/new`、`/hot`、`/pinned`、`/featured` | 200 |
+| **成功** | `/login`、`/robots.txt`、`/sitemap.xml`、`/feed.xml` | 200 |
+| **成功** | `/search?q=abc` | 200 |
+| **空态** | `/search?q=`、`/search?q=zzzzzzzz` | 200，页面呈现「没有匹配的标题。」与「体验模式：仅支持标题搜索。」——**是空态而不是错误** |
+| **不存在** | `/t/999999`、`/forums/nope`、`/tags/nope` | 404 |
+| **未认证** | `/settings/profile` | 401 |
+| **未授权** | `/me/topics` | 403 |
+| **未认证跳转** | `/manage`、`/manage/cases` | 303（转登录，不泄露后台结构） |
+| **依赖失败** | `/register` | 503（挑战 provider 未装配，失败关闭而非放行） |
+
+未覆盖两类：**冲突**与**过期**需要已登录的写入流程（版本 CAS 冲突、令牌过期），
+本轮未构造。
+
+## CSRF
+
+无令牌 POST：
+
+| 路径 | 状态 |
+|---|---|
+| `/login` | 400 |
+| `/register` | 400 |
+| `/topics/new` | 403 |
+
+三条都被拒绝，没有一条以「表单缺字段」的方式走进业务逻辑。
+
+## 公开页安全响应头
+
+```
+cache-control: private, no-store
+referrer-policy: no-referrer
+x-content-type-options: nosniff
+content-security-policy: default-src 'self'; script-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'
+```
+
+`script-src 'none'` 值得单独指出：它与此前实测的「页面 `<script>` 数为 0」互相印证
+——不是「暂时没写脚本」，而是策略层面直接禁止执行脚本。配合 `object-src 'none'`
+与 `base-uri 'none'`，XSS 的主要执行面被 CSP 关掉了。
+
+## 未覆盖
+
+- **冲突与过期**两类状态；
+- 已登录后的完整写入流程（发帖、回复、编辑、删除）的 E2E；
+- `/manage` 登录后的治理路径，依赖 `D01`–`D04`；
+- 下载鉴权，依赖 `WP-MVP-C03` 的媒体链。
