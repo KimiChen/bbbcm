@@ -121,7 +121,7 @@
 | `WP-MVP-C05` | In progress | 同事务权威 search_documents、搜索页/SEO/Feed/sitemap 已交付；**本轮补齐 PostgreSQL 完整模式全文检索**（`pg_jieba` 索引侧 `jiebaqry`／查询侧 `jiebacfg`，能力按实测探测装配，权限过滤与体验模式逐条对齐），见 5.24。GIN 索引与百万级重建属性能矩阵，仍缺。 |
 | `WP-MVP-C04` | In progress | **本轮交付 `SOCIAL-002`／`SOCIAL-003` 正向反馈切片**（迁移 0020、`interaction` 领域服务与仓库、唯一性与自我反馈的库层约束），并据此补齐 `90` §5 并发矩阵的「互动唯一性」，见 5.25。收藏、关注、阅读位置、站内通知与 HTTP 入口仍缺；无可达路由，不标完成。 |
 | `WP-MVP-D01..D04` | Not started | - |
-| `WP-MVP-E01` | In progress | 真实 Redis 8 合同与真实 PostgreSQL 16 双前缀集成（11 项）已通过并留证；`90` §5 其余 PostgreSQL 条目、`pg_jieba` 完整搜索、安全/并发/性能/E2E/视觉矩阵未执行，见 5.23。 |
+| `WP-MVP-E01` | In progress | 已通过并留证：真实 Redis 8 合同、真实 PostgreSQL 16 双前缀集成 11 项、并发矩阵九项中的**八项**、安全矩阵中不依赖未完成功能的六项、`90` §6 参数门槛六项、SQLite 体验模式四项、浏览器结构化检查（对比度经 `DEC-067` 修复后达标）、`pg_jieba` 扩展镜像离线构建与实测、SBOM/许可证/漏洞/Secret 全量扫描、公开读延迟基线（实验记录）。执行过程中发现并修复四个生产缺陷（`DEC-064`／`DEC-065`／`DEC-066` 与 `/manage` 错误响应缺安全头）。**仍缺**：通知去重（依赖 `C04` 的 `NOTIFY-*`）、E2E 全路径（依赖 `C04`／`D01`–`D04`）、A 级像素与几何比对、负载与延迟门槛（需批准资源规格）、触控目标门槛（待裁决）、`90` §5 部分 PostgreSQL 条目（`CommitUnknown`、`40001`/`40P01` 受控重试、审计与搜索权限状态同事务提交）。详见 5.23。 |
 | `WP-MVP-E02/E04/E05` | Not started | - |
 | `WP-P1A-01..09` | Not started / flag closed | - |
 | `WP-P1B-*` | Not started / flag closed | - |
@@ -1234,10 +1234,10 @@ B02按本轮完整adapter交付范围记Implemented；B01因明确需求缺口�
 
 | 需求 | 状态 | 本轮结论 |
 |---|---|---|
-| `SEARCH-001` | In progress | 标题检索已交付；正文与用户名检索需要 PostgreSQL 全文能力，属 `E01`。 |
-| `SEARCH-002` | In progress | 版块筛选、时间范围与排序白名单已交付；中文分词与短语搜索依赖 `pg_jieba`，未实现。 |
+| `SEARCH-001` | In progress | 标题与**正文**检索已交付（正文随 5.24 的 `pg_jieba` 完整模式落地）；**用户名与标签检索仍缺**——`community.search_documents` 没有用户名列，全文语句也只查 `title` 与 `body` 两列。原备注写「属 `E01`」有误：全文能力属 `C05` 的实现范围，`E01` 只负责验证，2026-09-07 复核纠正。 |
+| `SEARCH-002` | In progress | 版块筛选、时间范围、排序白名单与**中文分词**已交付（分词随 5.24 落地，索引侧 `jiebaqry`／查询侧 `jiebacfg`）；**短语搜索仍缺**——查询侧用 `plainto_tsquery`，它把输入分词后取合取、不保留词序，短语语义需要 `phraseto_tsquery` 或等价构造。 |
 | `SEARCH-003` | In progress | GET 可分享 URL 已交付；搜索结果分页游标未接（`NAV-005` 的搜索分支）。 |
-| `SEARCH-004` | In progress | 权限过滤与高亮已交付；正文摘要随全文能力一并留后续。 |
+| `SEARCH-004` | In progress | 权限过滤已交付且经真实 PostgreSQL 验证（仅成员内容对匿名检索完全不出现，见 5.24）；**高亮仍只覆盖标题**——`locate()` 只在标题上定位命中区间，正文命中因此既无摘要也无高亮。全文能力已就位不再是阻塞，缺的是正文摘要与高亮本身。 |
 | `SEO-004`／`SEO-005`／`SEO-006` | In progress | robots、sitemap、RSS 与 Canonical 白名单已交付；Atom 与标签级订阅、`/feeds` 说明页未做。 |
 | `SEO-002`／`SEO-003` | Not started | Canonical 逻辑已具备，但页面尚未输出 Canonical、OG、Twitter Card 与 Schema.org 标记。 |
 | `NAV-001` | In progress | 本轮交付了 `/search` 路由与页面；导航栏搜索入口仍为禁用态，接线属 `C01` 后续。 |
