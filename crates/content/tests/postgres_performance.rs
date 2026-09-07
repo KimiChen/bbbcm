@@ -181,6 +181,33 @@ async fn seed(prefix: &str, topics: usize) -> (Pool, SchemaRenderer, i64) {
     (app, r, forum)
 }
 
+/// 每个读路径单独测：并发 N 路，每路 rounds 次，汇总全部样本。
+/// 不做通用测量闭包——async 闭包无法当函数指针传，硬凑只会让代码更难读。
+async fn run<F, Fut>(concurrency: usize, rounds: usize, make: F) -> Stats
+where
+    F: Fn() -> Fut + Clone + Send + 'static,
+    Fut: std::future::Future<Output = ()> + Send,
+{
+    let mut tasks = Vec::new();
+    for _ in 0..concurrency {
+        let make = make.clone();
+        tasks.push(tokio::spawn(async move {
+            let mut samples = Vec::with_capacity(rounds);
+            for _ in 0..rounds {
+                let t = Instant::now();
+                make().await;
+                samples.push(t.elapsed().as_secs_f64() * 1000.0);
+            }
+            samples
+        }));
+    }
+    let mut all = Vec::new();
+    for t in tasks {
+        all.extend(t.await.expect("任务不应 panic"));
+    }
+    stats(all)
+}
+
 /// `90` §6 延迟门槛：公开读 p95 ≤ 400ms、SSR 首屏 p95 ≤ 800ms。
 ///
 /// 并发按 `90` §6 的「峰值在线 300 / 公开读 200 read/s 起点」取 16 路——本机
@@ -213,33 +240,6 @@ async fn public_read_latency_baseline() {
             .list(&ListFilter::default(), None, None, at())
             .await
             .expect("预热列表");
-    }
-
-    // 每个读路径单独测：并发 N 路，每路 rounds 次，汇总全部样本。
-    // 不做通用测量闭包——async 闭包无法当函数指针传，硬凑只会让代码更难读。
-    async fn run<F, Fut>(concurrency: usize, rounds: usize, make: F) -> Stats
-    where
-        F: Fn() -> Fut + Clone + Send + 'static,
-        Fut: std::future::Future<Output = ()> + Send,
-    {
-        let mut tasks = Vec::new();
-        for _ in 0..concurrency {
-            let make = make.clone();
-            tasks.push(tokio::spawn(async move {
-                let mut samples = Vec::with_capacity(rounds);
-                for _ in 0..rounds {
-                    let t = Instant::now();
-                    make().await;
-                    samples.push(t.elapsed().as_secs_f64() * 1000.0);
-                }
-                samples
-            }));
-        }
-        let mut all = Vec::new();
-        for t in tasks {
-            all.extend(t.await.expect("任务不应 panic"));
-        }
-        stats(all)
     }
 
     let s1 = service.clone();
@@ -294,6 +294,131 @@ async fn public_read_latency_baseline() {
     println!("效力：资源规格未获批准前，本结果只作实验记录，不支持 Production Approved。\n");
 
     for (label, s) in [&list, &forum_list] {
+        assert!(
+            s.p95 <= PUBLIC_READ_P95_MS,
+            "{label} 的 p95 {:.1}ms 超出 90 §6 的 {PUBLIC_READ_P95_MS}ms 门槛",
+            s.p95
+        );
+    }
+    pool.close().await;
+}
+
+/// `90` §6 搜索读延迟基线。搜索读归「公开读 p95 ≤ 400ms」——`90` §6 没有为搜索
+/// 单列门槛，因此这里对照同一条。
+///
+/// **测两个极端而不是一个中间值**：`seed` 给每篇文档都写了「梧桐」与「曼陀罗」，
+/// 所以「曼陀罗」是**全量命中**（最坏召回：匹配集等于整个语料，排序与取前 N 的
+/// 成本最高）；「紫檀」在语料里不存在，是**零命中**（只付索引查找的钱）。真实
+/// 查询落在两者之间，报告同时给出两端，读者才能判断自己的场景靠近哪一侧。
+///
+/// 只在 `pg_jieba` 就位时有意义：缺扩展时检索能力不升级，测出来的是 `LIKE`
+/// 降级路径而不是全文检索。因此缺扩展明确跳过——**跳过不是通过**。
+#[tokio::test(flavor = "multi_thread", worker_threads = 8)]
+#[ignore = "需要装有 pg_jieba 的隔离 PostgreSQL 16 端点；见 docs/development/postgres.md"]
+async fn search_latency_baseline() {
+    use content::search::{SearchBackend, SearchCapability, SearchQuery};
+
+    let prefix = std::env::var("POSTGRES_CONTRACT_ALT_PREFIX")
+        .unwrap_or_else(|_| panic!("需要 POSTGRES_CONTRACT_ALT_PREFIX"));
+    let topics = env_usize("POSTGRES_PERF_TOPICS", 2_000);
+    let concurrency = env_usize("POSTGRES_PERF_CONCURRENCY", 16);
+    let rounds = env_usize("POSTGRES_PERF_ROUNDS", 20);
+
+    let seed_started = Instant::now();
+    let (pool, renderer, _forum) = seed(&prefix, topics).await;
+    let seed_secs = seed_started.elapsed().as_secs_f64();
+
+    let capabilities = pool.capabilities().await;
+    let Some(backend) = content::search::PostgresFullTextSearch::new(capabilities) else {
+        eprintln!(
+            "跳过：该实例未安装 pg_jieba，检索能力未升级，测到的会是降级路径。跳过不等于通过。"
+        );
+        pool.close().await;
+        return;
+    };
+    assert_eq!(backend.capability(), SearchCapability::FullText);
+
+    let service = ContentService::new(
+        pool.clone(),
+        renderer.clone(),
+        Arc::new(AllowAll::new(vec![1])),
+        Arc::new(ApprovedContentPolicy::new().expect("已批准政策")),
+        CursorKey::new(vec![7; 32]).expect("游标密钥"),
+    )
+    .with_search_backend(Arc::new(backend));
+    assert_eq!(
+        service.search_capability(),
+        SearchCapability::FullText,
+        "注入后服务必须报告完整模式，否则本用例测的不是全文检索"
+    );
+
+    let search = |service: ContentService, term: &str| {
+        let term = term.to_owned();
+        async move {
+            let query = SearchQuery::build(&term, None, None, None, "", 50).expect("查询可构造");
+            let (_, hits) = service.search(&query, None, at()).await.expect("检索");
+            hits.len()
+        }
+    };
+
+    // 预热：首次检索要建连接、载入词典并填缓冲池，算进 p95 等于测冷启动。
+    for _ in 0..concurrency {
+        let _ = search(service.clone(), "曼陀罗").await;
+    }
+
+    // 先各跑一次确认召回符合预期，否则「零命中很快」这种结论会是假的。
+    let full_recall = search(service.clone(), "曼陀罗").await;
+    let zero_recall = search(service.clone(), "紫檀").await;
+    assert!(
+        full_recall > 0,
+        "「曼陀罗」应命中语料中的文档；命中 0 条说明分词或索引没生效，后续延迟数字无意义"
+    );
+    assert_eq!(
+        zero_recall, 0,
+        "「紫檀」不在语料里，应零命中；实际 {zero_recall} 条说明匹配过宽"
+    );
+
+    let s1 = service.clone();
+    let hit = (
+        "全量命中（「曼陀罗」）",
+        run(concurrency, rounds, move || {
+            let s = s1.clone();
+            async move {
+                let query = SearchQuery::build("曼陀罗", None, None, None, "", 50).expect("查询");
+                s.search(&query, None, at()).await.expect("检索");
+            }
+        })
+        .await,
+    );
+    let s2 = service.clone();
+    let miss = (
+        "零命中（「紫檀」）",
+        run(concurrency, rounds, move || {
+            let s = s2.clone();
+            async move {
+                let query = SearchQuery::build("紫檀", None, None, None, "", 50).expect("查询");
+                s.search(&query, None, at()).await.expect("检索");
+            }
+        })
+        .await,
+    );
+
+    println!("\n===== WP-MVP-E01/E02 搜索读延迟基线 =====");
+    println!("数据量：{topics} 主题（每主题 1 检索文档），播种耗时 {seed_secs:.1}s");
+    println!("召回：全量命中 {full_recall} 条（每页取前 50）、零命中 0 条");
+    println!("并发：{concurrency} 路 × 每路 {rounds} 次；连接池上限 16");
+    println!("检索：PostgreSQL 完整模式（pg_jieba，索引侧 jiebaqry / 查询侧 jiebacfg）");
+    println!("缓存：无应用层缓存（未注入 Redis）；数据库缓冲池与词典已预热");
+    for (label, s) in [&hit, &miss] {
+        println!(
+            "{label}: n={} p50={:.1}ms p95={:.1}ms p99={:.1}ms max={:.1}ms",
+            s.n, s.p50, s.p95, s.p99, s.max
+        );
+    }
+    println!("门槛：搜索读归公开读 p95 ≤ {PUBLIC_READ_P95_MS}ms");
+    println!("效力：资源规格未获批准前，本结果只作实验记录，不支持 Production Approved。\n");
+
+    for (label, s) in [&hit, &miss] {
         assert!(
             s.p95 <= PUBLIC_READ_P95_MS,
             "{label} 的 p95 {:.1}ms 超出 90 §6 的 {PUBLIC_READ_P95_MS}ms 门槛",
