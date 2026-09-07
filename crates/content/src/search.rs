@@ -99,7 +99,9 @@ pub struct PostgresFullTextSearch;
 impl PostgresFullTextSearch {
     /// `capabilities` 来自 `platform-db` 建连时的一次性探测。
     pub fn new(capabilities: platform::db::Capabilities) -> Option<Self> {
-        capabilities.pg_jieba.then_some(Self)
+        // 扩展与索引轨都就位才算完整模式：只看扩展会让「装了扩展、没跑索引轨」
+        // 的实例走进引用不存在列的查询，每次搜索抛错而不是干净降级。
+        (capabilities.pg_jieba && capabilities.search_vector).then_some(Self)
     }
 }
 impl SearchBackend for PostgresFullTextSearch {

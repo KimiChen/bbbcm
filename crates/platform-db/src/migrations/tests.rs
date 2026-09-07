@@ -578,3 +578,49 @@ async fn upgrades_a03_database_to_engine_and_flags_without_changing_old_data() {
         pool.close().await;
     }
 }
+
+/// 每一条迁移都必须能在受信标识符渲染器下渲染通过——**包括附加轨**。
+///
+/// 这条守卫来自一次实测事故：`postgres-search/0002` 的注释里写了一个模板字面量
+/// 作说明文字，渲染器不认注释、把它当成待展开的占位符，整条迁移在运行期失败，
+/// 报出的却是被脱敏成「受信迁移标识符非法」的笼统错误，只能靠逐段二分定位。
+/// 渲染是纯函数，没有理由留到连上数据库才发现。
+#[test]
+fn every_migration_including_optional_tracks_renders_under_both_prefixes() {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../db/migrations");
+    let mut checked = 0;
+    for prefix in ["bcm_", "render42_"] {
+        let renderer = SchemaRenderer::new(prefix).unwrap();
+        for (track, backend) in [
+            ("postgres", Backend::Postgres),
+            ("sqlite", Backend::Sqlite),
+            (crate::migrations::SEARCH_TRACK, Backend::Postgres),
+        ] {
+            let dir = root.join(track);
+            if !dir.exists() {
+                continue;
+            }
+            let mut entries: Vec<_> = std::fs::read_dir(&dir)
+                .unwrap()
+                .filter_map(|e| e.ok())
+                .map(|e| e.path())
+                .filter(|p| p.extension().is_some_and(|x| x == "sql"))
+                .collect();
+            entries.sort();
+            for path in entries {
+                let sql = std::fs::read_to_string(&path).unwrap();
+                assert!(
+                    renderer.migration(backend, &sql).is_ok(),
+                    "{} 在前缀 {prefix} 下渲染失败——检查注释里是否写了模板字面量",
+                    path.display()
+                );
+                checked += 1;
+            }
+        }
+    }
+    // 防空：路径写错时上面的循环会一条不跑，测试仍然「通过」。
+    assert!(
+        checked >= 40,
+        "只渲染了 {checked} 条迁移，路径或过滤条件可疑"
+    );
+}

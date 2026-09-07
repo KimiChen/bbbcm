@@ -391,6 +391,9 @@ pub const INDEXES: &[(&str, &str)] = &[
     // 因此不出现在三库基线轨里；名字仍须在此登记，受信标识符渲染没有例外。
     ("community", "search_title_gin_idx"),
     ("community", "search_body_gin_idx"),
+    // 物化 tsvector 列上的 GIN（`postgres-search` 轨 0002）。它取代上面两个
+    // 表达式索引：表达式索引免不了过滤路径上的重新分词，物化列可以。
+    ("community", "search_vector_gin_idx"),
     ("moderation", "content_restriction_owner_idx"),
     ("identity", "session_owner_idx"),
     ("identity", "invite_owner_idx"),

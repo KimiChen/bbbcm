@@ -158,16 +158,34 @@ impl Pool {
                     tracing::warn!("查询 pg_extension 失败，按扩展缺失处理");
                     Vec::new()
                 });
+                // 扩展在位不等于搜索轨已应用——两者由不同命令完成，「装了扩展但
+                // 没跑 db search-index」是真实且容易发生的状态。此时查询会引用
+                // 不存在的 search_vector 列并在每次搜索时抛错，而不是按 `02` §6.5
+                // 干净地降级，所以这里一并探测。
+                let vector: Option<bool> = sqlx::query_scalar(
+                    "SELECT TRUE FROM pg_attribute a JOIN pg_class c ON c.oid = a.attrelid \
+                     WHERE c.relname = 'search_documents' AND a.attname = 'search_vector' \
+                     AND a.attnum > 0 AND NOT a.attisdropped LIMIT 1",
+                )
+                .fetch_optional(pool)
+                .await
+                .unwrap_or(None);
                 let caps = Capabilities {
                     sqlite_fts5: false,
                     pg_jieba: installed.iter().any(|e| e == "pg_jieba"),
                     pg_trgm: installed.iter().any(|e| e == "pg_trgm"),
+                    search_vector: vector.unwrap_or(false),
                 };
                 if !caps.pg_jieba || !caps.pg_trgm {
                     tracing::warn!(
                         pg_jieba = caps.pg_jieba,
                         pg_trgm = caps.pg_trgm,
                         "完整模式缺少全文检索扩展，搜索能力须按降级矩阵关闭"
+                    );
+                } else if !caps.search_vector {
+                    tracing::warn!(
+                        "扩展已就位但 postgres-search 轨未应用（缺 search_documents.search_vector）；\
+                         搜索能力按降级矩阵关闭，运行 `bbbcm-cli db search-index` 后重启"
                     );
                 }
                 caps

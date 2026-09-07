@@ -34,7 +34,7 @@ pub enum SearchIndexOutcome {
 async fn execute(conn: &mut DatabaseConnection, sql: &str) -> Result<(), MigrationError> {
     match conn {
         DatabaseConnection::Postgres(c) => {
-            sqlx::raw_sql(sql).execute(c).await?;
+            sqlx::raw_sql(sql).execute(&mut *c).await?;
         }
         DatabaseConnection::Sqlite(_) => return Err(MigrationError::UnsupportedBackend),
     }

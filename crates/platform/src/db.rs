@@ -41,6 +41,12 @@ pub struct Capabilities {
     pub pg_jieba: bool,
     /// PostgreSQL 是否装有 `pg_trgm`。
     pub pg_trgm: bool,
+    /// `postgres-search` 轨是否已应用（`search_documents.search_vector` 是否存在）。
+    ///
+    /// 与 `pg_jieba` 分开探测：扩展装了但轨没跑，是一个真实且容易发生的状态
+    /// （两者由不同命令完成）。此时查询若引用不存在的列，会在每次搜索时抛错，
+    /// 而不是按 `02` §6.5 干净地降级。
+    pub search_vector: bool,
 }
 
 #[derive(Debug, Error, PartialEq, Eq)]
@@ -308,11 +314,19 @@ pub fn full_text_search_sql(
     // 实测十万篇语料下命中 1,000 条即超门槛 3.5 倍（`99` §5.39）。
     // 物化之后 `(created_at, topic_id)` 上的有序扫描可以凑满 50 条就停；低命中率
     // 仍走 GIN，高命中率走有序扫描，由规划器按选择性各取所需。
+    // 判定读物化列 `search_vector`（`postgres-search` 轨 0002 的生成列），
+    // 不再在查询里重算 `to_tsvector`。这不只是省一次函数调用：有序扫描的过滤
+    // 路径上，每一行都会执行一次这个表达式——实测 1% 命中档因此扫 38,600 行、
+    // 分词 38,600 次（`99` §5.40）。读物化列后 GIN 查找与过滤判定读同一份向量。
+    //
+    // 该列合并了 title 与 body，与原先 `title @@ q OR body @@ q` 等价，因此
+    // 只需一个绑定值；调用方仍传两个查询词参数以保持绑定顺序不变，第二个用于
+    // 兼容既有调用签名，值相同。
     let head = format!(
         "SELECT DISTINCT d.topic_id AS topic_id, d.title AS title, d.forum_id AS forum_id, \
          d.created_at AS created_at FROM {docs} d \
-         WHERE (to_tsvector('public.jiebaqry', d.title) @@ plainto_tsquery('public.jiebacfg', ?) \
-         OR to_tsvector('public.jiebaqry', d.body) @@ plainto_tsquery('public.jiebacfg', ?))"
+         WHERE (d.search_vector @@ plainto_tsquery('public.jiebacfg', ?) \
+         OR d.search_vector @@ plainto_tsquery('public.jiebacfg', ?))"
     );
     let tail = if newest_first {
         " ORDER BY d.created_at DESC, d.topic_id DESC LIMIT ?"
