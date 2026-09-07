@@ -1,0 +1,13 @@
+-- NAV-004「热门」排序键索引（`DEC-030`）。
+--
+-- E02 吞吐实测（`99` §5.43）：`/hot` 服务端单请求 12 秒，是四条被测路径里最慢的。
+-- `topics` 上原有三个索引 —— 主键 `(id)`、`(forum_id, create_seq, id)`、
+-- `(author_id, create_seq, id)` —— **没有一个覆盖 `view_count`**，于是每次请求都
+-- 要对全表扫描加排序。
+--
+-- 列序与 `repo::hot_page` 的 keyset 游标逐字对应：
+--   ORDER BY t.view_count DESC, t.id DESC
+--   WHERE (t.view_count < ? OR (t.view_count = ? AND t.id < ?))
+-- 因此建 `(view_count, id)`。两列都按同一方向排序时，B-tree 正反向扫描等价，
+-- 不必显式写 DESC。
+CREATE INDEX {{index:community.topic_hot_idx}} ON {{table:community.topics}} (view_count, id);

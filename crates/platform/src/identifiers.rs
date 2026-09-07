@@ -380,6 +380,8 @@ pub const INDEXES: &[(&str, &str)] = &[
     ("interaction", "notification_inbox_idx"),
     ("community", "topic_forum_idx"),
     ("community", "topic_owner_idx"),
+    // NAV-004 热门排序键（`DEC-030`）。缺它时 /hot 全表扫描加排序，实测 12 秒。
+    ("community", "topic_hot_idx"),
     ("community", "post_floor_idx"),
     ("community", "post_owner_idx"),
     ("community", "history_topic_idx"),

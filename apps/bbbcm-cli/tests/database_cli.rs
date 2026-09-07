@@ -68,11 +68,11 @@ fn cli_migrates_reports_and_seeds_repeatedly() {
     assert!(!f.db(&["seed"]).status.success());
     assert!(
         succeeds(f.db(&["migrate", "--backend", "sqlite"])).contains(
-            "应用 [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]"
+            "应用 [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]"
         )
     );
     assert!(succeeds(f.db(&["migrate"])).contains(
-        "已应用跳过 [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]"
+        "已应用跳过 [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]"
     ));
     assert!(succeeds(f.db(&["status"])).contains("applied"));
     assert!(succeeds(f.db(&["seed"])).contains("新增 6 个版块、6 个规则"));
