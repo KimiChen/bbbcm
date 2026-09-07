@@ -1,0 +1,68 @@
+# 治理路径打通：授权入口补齐后的实测（2026-09-07）
+
+`governance-path-postgres.txt` 记录过：管理登录与 TOTP 绑定都能走通，但四个治理
+队列一律回「没有查看案件的权限」，原因是四个交付缺口叠加。其中第三条是
+
+> 受控命令 `crates/manage/src/iam/commands.rs::assign_role` 完整实现，但全仓
+> **除测试外没有任何调用者**：没有 CLI 子命令，`/manage` 也没有对应路由。
+
+本轮补上这一环。
+
+## 为什么补在 CLI 而不是 `/manage`
+
+`03` 十六条路由中十一条未注册，`/manage` 的授权管理页属未交付范围。而这一环的
+**紧迫性来自引导**：`user promote` 建出的首个站点所有者只有四项极高危权限
+（`iam.billing.manage`／`disaster.recover`／`keys.rotate`／`production.access`），
+不含任何 `moderation.*`——他能登录后台，却看不到任何队列，也无法给别人授权。
+没有一条带外通道，系统从零状态出不来。
+
+因此按 `user promote`（`AUTH-014` 的一次性 CLI 提权）同级的定位补 CLI 命令：
+只能由持数据库凭据的运维在本机执行，成功与被拒都写审计。
+
+## 命令
+
+```
+bbbcm-cli iam grant <username> <role> --by <granter> [--scope global|forums] [--forum <slug>]...
+bbbcm-cli iam revoke <assignment_id> --by <granter>
+bbbcm-cli iam list <username>
+```
+
+## 实测
+
+```
+$ bbbcm-cli iam grant gov_mod global_moderator --by gov_mod
+授予人不得与被授予人相同（职责分离）
+
+$ bbbcm-cli iam grant gov_mod global_moderator --by gov_author
+[ALERT] IAM 授权变更 已执行
+已授予 gov_mod 角色 global_moderator（分配 ID 1，范围 global）；该账号既有管理会话已失效，需重新登录
+
+$ bbbcm-cli iam list gov_mod
+gov_mod 的角色分配（共 1 条）：
+  role=global_moderator scope=global forums=[0]
+```
+
+**自授被拒**是命令自己的前置校验，不是数据库约束：`03` §4 要求授权由他人执行，
+留一条「先给自己加权再操作」的路径等于把职责分离写成摆设。
+
+## 治理队列前后对比（真实 PostgreSQL，同一账号）
+
+| 路径 | 授权前 | 授权后 |
+|---|---|---|
+| `/manage` | 200「工作队列」 | 200「工作队列」 |
+| `/manage/cases` | 200，正文「**没有查看案件的权限**」 | 200「案件队列」 |
+| `/manage/reports` | 200，正文「**没有查看举报的权限**」 | 200「举报队列 目标 全站举报 状态 优先级 举报数 0」 |
+| `/manage/content` | 200「内容治理」 | 200「内容治理」 |
+
+队列本身为空——`moderation::http::router()` 仍返回空 Router，没有举报提交入口，
+因此还没有案件可看。那是下一项。
+
+## 审计
+
+`AuditAction` 新增 `RoleAssigned`／`RoleRevoked`，`TargetKind` 新增
+`RoleAssignment`。授予与撤销都在同一事务内写 `audit.audit_events`，被拒也记
+（`AuditResult::Denied`），与 `user promote` 的处理一致——一次被拒的授权尝试同样
+需要人工复盘。
+
+`assign_role` 内部的 `authz_version` 递增照常生效：授予后该账号既有管理会话立即
+失效，实测需重新登录，与 `03` §4 第 5 步一致。

@@ -287,6 +287,7 @@ dependencies = [
  "chrono",
  "clap",
  "identity",
+ "manage",
  "platform",
  "platform-audit",
  "platform-db",

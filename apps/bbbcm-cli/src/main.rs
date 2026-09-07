@@ -31,6 +31,40 @@ enum Command {
         #[command(subcommand)]
         command: FlagCommand,
     },
+    /// 管理角色授予与撤销（受控命令，全部记审计）
+    Iam {
+        #[command(subcommand)]
+        command: IamCommand,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+enum IamCommand {
+    /// 授予管理角色。`--scope forums` 时必须至少给一个 `--forum`
+    Grant {
+        /// 被授予人用户名
+        username: String,
+        /// 角色 key，取 `03` §4 registry 中的值
+        role: String,
+        /// 授予人用户名。**不得与被授予人相同**——职责分离要求授权由他人执行
+        #[arg(long)]
+        by: String,
+        #[arg(long, default_value = "global")]
+        scope: String,
+        /// `--scope forums` 的版块 slug，可重复
+        #[arg(long)]
+        forum: Vec<String>,
+    },
+    /// 撤销一条角色分配
+    Revoke {
+        /// `iam.role_assignments` 的行 ID
+        assignment_id: i64,
+        /// 执行撤销的账号用户名
+        #[arg(long)]
+        by: String,
+    },
+    /// 列出某账号当前生效的角色分配
+    List { username: String },
 }
 
 #[derive(Debug, Subcommand)]
@@ -306,6 +340,210 @@ async fn run(cli: Cli) -> Result<(), String> {
                 ));
             }
         },
+        // `03` §4／§5 的受控命令入口。此前 `manage::iam::commands::assign_role`
+        // 全仓除测试外没有任何调用方——`user promote` 只建 staff principal、不分配
+        // 角色，于是首个站点所有者能登录 /manage 却看不到任何队列。这条命令补上
+        // 那一环，并保持与 `user promote` 同级的约束：只能由持迁移凭据的运维在
+        // 本机执行，成功与被拒都写审计。
+        Command::Iam { command } => {
+            use platform::audit::{
+                AuditAction, AuditDetails, AuditEvent, AuditReason, AuditResult, AuditSummary,
+                AuditTarget, Classification, TargetKind,
+            };
+            let pool = platform_db::Pool::connect_existing(&config.database)
+                .await
+                .map_err(|err| err.to_string())?;
+            let renderer =
+                platform::identifiers::SchemaRenderer::new(&config.database.schema_prefix)
+                    .map_err(|err| err.to_string())?;
+            let now = chrono::Utc::now();
+            let mut tx = platform_db::transaction::DbTransaction::begin(&pool)
+                .await
+                .map_err(|err| err.to_string())?;
+            let outcome = async {
+                let mut c = tx.connection();
+                let lookup = |name: String| {
+                    let renderer = renderer.clone();
+                    async move { (name, renderer) }
+                };
+                let _ = lookup;
+                match command {
+                    IamCommand::Grant {
+                        username,
+                        role,
+                        by,
+                        scope,
+                        forum,
+                    } => {
+                        // 职责分离：`03` §4 要求授权由他人执行。自授在这里直接
+                        // 拒绝，不留「先给自己加权再操作」的路径。
+                        if username.eq_ignore_ascii_case(&by) {
+                            return Err("授予人不得与被授予人相同（职责分离）".to_owned());
+                        }
+                        let target =
+                            identity::management::account_id_by_username(&mut c, &renderer, &username)
+                                .await
+                                .map_err(|err| err.to_string())?
+                                .ok_or_else(|| "被授予账号不存在".to_owned())?;
+                        let actor =
+                            identity::management::account_id_by_username(&mut c, &renderer, &by)
+                                .await
+                                .map_err(|err| err.to_string())?
+                                .ok_or_else(|| "授予人账号不存在".to_owned())?;
+                        let mut forum_ids = Vec::new();
+                        for slug in &forum {
+                            let table = renderer
+                                .table(c.backend(), "community", "forums")
+                                .map_err(|err| err.to_string())?;
+                            let rows = c
+                                .fetch_all(
+                                    &format!("SELECT id FROM {table} WHERE slug = ?"),
+                                    &[platform_db::transaction::DbValue::Text(slug.clone())],
+                                )
+                                .await
+                                .map_err(|err| err.to_string())?;
+                            let row = rows.first().ok_or_else(|| format!("版块不存在：{slug}"))?;
+                            forum_ids.push(row.i64("id").map_err(|err| err.to_string())?);
+                        }
+                        let input = manage::iam::commands::Assignment {
+                            user_id: target,
+                            role_key: &role,
+                            granted_by: actor,
+                            scope_type: &scope,
+                            forum_ids: &forum_ids,
+                            starts_at: now,
+                            expires_at: None,
+                        };
+                        let assigned =
+                            manage::iam::commands::assign_role(&mut c, &renderer, &input, now).await;
+                        Ok((
+                            AuditAction::RoleAssigned,
+                            actor,
+                            assigned.as_ref().ok().copied().unwrap_or(0),
+                            assigned.map(|id| format!("已授予 {username} 角色 {role}（分配 ID {id}，范围 {scope}）；该账号既有管理会话已失效，需重新登录")),
+                        ))
+                    }
+                    IamCommand::Revoke { assignment_id, by } => {
+                        let actor =
+                            identity::management::account_id_by_username(&mut c, &renderer, &by)
+                                .await
+                                .map_err(|err| err.to_string())?
+                                .ok_or_else(|| "执行人账号不存在".to_owned())?;
+                        let table = renderer
+                            .table(c.backend(), "iam", "role_assignments")
+                            .map_err(|err| err.to_string())?;
+                        let rows = c
+                            .fetch_all(
+                                &format!("SELECT user_id FROM {table} WHERE id = ?"),
+                                &[assignment_id.into()],
+                            )
+                            .await
+                            .map_err(|err| err.to_string())?;
+                        let holder = rows
+                            .first()
+                            .ok_or_else(|| "分配不存在".to_owned())?
+                            .i64("user_id")
+                            .map_err(|err| err.to_string())?;
+                        let revoked = manage::iam::commands::revoke_role(
+                            &mut c,
+                            &renderer,
+                            assignment_id,
+                            holder,
+                            now,
+                        )
+                        .await;
+                        Ok((
+                            AuditAction::RoleRevoked,
+                            actor,
+                            assignment_id,
+                            revoked.map(|()| {
+                                format!("已撤销分配 {assignment_id}；该账号既有管理会话已失效")
+                            }),
+                        ))
+                    }
+                    IamCommand::List { username } => {
+                        let target =
+                            identity::management::account_id_by_username(&mut c, &renderer, &username)
+                                .await
+                                .map_err(|err| err.to_string())?
+                                .ok_or_else(|| "账号不存在".to_owned())?;
+                        let facts = manage::iam::repo::assignments(&mut c, &renderer, target)
+                            .await
+                            .map_err(|err| err.to_string())?;
+                        // 只读查询不写审计：`03` §8 的敏感读另有专门通道，
+                        // 这里读的是授权目录本身，不含个人敏感数据。
+                        println!("{username} 的角色分配（共 {} 条）：", facts.len());
+                        for f in &facts {
+                            println!(
+                                "  role={} scope={} forums={:?}",
+                                f.role_key, f.scope_type, f.forum_ids
+                            );
+                        }
+                        Err(String::new())
+                    }
+                }
+            }
+            .await;
+            match outcome {
+                // List 用空串表示「已自行输出、无需审计」。
+                Err(e) if e.is_empty() => {
+                    tx.rollback().await.map_err(|err| err.to_string())?;
+                    pool.close().await;
+                }
+                other => {
+                    let (action, actor, target_id, result) = match other {
+                        Ok(v) => v,
+                        Err(message) => {
+                            tx.rollback().await.map_err(|err| err.to_string())?;
+                            pool.close().await;
+                            return Err(message);
+                        }
+                    };
+                    let succeeded = result.is_ok();
+                    let event = AuditEvent {
+                        event_id: platform::transaction::new_operation_id(),
+                        actor_id: actor,
+                        action,
+                        target: AuditTarget {
+                            kind: TargetKind::RoleAssignment,
+                            id: target_id.to_string(),
+                        },
+                        reason: AuditReason::Correction,
+                        ticket_id: None,
+                        occurred_at: platform::db::encode_time(now),
+                        result: if succeeded {
+                            AuditResult::Succeeded
+                        } else {
+                            AuditResult::Denied
+                        },
+                        operation_id: platform::transaction::new_operation_id(),
+                        trace_id: None,
+                        version: 1,
+                        details: AuditDetails {
+                            approval_ids: Vec::new(),
+                            before: None,
+                            after: Some(AuditSummary::from_value(
+                                Classification::C0,
+                                target_id.to_string().as_bytes(),
+                            )),
+                        },
+                        correction_of: None,
+                    };
+                    platform_db::audit_repo::append_audit(&mut tx.connection(), &renderer, &event)
+                        .await
+                        .map_err(|err| err.to_string())?;
+                    tx.commit().await.map_err(|err| err.to_string())?;
+                    pool.close().await;
+                    match result {
+                        Ok(message) => {
+                            eprintln!("[ALERT] IAM 授权变更 已执行");
+                            println!("{message}");
+                        }
+                        Err(err) => return Err(err.to_string()),
+                    }
+                }
+            }
+        }
         Command::Flag { command } => match command {
             FlagCommand::List => {
                 use platform::flags::FlagReader;

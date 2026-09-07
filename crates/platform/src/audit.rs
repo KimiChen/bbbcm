@@ -27,6 +27,9 @@ pub enum AuditAction {
     ContentMoved,
     /// AUTH-014：首个站点所有者的一次性 CLI 提权。成功与被拒都记录。
     OwnerBootstrapped,
+    /// `03` §4：授予或撤销管理角色。授权变更必须可复核，成功与被拒都记录。
+    RoleAssigned,
+    RoleRevoked,
 }
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -55,6 +58,8 @@ pub enum TargetKind {
     Topic,
     /// staff principal。目标 ID 为对应账号的数据库 ID。
     StaffPrincipal,
+    /// IAM 角色分配。目标 ID 为 `iam.role_assignments` 的行 ID。
+    RoleAssignment,
 }
 
 /// 类型化目标，当前仅引擎和合成测试；未来领域在本注册中显式扩展。

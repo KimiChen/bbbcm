@@ -2000,6 +2000,30 @@ SQLite 验语义（幂等重投不报错、未读计数、单条与全部已读�
 
 规格待确认前本结果只作实验记录，不支持 Production Approved。100,000 档搜索仍在播种，结果另行补记。
 
+### 5.36 治理路径打通：补齐授权入口（2026-09-07）
+
+第 5.29 节记录的四个交付缺口中，第三条是「受控命令 `assign_role` 全仓除测试外无任何调用方」。本轮补上。证据见 [`governance-path-unblocked.txt`](../docs/evidence/mvp/wp-mvp-e01/dev-20260907/governance-path-unblocked.txt)。
+
+#### 补在 CLI 而非 `/manage` 的理由
+
+`03` 十六条路由中十一条未注册，授权管理页属未交付范围。而这一环的紧迫性来自**引导**：`user promote` 建出的首个站点所有者只有四项极高危权限、不含任何 `moderation.*`，他能登录后台却看不到任何队列，也无法给别人授权——没有带外通道，系统从零状态出不来。故按 `user promote`（`AUTH-014` 一次性 CLI 提权）同级定位补 CLI 命令：只能由持数据库凭据的运维在本机执行，成功与被拒都写审计。
+
+#### 命令与实测
+
+`bbbcm-cli iam grant|revoke|list`。**自授被拒**是命令自身的前置校验（`03` §4 要求授权由他人执行，留一条自授路径等于把职责分离写成摆设）。授予后打印 `[ALERT] IAM 授权变更 已执行`。
+
+治理队列前后对比（真实 PostgreSQL，同一账号）：`/manage/cases` 由「没有查看案件的权限」变为「案件队列」，`/manage/reports` 由「没有查看举报的权限」变为渲染出表头「目标／全站举报／状态／优先级／举报数」。
+
+`assign_role` 的 `authz_version` 递增照常生效——授予后既有管理会话立即失效，实测需重新登录，与 `03` §4 第 5 步一致。
+
+#### 审计扩展
+
+`AuditAction` 新增 `RoleAssigned`／`RoleRevoked`，`TargetKind` 新增 `RoleAssignment`。授予与撤销在同一事务内写 `audit.audit_events`，被拒记 `Denied`——与 `user promote` 一致，一次被拒的授权尝试同样需要人工复盘。
+
+#### 剩余
+
+队列仍为空：`moderation::http::router()` 返回空 Router，没有举报提交入口，因此还没有案件可看。第 5.29 节四条缺口中的第四条仍在。
+
 ## 6. 门禁状态
 
 | 门禁 | 当前状态 | 原因 |
