@@ -1,0 +1,61 @@
+# 举报入口交付与治理闭环实测（2026-09-07，`MOD-001`／`MOD-002`）
+
+`governance-path-postgres.txt` 记录的四个交付缺口，第四条是
+
+> `crates/moderation/src/http.rs::router()` 返回空 Router，举报入口未交付，
+> 队列里也不可能有案件。
+
+本轮补上，治理闭环随之打通。
+
+## 装配方式
+
+与 `manage::console` 同一范式：领域 crate 只定义路由、视图模型与两个 trait
+（`ReportBackend`／`ReportRenderer`），模板与身份接线放在 `apps/web/src/report_web.rs`。
+`moderation` 因此不反向依赖 `identity`／`content`，也不引入模板引擎。
+
+**未装配时整组路由不注册**，由框架 404，而不是注册后回 503——一个稳定回 503 的
+入口同样能用来探测部署状态，而 404 与「本来就没有这个路径」不可区分。
+
+## 三处安全口径
+
+1. **CSRF 双提交**：表单字段与 `bcm_csrf` cookie 在 HTTP 层常量时间比对，
+   cookie 值与会话的绑定由 `identity::core::authorize_content_identity` 在事务内
+   核对。两半缺一不可——只比 cookie 与表单，能写 cookie 的攻击者可同时控制两边。
+2. **与发帖同一条资格判定**：举报走 `authorize_content_identity`，不另设更宽松的
+   路径。否则被限制发言的账号仍能刷举报。
+3. **失败原因不外泄**：`Rejected` 与 `Unavailable` 回同一句提示。区分「目标不存在」
+   与「你无权举报它」会把举报入口变成内容存在性探测器，可用来枚举私有内容。
+
+## 实测（真实 PostgreSQL）
+
+| 步骤 | 结果 |
+|---|---|
+| 未登录 `GET /reports/new?kind=topic&id=1` | **401** |
+| 非法目标类型 `kind=bogus` | **404** |
+| 登录后取表单 | **200**，字段 `csrf`／`target_kind`／`target_id`／`category`／`note` |
+| 类型选项 | **八项齐全**：spam／harassment／illegal／privacy／infringement／fraud／malware／other（`MOD-002`） |
+| `POST /reports` | **200**「举报已提交，我们会尽快处理。同一目标的重复举报会合并到同一案件。」 |
+| `/manage/cases` | **200**「案件队列 #1 topic #1 待分流 中 1」 |
+| `/manage/reports` | **200**「举报队列 … 1 垃圾广告 2026-09-07 06:13 UTC #3」 |
+| 案件详情 `/manage/cases/1` | **200**，四个处置动作 + 内部备注表单 |
+| 处置「开始调查」 | **303**，复查后状态由「待分流」变「调查中」，该动作从可选项中消失 |
+
+至此 `99` §5.29 登记的四条缺口全部关闭，举报 → 建案 → 队列 → 处置的闭环在真实
+PostgreSQL 上跑通。
+
+## 单元测试
+
+`moderation::http` 两项：
+
+- `every_mod002_category_is_offered_and_other_is_last` 逐项断言 `MOD-002` 的八类
+  都在表单里、「其他」殿后，且每个表单取值都能反解回领域枚举——不能反解会让提交
+  静默落到默认分类。
+- `duplicate_session_cookie_is_refused` 断言同名 cookie 出现两次时一律不认
+  （无法判断浏览器会送哪个，猜一个等于留着会话固定攻击窗口），且打开 secure 前缀
+  后旧名不再被接受。
+
+## 未覆盖
+
+- 举报限流（同一账号短时间大量举报）未做，`reporting` flag 之外没有额外节流。
+- 证据快照（`submit_report` 的 `snapshot` 参数）当前传 `None`，随 `C03` 媒体链接入。
+- 附件与私信举报按 `MOD-001` 属后续能力，`TARGET_KINDS` 目前只有 topic／post／profile。

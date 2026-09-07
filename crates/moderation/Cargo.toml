@@ -13,6 +13,7 @@ thiserror.workspace = true
 sha2.workspace = true
 platform-db.workspace = true
 chrono.workspace = true
+serde.workspace = true
 
 [dev-dependencies]
 tokio.workspace = true

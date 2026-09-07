@@ -30,7 +30,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .merge(content::http::router(state.content.clone()))
         .merge(media::http::router())
         .merge(interaction::http::router())
-        .merge(moderation::http::router())
+        .merge(moderation::http::router(state.reports.clone()))
         .merge(support::http::router())
         .merge(trust::http::router())
         .merge(privacy::http::router())

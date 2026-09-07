@@ -1459,6 +1459,7 @@ dependencies = [
  "chrono",
  "platform",
  "platform-db",
+ "serde",
  "sha2",
  "sqlx",
  "thiserror",

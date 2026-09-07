@@ -1,0 +1,45 @@
+{# 举报表单。沿用 A00 冻结的模板结构与 CSS 类名，不新增类名、不引入脚本。 #}
+{% extends "layout/base.html" %}
+{% block title %}{{ page.title }} · 草莓论坛{% endblock %}
+{% block assets %}
+{# 举报页不进搜索引擎索引：它按目标 ID 生成，收录只会把内容 ID 空间暴露出去。 #}
+<meta name="robots" content="noindex, nofollow, noarchive" />
+<link rel="icon" type="image/svg+xml" href="{{ "img/brand-symbol.svg"|asset_url }}" />
+<link rel="stylesheet" href="{{ "css/fonts.css"|asset_url }}" />
+<link rel="stylesheet" href="{{ "css/site.css"|asset_url }}" />
+<link rel="stylesheet" href="{{ "css/pages.css"|asset_url }}" />
+<link rel="stylesheet" href="{{ "css/a11y.css"|asset_url }}" />
+{% endblock %}
+{% block header %}
+<header class="site-header"><div class="header-inner">
+<a class="brand" href="/"><span class="brand-text">草莓论坛</span></a>
+</div></header>
+{% endblock %}
+{% block content %}
+<div class="layout"><main class="main-col">
+<section class="main-panel" aria-labelledby="report-heading">
+<div class="reply-head"><h1 id="report-heading">{{ page.title }}</h1></div>
+
+{% if let Some(error) = page.error %}<p class="list-empty" role="alert">{{ error }}</p>{% endif %}
+{% if let Some(notice) = page.notice %}<p class="list-empty">{{ notice }}</p>{% endif %}
+
+{% if page.notice.is_none() %}
+<form class="reply-form" method="post" action="/reports">
+  <input type="hidden" name="csrf" value="{{ page.csrf }}" />
+  <input type="hidden" name="target_kind" value="{{ page.target_kind }}" />
+  <input type="hidden" name="target_id" value="{{ page.target_id }}" />
+  <p class="post-meta"><span>举报目标</span><span>{{ page.target_kind }} #{{ page.target_id }}</span></p>
+  <label for="report-category">举报类型</label>
+  <select id="report-category" name="category" required>
+    {% for item in page.categories %}<option value="{{ item.0 }}">{{ item.1 }}</option>{% endfor %}
+  </select>
+  <label for="report-note">补充说明（可选，最多 2000 字）</label>
+  <textarea id="report-note" name="note" rows="6" maxlength="2000"></textarea>
+  <button class="btn-primary" type="submit">提交举报</button>
+</form>
+{% else %}
+<p class="post-meta"><a class="post-title" href="/">返回首页</a></p>
+{% endif %}
+
+</section></main></div>
+{% endblock %}

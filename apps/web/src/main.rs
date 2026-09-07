@@ -26,6 +26,7 @@ mod moderation_authority;
 mod moderation_runtime_tests;
 #[cfg(test)]
 mod parameter_conformance_tests;
+mod report_web;
 mod router;
 #[cfg(test)]
 mod security_tests;
@@ -79,6 +80,8 @@ async fn run() -> Result<(), String> {
     content_authority::connect(&mut state).await?;
     // /manage 控制台在内容与治理授权之后装配：它依赖两者已就绪的服务句柄。
     manage_web::connect(&mut state).await;
+    // 举报入口与管理控制台在同一处装配，避免两者的装配状态出现分叉。
+    state.reports = report_web::connect(&state).await;
     let state = Arc::new(state);
 
     // 内嵌任务循环与 HTTP 服务共享同一取消令牌：优雅退出时先停任务循环再落地。
