@@ -26,9 +26,33 @@ try {
   const send = (m, p) => call(m, p, sessionId);
   await send('Page.enable'); await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
   for (const width of VIEWPORTS) {
+    // 参考侧采集时存在 15px 的经典滚动条（bodyWidth = 视口 − 15）。CDP 会话里
+    // 滚动条可能是覆盖式的，实测同一脚本两次跑出 1425 与 1440 两种布局宽度——
+    // 不处理的话整份比对会整体偏移 15px，看起来像布局改了。
+    //
+    // 归一化必须改滚动条而不是改模拟宽度：媒体查询按**视口宽度**求值，把模拟
+    // 宽度从 768 调到 753 会把页面推进 `max-width: 760px` 分支，量到的是另一套
+    // 布局。所以这里显式关闭覆盖式滚动条，保持视口为标称宽度。
     await send('Emulation.setDeviceMetricsOverride', { width, height: 1000, deviceScaleFactor: 1, mobile: false });
     await send('Page.navigate', { url: `http://127.0.0.1:18099/__fixtures/a00/home?theme=light` });
-    await new Promise(r => setTimeout(r, 2500));
+    await new Promise(r => setTimeout(r, 2200));
+    // 本机这套 Chrome 在模拟视口下用的是覆盖式滚动条（macOS 默认），布局宽度等于
+    // 视口；参考侧采集时是经典滚动条，布局宽度为视口 − 15。`setScrollbarsHidden`
+    // 实测无效——它归 OS 设置管，不是 CDP 能可靠切换的。
+    //
+    // 归一化必须只改**布局宽度**、不改视口宽度：媒体查询按视口求值，直接把模拟
+    // 宽度从 768 调到 753 会把页面推进 `max-width: 760px` 分支，量到的是另一套
+    // 布局（实测 brand 差 32px、search-form 差 249px）。因此在页面里补一条
+    // `html { padding-right: 15px; box-sizing: border-box }`：body 的包含块缩到
+    // 视口 − 15，与经典滚动条等价，而媒体查询仍看到标称视口。
+    await send('Runtime.evaluate', { expression: `(() => {
+      let s = document.getElementById('bcm-scrollbar-normalize');
+      if (!s) { s = document.createElement('style'); s.id = 'bcm-scrollbar-normalize'; document.head.appendChild(s); }
+      s.textContent = document.documentElement.clientWidth === ${width}
+        ? 'html{padding-right:15px;box-sizing:border-box}' : '';
+    })()` });
+    await new Promise(r => setTimeout(r, 400));
+    await new Promise(r => setTimeout(r, 500));
     const { result } = await send('Runtime.evaluate', {
       awaitPromise: true, returnByValue: true,
       expression: `(async () => { try { await document.fonts.ready } catch(e) {}
