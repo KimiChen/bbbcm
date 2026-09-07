@@ -193,7 +193,7 @@ async fn drive(
     )
 }
 
-/// `90` §6：公开读 200 read/s 起点、公开读 p95 ≤400ms、SSR 首屏 p95 ≤800ms。
+/// `90` §6：公开读 100 read/s 起点（`DEC-071`）、公开读 p95 ≤400ms、SSR 首屏 p95 ≤800ms。
 ///
 /// 需要一个已经跑起来、已接真实 PostgreSQL 的 `bbbcm-web`。
 #[tokio::test(flavor = "multi_thread", worker_threads = 8)]
@@ -201,7 +201,10 @@ async fn drive(
 async fn public_read_throughput_baseline() {
     let base = std::env::var("BBBCM_THROUGHPUT_BASE")
         .unwrap_or_else(|_| panic!("需要 BBBCM_THROUGHPUT_BASE，例如 127.0.0.1:18099"));
-    let rate = env_usize("BBBCM_THROUGHPUT_RATE", 200);
+    // 默认取 `90` §6 的公开读起点。`DEC-071` 把它由 200 下调为 100——该目标落在
+    // 实测饱和点（约 128 req/s）之内，因此**必须实测确认而不能由 128 > 100 推定
+    // 通过**：饱和点附近的排队行为是非线性的。
+    let rate = env_usize("BBBCM_THROUGHPUT_RATE", 100);
     let seconds = env_usize("BBBCM_THROUGHPUT_SECONDS", 60) as u64;
     let connections = env_usize("BBBCM_THROUGHPUT_CONNECTIONS", 200);
     let paths: Vec<String> = std::env::var("BBBCM_THROUGHPUT_PATHS")
